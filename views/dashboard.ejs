@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Dashboard</h1>
+        <nav>
+            <ul>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/users">User Management</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Welcome, <%= user.name %>!</h2>
+    </main>
+</body>
+</html>

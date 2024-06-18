@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Reports</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Generate Reports</h2>
+        <form action="/reports/generate" method="post">
+            <div>
+                <label for="reportType">Report Type:</label>
+                <select id="reportType" name="reportType" required>
+                    <option value="pdf">PDF</option>
+                    <option value="csv">CSV</option>
+                    <option value="excel">Excel</option>
+                </select>
+            </div>
+            <button type="submit">Generate Report</button>
+        </form>
+    </main>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View/Edit Claim - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>View/Edit Claim</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <form action="/claims/<%= claim._id %>" method="post">
+            <div>
+                <label for="mva">MVA:</label>
+                <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required>
+            </div>
+            <div>
+                <label for="customerName">Customer Name:</label>
+                <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
+            </div>
+            <div>
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required><%= claim.description %></textarea>
+            </div>
+            <div>
+                <label for="status">Status:</label>
+                <select id="status" name="status" required>
+                    <option value="Open" <%= claim.status === 'Open' ? 'selected' : '' %>>Open</option>
+                    <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
+                </select>
+            </div>
+            <button type="submit">Save Changes</button>
+        </form>
+    </main>
+</body>
+</html>
