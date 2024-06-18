@@ -52,7 +52,7 @@ The application provides several API endpoints for managing claims, customers, a
 Contributing
 
 We welcome contributions to improve the Budget Claims System. Please follow these steps to contribute:
-```
+
     Fork the repository.
     Create a new branch for your feature or bugfix.
     Commit your changes with clear commit messages.

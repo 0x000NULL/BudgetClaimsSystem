@@ -1,272 +1,473 @@
 # Budget Claims System Installation Guide
 
-This guide provides detailed instructions for installing Node.js, npm, MongoDB, and the Budget Claims System on Ubuntu, Debian, and Windows.
+This guide provides detailed instructions for installing the Budget Claims System on various operating systems: Ubuntu, Debian, macOS, Arch Linux, Red Hat OS, and Windows. It covers the installation of Node.js, npm, MongoDB, and Redis, as well as setting up the project.
 
 ## Prerequisites
 
 Before you begin, ensure you have the following:
+- Administrative access to your server or local machine.
+- Basic knowledge of the command line interface.
 
-- Internet connection
-- Administrative privileges on your machine
+## Step 1: Install Node.js and npm
 
----
+### Ubuntu/Debian
 
-## Table of Contents
+1. **Update the package index:**
 
-1. [Install Node.js and npm](#install-nodejs-and-npm)
-   - [Ubuntu](#ubuntu)
-   - [Debian](#debian)
-   - [Windows](#windows)
-2. [Install MongoDB](#install-mongodb)
-   - [Ubuntu](#ubuntu-1)
-   - [Debian](#debian-1)
-   - [Windows](#windows-1)
-3. [Set Up the Budget Claims System](#set-up-the-budget-claims-system)
+   ```sh
+   sudo apt update
+   ```
+    Install Node.js and npm:
 
----
+    ```sh
 
-## Install Node.js and npm
+sudo apt install nodejs npm -y
+```
+Verify the installation:
 
-### Ubuntu
+```sh
 
-1. **Update your package index:**
-    ```bash
-    sudo apt update
-    ```
-
-2. **Install Node.js and npm from NodeSource:**
-    ```bash
-    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-    sudo apt install -y nodejs
-    ```
-
-3. **Verify the installation:**
-    ```bash
     node -v
     npm -v
-    ```
+```
+macOS
 
-### Debian
+    Install Homebrew (if not already installed):
 
-1. **Update your package index:**
-    ```bash
-    sudo apt update
-    ```
+    ```sh
 
-2. **Install build-essential (required for some npm packages):**
-    ```bash
-    sudo apt install -y build-essential
-    ```
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+Install Node.js and npm using Homebrew:
 
-3. **Install Node.js and npm from NodeSource:**
-    ```bash
-    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-    sudo apt install -y nodejs
-    ```
+```sh
 
-4. **Verify the installation:**
-    ```bash
+brew install node
+```
+Verify the installation:
+
+```sh
+
     node -v
     npm -v
-    ```
+```
+Arch Linux
 
-### Windows
+    Update the package database:
 
-1. **Download Node.js and npm:**
-    - Visit the [Node.js website](https://nodejs.org/) and download the LTS version.
+    ```sh
 
-2. **Run the installer:**
-    - Follow the prompts in the Node.js Setup Wizard. Accept the license agreement and click "Next" until you reach the "Install" button.
+sudo pacman -Syu
+```
+Install Node.js and npm:
 
-3. **Verify the installation:**
-    - Open Command Prompt or PowerShell and run:
-        ```bash
-        node -v
-        npm -v
-        ```
+```sh
 
----
+sudo pacman -S nodejs npm
+```
+Verify the installation:
 
-## Install MongoDB
+```sh
 
-### Ubuntu
+    node -v
+    npm -v
+```
+Red Hat OS
 
-1. **Import the public key used by the package management system:**
-    ```bash
-    wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-    ```
+    Enable EPEL repository:
 
-2. **Create a list file for MongoDB:**
-    ```bash
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-    ```
+    ```sh
 
-3. **Reload the local package database:**
-    ```bash
-    sudo apt update
-    ```
+sudo yum install epel-release
+```
+Install Node.js and npm:
 
-4. **Install the MongoDB packages:**
-    ```bash
-    sudo apt install -y mongodb-org
-    ```
+```sh
 
-5. **Start MongoDB:**
-    ```bash
-    sudo systemctl start mongod
-    ```
+sudo yum install nodejs npm -y
+```
+Verify the installation:
 
-6. **Enable MongoDB to start on boot:**
-    ```bash
-    sudo systemctl enable mongod
-    ```
+```sh
 
-7. **Verify the installation:**
-    ```bash
+    node -v
+    npm -v
+```
+Windows
+
+    Download the Node.js installer:
+
+    Visit the Node.js download page and download the Windows installer.
+
+    Run the installer:
+
+    Run the downloaded installer and follow the setup wizard. Ensure that the "npm package manager" option is selected.
+
+    Verify the installation:
+
+    Open a command prompt and run:
+
+    ```sh
+
+    node -v
+    npm -v
+```
+Step 2: Install MongoDB
+Ubuntu/Debian
+
+    Import the MongoDB public key:
+
+    ```sh
+
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+```
+Create a list file for MongoDB:
+
+```sh
+
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+```
+Reload the local package database:
+
+```sh
+
+sudo apt update
+```
+Install MongoDB packages:
+
+```sh
+
+sudo apt install -y mongodb-org
+```
+Start MongoDB:
+
+```sh
+
+sudo systemctl start mongod
+```
+Verify that MongoDB has started:
+
+```sh
+
     sudo systemctl status mongod
-    ```
+```
+macOS
 
-### Debian
+    Install MongoDB using Homebrew:
 
-1. **Import the public key used by the package management system:**
-    ```bash
-    wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-    ```
+    ```sh
 
-2. **Create a list file for MongoDB:**
-    ```bash
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-    ```
+brew tap mongodb/brew
+brew install mongodb-community@4.4
+```
+Start MongoDB:
 
-3. **Reload the local package database:**
-    ```bash
-    sudo apt update
-    ```
+```sh
 
-4. **Install the MongoDB packages:**
-    ```bash
-    sudo apt install -y mongodb-org
-    ```
+brew services start mongodb/brew/mongodb-community
+```
+Verify that MongoDB has started:
 
-5. **Start MongoDB:**
-    ```bash
-    sudo systemctl start mongod
-    ```
+```sh
 
-6. **Enable MongoDB to start on boot:**
-    ```bash
-    sudo systemctl enable mongod
-    ```
+    brew services list
+```
+Arch Linux
 
-7. **Verify the installation:**
-    ```bash
+    Install MongoDB:
+
+    ```sh
+
+sudo pacman -S mongodb
+```
+Start MongoDB:
+
+```sh
+
+sudo systemctl start mongodb
+```
+Enable MongoDB to start on boot:
+
+```sh
+
+    sudo systemctl enable mongodb
+```
+Red Hat OS
+
+    Create a repository file for MongoDB:
+
+    ```sh
+
+sudo tee /etc/yum.repos.d/mongodb-org-4.4.repo <<EOF
+[mongodb-org-4.4]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/4.4/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-4.4.asc
+EOF
+```
+Install MongoDB packages:
+
+```sh
+
+sudo yum install -y mongodb-org
+```
+Start MongoDB:
+
+```sh
+
+sudo systemctl start mongod
+```
+Verify that MongoDB has started:
+
+```sh
+
     sudo systemctl status mongod
-    ```
+```
+Windows
 
-### Windows
+    Download the MongoDB installer:
 
-1. **Download MongoDB:**
-    - Visit the [MongoDB Download Center](https://www.mongodb.com/try/download/community) and download the MongoDB installer for Windows.
+    Visit the MongoDB download page and download the installer.
 
-2. **Run the installer:**
-    - Follow the prompts in the MongoDB Setup Wizard. Accept the license agreement, and choose the Complete setup type. Ensure "Install MongoDB as a Service" is checked.
+    Run the installer:
 
-3. **Verify the installation:**
-    - Open Command Prompt or PowerShell and run:
-        ```bash
-        mongo --version
-        ```
+    Run the installer and follow the setup wizard.
 
----
+    Start MongoDB:
 
-## Set Up the Budget Claims System
+    Follow the instructions provided by the installer to start MongoDB as a service.
 
-1. **Clone the repository:**
-    ```bash
-    git clone https://github.com/yourusername/BudgetClaimsSystem.git
-    cd BudgetClaimsSystem
-    ```
+## Step 3: Install Redis
+### Ubuntu/Debian
 
-2. **Install dependencies:**
-    ```bash
-    npm install
-    ```
+    Install Redis:
 
-3. **Set up environment variables:**
-    - Create a `.env` file in the root directory and add the following:
-    ```env
-    PORT=5000
-    MONGODB_URI=mongodb://localhost:27017/BudgetClaimsSystem
-    SESSION_SECRET=your_secret_key
-    JWT_SECRET=your_jwt_secret
-    EMAIL_USER=your_email@gmail.com
-    EMAIL_PASS=your_email_password
-    ```
+    ```sh
 
-4. **Start the server:**
-    ```bash
-    npm start
-    ```
+sudo apt install redis-server
+```
+Verify Redis installation:
 
-5. **Access the application:**
-    - Open your browser and go to `http://localhost:5000`.
+```sh
 
-### Additional PM2 Commands
+redis-server --version
+```
+Enable Redis to start on boot:
 
-- **Install PM2** (if not already installed):
-    ```bash
-    npm install pm2 -g
-    ```
+```sh
 
-- **Start the application with PM2**:
-    ```bash
-    pm2 start server.js --name BudgetClaimsSystem
-    ```
+    sudo systemctl enable redis-server
+```
+### macOS
 
-- **View running processes:**
-    ```bash
-    pm2 list
-    ```
+    Install Redis using Homebrew:
 
-- **Stop the application:**
-    ```bash
-    pm2 stop BudgetClaimsSystem
-    ```
+    ```sh
 
-- **Restart the application:**
-    ```bash
-    pm2 restart BudgetClaimsSystem
-    ```
+brew install redis
+```
+Start Redis:
 
-- **View logs:**
-    ```bash
-    pm2 logs BudgetClaimsSystem
-    ```
+```sh
 
-- **Delete the application from PM2:**
-    ```bash
-    pm2 delete BudgetClaimsSystem
-    ```
+brew services start redis
+```
+Verify that Redis has started:
 
-## Troubleshooting
+```sh
 
-### Common Issues
+    brew services list
+```
+### Arch Linux
 
-- **Node.js and npm installation errors:**
-    - Ensure that your system is updated and the correct Node.js version is installed.
+    Install Redis:
 
-- **MongoDB service not starting:**
-    - Check the status of the MongoDB service and review logs for errors:
-      ```bash
-      sudo systemctl status mongod
-      sudo journalctl -u mongod
-      ```
+    ```sh
 
-- **Environment variables not set correctly:**
-    - Ensure the `.env` file is in the root directory of your project and contains all necessary variables.
+sudo pacman -S redis
+```
+Start Redis:
 
-For further assistance, please refer to the official documentation of Node.js, npm, and MongoDB, or contact the project maintainers.
+```sh
 
----
+sudo systemctl start redis
+```
+Enable Redis to start on boot:
 
-This installation guide should help you set up the Budget Claims System on Ubuntu, Debian, and Windows with detailed steps and troubleshooting tips. If you encounter any issues, feel free to seek help from the community or the project maintainers.
+```sh
+
+    sudo systemctl enable redis
+```
+### Red Hat OS
+
+    Enable the EPEL repository:
+
+    ```sh
+
+sudo yum install epel-release
+```
+Install Redis:
+
+```sh
+
+sudo yum install redis
+```
+Start Redis:
+
+```sh
+
+sudo systemctl start redis
+```
+Enable Redis to start on boot:
+
+```sh
+
+    sudo systemctl enable redis
+```
+## Windows
+
+    Download the Redis MSI installer:
+
+    Visit the Redis download page and download the Redis MSI installer.
+
+    Run the Redis server:
+
+    Run the Redis server by executing redis-server.exe.
+
+### Step 4: Clone the Budget Claims System Repository
+
+```sh
+
+git clone <repository_url>
+```
+### Step 5: Install Project Dependencies
+
+Navigate to the project directory and run:
+
+```sh
+
+npm install
+```
+### Step 6: Set Up Environment Variables
+
+Create a .env file in the root of the project and add the required environment variables.
+
+Example .env file:
+
+```makefile
+
+MONGODB_URI=mongodb://localhost:27017/budget-claims-system
+SESSION_SECRET=your_session_secret
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+EMAIL_USER=your_email@example.com
+EMAIL_PASS=your_email_password
+```
+### Step 7: Start the Application
+
+```sh
+
+npm start
+```
+Your application should now be running on http://localhost:5000.
+# Usage
+Running the Application in Development Mode
+
+To start the application in development mode with hot-reloading using Nodemon:
+
+```sh
+
+npm run dev
+```
+Running the Application in Production Mode
+
+To start the application in production mode using PM2:
+
+```sh
+
+pm2 start server.js
+```
+Additional Configuration
+Configuring PM2 for Production
+
+    Install PM2 globally:
+
+    ```sh
+
+npm install pm2@latest -g
+```
+Start the application with PM2:
+
+```sh
+
+pm2 start server.js
+```
+Save the PM2 process list:
+
+```sh
+
+pm2 save
+```
+Set PM2 to start on boot:
+
+```sh
+
+    pm2 startup
+```
+Setting Up Reverse Proxy with Nginx
+
+    Install Nginx:
+
+    ```sh
+
+sudo apt install nginx
+```
+Configure Nginx:
+
+Create a configuration file for your application:
+
+```sh
+
+sudo nano /etc/nginx/sites-available/budget-claims-system
+```
+Add the following content:
+
+```nginx
+
+server {
+    listen 80;
+    server_name your_domain_or_IP;
+
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+Enable the configuration:
+
+```sh
+
+sudo ln -s /etc/nginx/sites-available/budget-claims-system /etc/nginx/sites-enabled/
+```
+Test the Nginx configuration:
+
+```sh
+
+sudo nginx -t
+```
+Restart Nginx:
+
+```sh
+
+    sudo systemctl restart nginx
+```
+License
+
+This project is licensed under the UNLICENSE.
