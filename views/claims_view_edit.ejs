@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Claims - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS file for styling -->
+</head>
+<body>
+    <header>
+        <!-- Budget logo, page title, and navigation links -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Search Claims</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <!-- Form to search for claims -->
+        <form action="/claims/search" method="get">
+            <div>
+                <!-- Input field for MVA -->
+                <label for="mva">MVA:</label>
+                <input type="text" id="mva" name="mva">
+            </div>
+            <div>
+                <!-- Input field for Customer Name -->
+                <label for="customerName">Customer Name:</label>
+                <input type="text" id="customerName" name="customerName">
+            </div>
+            <button type="submit">Search</button><!-- Submit button for the form -->
+        </form>
+        <% if (claims) { %>
+            <!-- Display search results if claims are found -->
+            <h2>Search Results</h2>
+            <ul>
+                <% claims.forEach(claim => { %>
+                    <!-- Link to view/edit individual claim -->
+                    <li><a href="/claims/<%= claim._id %>"><%= claim.mva %> - <%= claim.customerName %></a></li>
+                <% }) %>
+            </ul>
+        <% } %>
+    </main>
+</body>
+</html>

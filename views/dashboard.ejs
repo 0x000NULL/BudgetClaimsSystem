@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS file for styling -->
 </head>
 <body>
     <header>
+        <!-- Budget logo, page title, and navigation links -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>Dashboard</h1>
         <nav>
@@ -20,7 +21,8 @@
         </nav>
     </header>
     <main>
-        <h2>Welcome, <%= user.name %>!</h2>
+        <!-- Welcome message for the logged-in user -->
+        <h2>Welcome, <%= user.name %>!</h2><!-- EJS syntax to inject user's name dynamically -->
     </main>
 </body>
 </html>

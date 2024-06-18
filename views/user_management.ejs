@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS file for styling -->
 </head>
 <body>
     <header>
+        <!-- Budget logo, page title, and navigation links -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>User Management</h1>
         <nav>
@@ -18,6 +19,7 @@
         </nav>
     </header>
     <main>
+        <!-- Form to create a new user -->
         <h2>Create User</h2>
         <form action="/users/create" method="post">
             <div>
@@ -32,18 +34,20 @@
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit">Create User</button>
+            <button type="submit">Create User</button><!-- Submit button for the form -->
         </form>
 
+        <!-- Form to delete an existing user -->
         <h2>Delete User</h2>
         <form action="/users/delete" method="post">
             <div>
                 <label for="userId">User ID:</label>
                 <input type="text" id="userId" name="userId" required>
             </div>
-            <button type="submit">Delete User</button>
+            <button type="submit">Delete User</button><!-- Submit button for the form -->
         </form>
 
+        <!-- Form to modify user permissions -->
         <h2>Modify Permissions</h2>
         <form action="/users/permissions" method="post">
             <div>
@@ -54,7 +58,7 @@
                 <label for="permissions">Permissions:</label>
                 <input type="text" id="permissions" name="permissions" required>
             </div>
-            <button type="submit">Modify Permissions</button>
+            <button type="submit">Modify Permissions</button><!-- Submit button for the form -->
         </form>
     </main>
 </body>
