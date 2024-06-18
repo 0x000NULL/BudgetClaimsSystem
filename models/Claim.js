@@ -26,8 +26,17 @@ const ClaimSchema = new Schema({
     },
     files: [{
         type: String // Store file names
+    }],
+    versions: [{
+        description: String, // Description of the claim
+        status: String, // Status of the claim
+        files: [String], // Files associated with the claim
+        updatedAt: {
+            type: Date,
+            default: Date.now // Default to current date and time
+        }
     }]
-});
+}, { timestamps: true }); // Enable timestamps to keep track of creation and update times
 
 // Create a model from the schema
 const Claim = mongoose.model('Claim', ClaimSchema);

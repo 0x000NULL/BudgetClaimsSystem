@@ -4,25 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS file for styling -->
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script><!-- Link to Chart.js for creating charts -->
 </head>
 <body>
     <header>
-        <!-- Budget logo, page title, and navigation links -->
+        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>Dashboard</h1>
         <nav>
             <ul>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/users">User Management</a></li>
-                <li><a href="/reports">Reports</a></li>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims">Claims</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <!-- Welcome message for the logged-in user -->
-        <h2>Welcome, <%= user.name %>!</h2><!-- EJS syntax to inject user's name dynamically -->
+        <div class="analytics">
+            <h2>Analytics Overview</h2>
+            <canvas id="claimsChart"></canvas><!-- Canvas for claims chart -->
+            <div class="stats">
+                <p>Total Claims: <span id="totalClaims"></span></p>
+                <p>Open Claims: <span id="openClaims"></span></p>
+                <p>In Progress Claims: <span id="inProgressClaims"></span></p>
+                <p>Closed Claims: <span id="closedClaims"></span></p>
+                <p>Average Resolution Time: <span id="avgResolutionTime"></span> days</p>
+            </div>
+        </div>
     </main>
+    <script>
+        // Fetch the analytics data from the server
+        fetch('/dashboard')
+            .then(response => response.json())
+            .then(data => {
+                // Update the stats
+                document.getElementById('totalClaims').textContent = data.totalClaims;
+                document.getElementById('openClaims').textContent = data.openClaims;
+                document.getElementById('inProgressClaims').textContent = data.inProgressClaims;
+                document.getElementById('closedClaims').textContent = data.closedClaims;
+                document.getElementById('avgResolutionTime').textContent = data.avgResolutionTime.toFixed(2);
+
+                // Create the claims chart
+                const ctx = document.getElementById('claimsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Open', 'In Progress', 'Closed'],
+                        datasets: [{
+                            label: 'Claims Status',
+                            data: [data.openClaims, data.inProgressClaims, data.closedClaims],
+                            backgroundColor: ['#f39c12', '#3498db', '#2ecc71']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Claims Status Distribution'
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching analytics data:', error));
+    </script>
 </body>
 </html>

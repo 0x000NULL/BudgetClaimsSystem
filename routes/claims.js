@@ -82,10 +82,28 @@ router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
 
 // Route to update a claim by ID, accessible by admin and manager
 router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), (req, res) => {
-    Claim.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    Claim.findById(req.params.id)
         .then(claim => {
-            res.json(claim); // Respond with the updated claim
-            notifyClaimStatusUpdate(req.user.email, claim); // Send notification about the claim status update
+            // Save the current version of the claim before updating
+            claim.versions.push({
+                description: claim.description,
+                status: claim.status,
+                files: claim.files,
+                updatedAt: claim.updatedAt
+            });
+
+            // Update the claim with new data
+            claim.description = req.body.description || claim.description;
+            claim.status = req.body.status || claim.status;
+            claim.files = req.body.files || claim.files;
+
+            // Save the updated claim to the database
+            claim.save()
+                .then(updatedClaim => {
+                    res.json(updatedClaim); // Respond with the updated claim
+                    notifyClaimStatusUpdate(req.user.email, updatedClaim); // Send notification about the claim status update
+                })
+                .catch(err => res.status(500).json({ error: err.message })); // Handle errors
         })
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });

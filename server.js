@@ -1,4 +1,4 @@
-const express = require('express'); // Import the Express framework
+const express = require('express'); // Import Express to create an application
 const mongoose = require('mongoose'); // Import Mongoose for MongoDB interaction
 const passport = require('passport'); // Import Passport for authentication
 const session = require('express-session'); // Import Express session middleware
@@ -55,10 +55,11 @@ app.use((req, res, next) => {
     next(); // Continue to the next middleware
 });
 
-// Define routes
+// Routes
 app.use('/', require('./routes/index')); // Root route
 app.use('/users', require('./routes/users')); // User routes
 app.use('/claims', require('./routes/claims')); // Claim routes
+app.use('/dashboard', require('./routes/dashboard')); // Dashboard routes
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
