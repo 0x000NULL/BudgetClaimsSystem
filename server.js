@@ -1,173 +1,72 @@
-// server.js
+const express = require('express'); // Import the Express framework
+const mongoose = require('mongoose'); // Import Mongoose for MongoDB interaction
+const passport = require('passport'); // Import Passport for authentication
+const session = require('express-session'); // Import Express session middleware
+const connectMongo = require('connect-mongo'); // Import Connect Mongo for session storage in MongoDB
+const flash = require('connect-flash'); // Import Connect Flash for flash messages
+const logger = require('morgan'); // Import Morgan for HTTP request logging
+const path = require('path'); // Import Path for file and directory paths
+const cors = require('cors'); // Import CORS middleware
+const fileUpload = require('express-fileupload'); // Import Express FileUpload middleware
+require('dotenv').config(); // Import and configure dotenv for environment variables
 
-// Import required modules
-const express = require('express');
-const mongoose = require('mongoose');
-const session = require('express-session');
-const MongoStore = require('connect-mongo');
-const passport = require('passport');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const fileUpload = require('express-fileupload');
-const path = require('path');
+// Import the reminder scheduler to schedule notifications
+require('./notifications/reminderScheduler');
 
-const app = express();
-
-// Middleware to enable Cross-Origin Resource Sharing (CORS)
-app.use(cors());
-
-// Middleware to parse JSON bodies
-app.use(bodyParser.json());
-// Middleware to parse URL-encoded bodies
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Middleware to handle file uploads
-app.use(fileUpload());
-
-// Set up EJS as the template engine
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-
-// Set up static files
-app.use(express.static(path.join(__dirname, 'public')));
+const app = express(); // Initialize the Express application
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/BudgetClaimsSystem', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log('MongoDB connected'))
-    .catch(err => console.log(err));
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true, // Use the new URL parser
+    useUnifiedTopology: true // Use the new Server Discover and Monitoring engine
+})
+    .then(() => console.log('MongoDB connected')) // Log success message
+    .catch(err => console.log(err)); // Log any connection errors
 
-// Configure session management
+// Middleware setup
+app.use(logger('dev')); // Use Morgan for logging HTTP requests
+app.use(express.json()); // Parse incoming JSON requests
+app.use(express.urlencoded({ extended: false })); // Parse URL-encoded data
+app.use(cors()); // Enable CORS
+app.use(fileUpload()); // Enable file uploads
+
+// Configure Express session with MongoDB session store
+const MongoStore = connectMongo(session);
 app.use(session({
-    secret: 'your_secret_key', // Secret key for signing the session ID cookie
-    resave: false, // Prevents session from being saved back to the session store if it wasn't modified
-    saveUninitialized: false, // Prevents uninitialized sessions from being saved to the session store
-    store: MongoStore.create({ mongoUrl: 'mongodb://localhost:27017/BudgetClaimsSystem' }) // Store sessions in MongoDB
+    secret: process.env.SESSION_SECRET, // Session secret key
+    resave: false, // Do not save session if unmodified
+    saveUninitialized: false, // Do not create session until something is stored
+    store: new MongoStore({ mongooseConnection: mongoose.connection }) // Use MongoStore for session storage
 }));
 
-// Initialize Passport.js for authentication
-require('./config/passport')(passport);
+// Initialize Passport middleware for authentication
 app.use(passport.initialize());
 app.use(passport.session());
+require('./config/passport')(passport); // Import Passport configuration
+
+// Initialize Connect Flash middleware for flash messages
+app.use(flash());
+
+// Set global variables for flash messages
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg'); // Success message
+    res.locals.error_msg = req.flash('error_msg'); // Error message
+    res.locals.error = req.flash('error'); // Error object
+    next(); // Continue to the next middleware
+});
 
 // Define routes
-app.use('/api/claims', require('./routes/claims'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/email', require('./routes/email'));
+app.use('/', require('./routes/index')); // Root route
+app.use('/users', require('./routes/users')); // User routes
+app.use('/claims', require('./routes/claims')); // Claim routes
 
-// Serve the landing page
-app.get('/', (req, res) => {
-    res.render('index');
-});
+// Serve static files from the "public" directory
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve the login page
-app.get('/login', (req, res) => {
-    res.render('login');
-});
-
-// Handle login form submission
-app.post('/login', (req, res, next) => {
-    passport.authenticate('local', {
-        successRedirect: '/dashboard',
-        failureRedirect: '/login',
-        failureFlash: true
-    })(req, res, next);
-});
-
-// Serve the dashboard page (requires authentication)
-app.get('/dashboard', (req, res) => {
-    if (!req.isAuthenticated()) {
-        return res.redirect('/login');
-    }
-    res.render('dashboard', { user: req.user });
-});
-
-// Serve the claims search page
-app.get('/claims/search', (req, res) => {
-    res.render('claims_search');
-});
-
-// Serve the claims view/edit page
-app.get('/claims/:id', (req, res) => {
-    Claim.findById(req.params.id, (err, claim) => {
-        if (err) {
-            return res.status(500).send(err);
-        }
-        res.render('claim_view_edit', { claim });
-    });
-});
-
-// Handle claim update
-app.post('/claims/:id', (req, res) => {
-    Claim.findByIdAndUpdate(req.params.id, req.body, (err, claim) => {
-        if (err) {
-            return res.status(500).send(err);
-        }
-        res.redirect('/claims/' + req.params.id);
-    });
-});
-
-// Serve the logout page
-app.get('/logout', (req, res) => {
-    req.logout();
-    res.render('logout');
-});
-
-// Serve the help page
-app.get('/help', (req, res) => {
-    res.render('help');
-});
-
-// Serve the user management page
-app.get('/users', (req, res) => {
-    res.render('user_management');
-});
-
-// Handle user creation
-app.post('/users/create', (req, res) => {
-    const { name, email, password } = req.body;
-    const newUser = new User({ name, email, password });
-    newUser.save(err => {
-        if (err) {
-            return res.status(500).send(err);
-        }
-        res.redirect('/users');
-    });
-});
-
-// Handle user deletion
-app.post('/users/delete', (req, res) => {
-    User.findByIdAndDelete(req.body.userId, err => {
-        if (err) {
-            return res.status(500).send(err);
-        }
-        res.redirect('/users');
-    });
-});
-
-// Handle permissions modification
-app.post('/users/permissions', (req, res) => {
-    User.findByIdAndUpdate(req.body.userId, { permissions: req.body.permissions }, err => {
-        if (err) {
-            return res.status(500).send(err);
-        }
-        res.redirect('/users');
-    });
-});
-
-// Serve the reports page
-app.get('/reports', (req, res) => {
-    res.render('reports');
-});
-
-// Handle report generation
-app.post('/reports/generate', (req, res) => {
-    const reportType = req.body.reportType;
-    // Generate the report based on the selected type (PDF, CSV, Excel)
-    res.send('Report generation is not yet implemented.');
-});
-
-// Start the server
+// Define the port for the server to listen on
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+
+// Start the server and listen on the defined port
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});

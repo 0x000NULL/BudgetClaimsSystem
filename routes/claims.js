@@ -1,9 +1,14 @@
-const express = require('express');
-const Claim = require('../models/Claim');
-const path = require('path');
-const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth');
-const logActivity = require('../middleware/activityLogger');
-const router = express.Router();
+const express = require('express'); // Import Express to create a router
+const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
+const path = require('path'); // Import Path to handle file and directory paths
+const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
+const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
+const {
+    notifyNewClaim,
+    notifyClaimStatusUpdate
+} = require('../notifications/notify'); // Import notification functions
+
+const router = express.Router(); // Create a new router
 
 // Route to get all claims, accessible by admin, manager, and employee
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), (req, res) => {
@@ -14,7 +19,7 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
 
 // Route to add a new claim, accessible by admin and manager
 router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), (req, res) => {
-    const { mva, customerName, description, status } = req.body;
+    const { mva, customerName, description, status } = req.body; // Extract claim details from the request body
 
     // Initialize an array to hold uploaded file names
     let filesArray = [];
@@ -47,7 +52,10 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
 
     // Save the claim to the database
     newClaim.save()
-        .then(claim => res.json(claim)) // Respond with the saved claim
+        .then(claim => {
+            res.json(claim); // Respond with the saved claim
+            notifyNewClaim(req.user.email, claim); // Send notification about the new claim
+        })
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
@@ -61,7 +69,10 @@ router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
 // Route to update a claim by ID, accessible by admin and manager
 router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), (req, res) => {
     Claim.findByIdAndUpdate(req.params.id, req.body, { new: true })
-        .then(claim => res.json(claim)) // Respond with the updated claim
+        .then(claim => {
+            res.json(claim); // Respond with the updated claim
+            notifyClaimStatusUpdate(req.user.email, claim); // Send notification about the claim status update
+        })
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
