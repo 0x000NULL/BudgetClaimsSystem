@@ -24,6 +24,13 @@ const UserSchema = new Schema({
     date: {
         type: Date,
         default: Date.now // Default to current date and time
+    },
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false // 2FA is disabled by default
+    },
+    twoFactorSecret: {
+        type: String // Secret key for 2FA
     }
 });
 

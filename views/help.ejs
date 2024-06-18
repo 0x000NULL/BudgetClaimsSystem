@@ -4,114 +4,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Help - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS file for styling -->
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
 </head>
 <body>
     <header>
-        <!-- Budget logo, page title, and navigation links -->
+        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Help</h1>
+        <h1>Help and Support</h1>
         <nav>
             <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/login">Login</a></li>
                 <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims">Claims</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <h2>Documentation and Support</h2>
-        <p>Welcome to the Budget Claims System help page. Here you'll find detailed documentation and support for using the system.</p>
+        <section>
+            <h2>Overview</h2>
+            <p>Welcome to the Budget Claims System. This application is designed to help you manage vehicle claims efficiently. Below, you will find detailed guides and instructions for using various features of the system.</p>
+        </section>
         
-        <!-- List of features with links to detailed sections -->
-        <h3>Features</h3>
-        <ul>
-            <li><a href="#add-claim">Add Claims</a></li>
-            <li><a href="#edit-claim">Edit Claims</a></li>
-            <li><a href="#search-claims">Search Claims</a></li>
-            <li><a href="#export-claims">Export Claims</a></li>
-            <li><a href="#generate-reports">Generate Reports</a></li>
-            <li><a href="#user-management">User Management</a></li>
-        </ul>
-
-        <!-- Section for adding claims -->
-        <section id="add-claim">
-            <h3>Add Claims</h3>
-            <p>To add a new claim, follow these steps:</p>
+        <section>
+            <h2>Getting Started</h2>
+            <h3>Login</h3>
+            <p>To access the system, you need to log in with your credentials. If you do not have an account, please contact your administrator.</p>
+            <h3>Dashboard</h3>
+            <p>The dashboard provides an overview of key metrics and analytics, such as the number of claims processed, open vs. closed claims, average resolution time, etc. This helps management track performance and identify areas for improvement.</p>
+        </section>
+        
+        <section>
+            <h2>Managing Claims</h2>
+            <h3>Adding a New Claim</h3>
             <ol>
-                <li>Navigate to the <a href="/claims/search">Claims Search</a> page.</li>
+                <li>Navigate to the "Claims" page.</li>
                 <li>Click on the "Add Claim" button.</li>
-                <li>Fill in the required fields including MVA, Customer Name, Description, and Status.</li>
-                <li>Upload any necessary files.</li>
-                <li>Click the "Submit" button to save the claim.</li>
+                <li>Fill in the required fields: MVA, Customer Name, Description, and Status.</li>
+                <li>If necessary, upload relevant files.</li>
+                <li>Click "Submit" to save the new claim.</li>
             </ol>
-        </section>
-
-        <!-- Section for editing claims -->
-        <section id="edit-claim">
-            <h3>Edit Claims</h3>
-            <p>To edit an existing claim, follow these steps:</p>
+            <h3>Editing an Existing Claim</h3>
             <ol>
-                <li>Navigate to the <a href="/claims/search">Claims Search</a> page.</li>
-                <li>Search for the claim you want to edit.</li>
-                <li>Click on the claim to open the detail view.</li>
-                <li>Update the necessary fields.</li>
-                <li>Click the "Save Changes" button to update the claim.</li>
+                <li>Navigate to the "Claims" page.</li>
+                <li>Click on the claim you wish to edit.</li>
+                <li>Update the necessary fields and upload any additional files if needed.</li>
+                <li>Click "Save" to update the claim.</li>
             </ol>
-        </section>
-
-        <!-- Section for searching claims -->
-        <section id="search-claims">
-            <h3>Search Claims</h3>
-            <p>To search for claims, follow these steps:</p>
+            <h3>Searching and Filtering Claims</h3>
+            <p>Use the search form on the "Claims" page to filter claims based on various criteria, including MVA, Customer Name, Status, and Date Range. This helps you quickly find specific claims.</p>
+            <h3>Deleting a Claim</h3>
             <ol>
-                <li>Navigate to the <a href="/claims/search">Claims Search</a> page.</li>
-                <li>Enter the search criteria such as MVA or Customer Name.</li>
-                <li>Click the "Search" button to find matching claims.</li>
-                <li>Click on a claim in the search results to view or edit it.</li>
+                <li>Navigate to the "Claims" page.</li>
+                <li>Click on the claim you wish to delete.</li>
+                <li>Click the "Delete" button to remove the claim from the system.</li>
             </ol>
         </section>
-
-        <!-- Section for exporting claims -->
-        <section id="export-claims">
-            <h3>Export Claims</h3>
-            <p>To export claims to a file, follow these steps:</p>
+        
+        <section>
+            <h2>Notifications</h2>
+            <p>The system sends email notifications for various events, such as:</p>
+            <ul>
+                <li>New claim created</li>
+                <li>Claim status updated</li>
+                <li>Reminders for pending tasks</li>
+            </ul>
+            <p>Ensure your email settings are configured correctly to receive notifications.</p>
+        </section>
+        
+        <section>
+            <h2>Activity Logging</h2>
+            <p>The system tracks user activities, such as logins, claim creations, edits, and deletions. This helps in auditing and understanding user behavior within the application. Activity logs can be viewed by administrators for security and auditing purposes.</p>
+        </section>
+        
+        <section>
+            <h2>File Versioning</h2>
+            <p>When editing a claim, the system saves a version of the claim before making updates. This maintains a history of changes and allows you to revert to previous versions if needed.</p>
+            <h3>Viewing Claim Versions</h3>
             <ol>
-                <li>Navigate to the <a href="/claims/search">Claims Search</a> page.</li>
-                <li>Search for the claims you want to export.</li>
-                <li>Click the "Export" button and select the desired format (CSV, Excel, or PDF).</li>
-                <li>The file will be downloaded to your computer.</li>
+                <li>Navigate to the claim you wish to view.</li>
+                <li>Click on the "Versions" tab to see the history of changes made to the claim.</li>
             </ol>
         </section>
-
-        <!-- Section for generating reports -->
-        <section id="generate-reports">
-            <h3>Generate Reports</h3>
-            <p>To generate reports, follow these steps:</p>
+        
+        <section>
+            <h2>Role-Based Access Control (RBAC)</h2>
+            <p>The system uses role-based access control to manage user permissions. There are three roles:</p>
+            <ul>
+                <li><strong>Admin</strong>: Full access to all features, including user management and activity logs.</li>
+                <li><strong>Manager</strong>: Access to most features, including claim management and dashboard analytics, but limited access to user management.</li>
+                <li><strong>Employee</strong>: Limited access to view and manage claims.</li>
+            </ul>
+        </section>
+        
+        <section>
+            <h2>Generating Reports</h2>
+            <p>Generate reports in CSV, Excel, or PDF formats to analyze and share data.</p>
+            <h3>Creating a Report</h3>
             <ol>
-                <li>Navigate to the <a href="/reports">Reports</a> page.</li>
-                <li>Select the report type (PDF, CSV, or Excel) from the dropdown menu.</li>
-                <li>Click the "Generate Report" button.</li>
-                <li>The report will be generated and downloaded to your computer.</li>
+                <li>Navigate to the "Reports" page.</li>
+                <li>Select the report type and format.</li>
+                <li>Choose the data fields and apply any filters.</li>
+                <li>Click "Generate Report" to download the file.</li>
             </ol>
         </section>
-
-        <!-- Section for managing users -->
-        <section id="user-management">
-            <h3>User Management</h3>
-            <p>To manage users, follow these steps:</p>
+        
+        <section>
+            <h2>API Access</h2>
+            <p>The system provides API endpoints for key functionalities, allowing other applications to interact with the Budget Claims System. API documentation is available for developers to integrate with third-party services.</p>
+        </section>
+        
+        <section>
+            <h2>Data Import/Export</h2>
+            <p>Import data from external sources and export data to various formats to facilitate data migration and sharing.</p>
+            <h3>Importing Data</h3>
             <ol>
-                <li>Navigate to the <a href="/users">User Management</a> page.</li>
-                <li>To create a new user, fill in the required fields (Name, Email, Password) and click the "Create User" button.</li>
-                <li>To delete a user, enter the User ID and click the "Delete User" button.</li>
-                <li>To modify user permissions, enter the User ID and new permissions, then click the "Modify Permissions" button.</li>
+                <li>Navigate to the "Data Import" page.</li>
+                <li>Upload the file containing the data.</li>
+                <li>Map the fields to the system's database structure.</li>
+                <li>Click "Import" to upload the data.</li>
+            </ol>
+            <h3>Exporting Data</h3>
+            <ol>
+                <li>Navigate to the "Data Export" page.</li>
+                <li>Select the data fields and apply any filters.</li>
+                <li>Choose the format (CSV, Excel, PDF).</li>
+                <li>Click "Export" to download the file.</li>
             </ol>
         </section>
-
-        <!-- Support contact information -->
-        <h3>Support</h3>
-        <p>If you need further assistance, please contact our support team at <a href="mailto:support@budgetclaims.com">support@budgetclaims.com</a>.</p>
+        
+        <section>
+            <h2>User Feedback System</h2>
+            <p>Report issues, suggest features, and provide general feedback to help improve the system.</p>
+            <h3>Submitting Feedback</h3>
+            <ol>
+                <li>Navigate to the "Feedback" page.</li>
+                <li>Fill in the feedback form with your comments and suggestions.</li>
+                <li>Click "Submit" to send your feedback to the system administrators.</li>
+            </ol>
+        </section>
+        
+        <section>
+            <h2>Support</h2>
+            <p>If you need further assistance, please contact our support team at <a href="mailto:support@budgetclaims.com">support@budgetclaims.com</a>.</p>
+        </section>
     </main>
 </body>
 </html>

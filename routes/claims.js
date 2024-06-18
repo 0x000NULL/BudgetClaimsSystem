@@ -115,4 +115,28 @@ router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Del
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
-module.exports = router;
+// Route for bulk updating claims, accessible by admin and manager
+router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk updated claims'), (req, res) => {
+    const { claimIds, updateData } = req.body; // Extract claim IDs and update data from the request body
+
+    // Update multiple claims based on provided IDs and data
+    Claim.updateMany({ _id: { $in: claimIds } }, updateData)
+        .then(result => res.json({ msg: 'Claims updated', result })) // Respond with update result
+        .catch(err => res.status(500).json({ error: err.message })); // Handle errors
+});
+
+// Route for bulk exporting claims, accessible by admin and manager
+router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk exported claims'), (req, res) => {
+    const { claimIds, format } = req.body; // Extract claim IDs and export format from the request body
+
+    // Find claims based on provided IDs
+    Claim.find({ _id: { $in: claimIds } })
+        .then(claims => {
+            // Implement export functionality based on desired format (CSV, Excel, PDF)
+            // For simplicity, we'll respond with the claims data in JSON format
+            res.json(claims);
+        })
+        .catch(err => res.status(500).json({ error: err.message })); // Handle errors
+});
+
+module.exports = router; // Export the router
