@@ -19,7 +19,7 @@ Before you begin, ensure you have the following:
    ```
     Install Node.js and npm:
 
-    ```sh
+```sh
 
 sudo apt install nodejs npm -y
 ```
@@ -34,7 +34,7 @@ macOS
 
     Install Homebrew (if not already installed):
 
-    ```sh
+```sh
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
@@ -55,7 +55,7 @@ Arch Linux
 
     Update the package database:
 
-    ```sh
+```sh
 
 sudo pacman -Syu
 ```
@@ -76,7 +76,7 @@ Red Hat OS
 
     Enable EPEL repository:
 
-    ```sh
+```sh
 
 sudo yum install epel-release
 ```
@@ -95,19 +95,19 @@ Verify the installation:
 ```
 Windows
 
-    Download the Node.js installer:
+Download the Node.js installer:
 
-    Visit the Node.js download page and download the Windows installer.
+Visit the Node.js download page and download the Windows installer.
 
-    Run the installer:
+Run the installer:
 
-    Run the downloaded installer and follow the setup wizard. Ensure that the "npm package manager" option is selected.
+Run the downloaded installer and follow the setup wizard. Ensure that the "npm package manager" option is selected.
 
-    Verify the installation:
+Verify the installation:
 
-    Open a command prompt and run:
+Open a command prompt and run:
 
-    ```sh
+```sh
 
     node -v
     npm -v
@@ -115,9 +115,9 @@ Windows
 Step 2: Install MongoDB
 Ubuntu/Debian
 
-    Import the MongoDB public key:
+Import the MongoDB public key:
 
-    ```sh
+```sh
 
 wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
 ```
@@ -153,9 +153,9 @@ Verify that MongoDB has started:
 ```
 macOS
 
-    Install MongoDB using Homebrew:
+Install MongoDB using Homebrew:
 
-    ```sh
+```sh
 
 brew tap mongodb/brew
 brew install mongodb-community@4.4
@@ -174,9 +174,9 @@ Verify that MongoDB has started:
 ```
 Arch Linux
 
-    Install MongoDB:
+Install MongoDB:
 
-    ```sh
+```sh
 
 sudo pacman -S mongodb
 ```
@@ -194,9 +194,9 @@ Enable MongoDB to start on boot:
 ```
 Red Hat OS
 
-    Create a repository file for MongoDB:
+Create a repository file for MongoDB:
 
-    ```sh
+```sh
 
 sudo tee /etc/yum.repos.d/mongodb-org-4.4.repo <<EOF
 [mongodb-org-4.4]
@@ -227,24 +227,24 @@ Verify that MongoDB has started:
 ```
 Windows
 
-    Download the MongoDB installer:
+Download the MongoDB installer:
 
-    Visit the MongoDB download page and download the installer.
+Visit the MongoDB download page and download the installer.
 
-    Run the installer:
+Run the installer:
 
-    Run the installer and follow the setup wizard.
+Run the installer and follow the setup wizard.
 
-    Start MongoDB:
+Start MongoDB:
 
-    Follow the instructions provided by the installer to start MongoDB as a service.
+Follow the instructions provided by the installer to start MongoDB as a service.
 
 ## Step 3: Install Redis
 ### Ubuntu/Debian
 
-    Install Redis:
+Install Redis:
 
-    ```sh
+```sh
 
 sudo apt install redis-server
 ```
@@ -258,13 +258,13 @@ Enable Redis to start on boot:
 
 ```sh
 
-    sudo systemctl enable redis-server
+sudo systemctl enable redis-server
 ```
 ### macOS
 
-    Install Redis using Homebrew:
+Install Redis using Homebrew:
 
-    ```sh
+```sh
 
 brew install redis
 ```
@@ -278,13 +278,13 @@ Verify that Redis has started:
 
 ```sh
 
-    brew services list
+brew services list
 ```
 ### Arch Linux
 
-    Install Redis:
+Install Redis:
 
-    ```sh
+```sh
 
 sudo pacman -S redis
 ```
@@ -302,9 +302,9 @@ Enable Redis to start on boot:
 ```
 ### Red Hat OS
 
-    Enable the EPEL repository:
+Enable the EPEL repository:
 
-    ```sh
+```sh
 
 sudo yum install epel-release
 ```
@@ -328,13 +328,13 @@ Enable Redis to start on boot:
 ```
 ## Windows
 
-    Download the Redis MSI installer:
+Download the Redis MSI installer:
 
-    Visit the Redis download page and download the Redis MSI installer.
+Visit the Redis download page and download the Redis MSI installer.
 
-    Run the Redis server:
+Run the Redis server:
 
-    Run the Redis server by executing redis-server.exe.
+Run the Redis server by executing redis-server.exe.
 
 ### Step 4: Clone the Budget Claims System Repository
 
@@ -392,9 +392,9 @@ pm2 start server.js
 Additional Configuration
 Configuring PM2 for Production
 
-    Install PM2 globally:
+Install PM2 globally:
 
-    ```sh
+```sh
 
 npm install pm2@latest -g
 ```
@@ -418,9 +418,9 @@ Set PM2 to start on boot:
 ```
 Setting Up Reverse Proxy with Nginx
 
-    Install Nginx:
+Install Nginx:
 
-    ```sh
+```sh
 
 sudo apt install nginx
 ```
