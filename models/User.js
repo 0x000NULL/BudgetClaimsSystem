@@ -5,37 +5,36 @@ const Schema = mongoose.Schema;
 const UserSchema = new Schema({
     name: {
         type: String,
-        required: true // User's name is required
+        required: true // User name is required
     },
     email: {
         type: String,
-        required: true, // User's email is required
+        required: true, // User email is required
         unique: true // Email must be unique
     },
     password: {
         type: String,
-        required: true // User's password is required
+        required: true // User password is required
     },
     role: {
         type: String,
+        required: true, // User role is required
         enum: ['admin', 'manager', 'employee'], // Define possible roles
-        default: 'employee' // Default role is 'employee'
-    },
-    date: {
-        type: Date,
-        default: Date.now // Default to current date and time
+        default: 'employee' // Default role is employee
     },
     twoFactorEnabled: {
         type: Boolean,
         default: false // 2FA is disabled by default
     },
     twoFactorSecret: {
-        type: String // Secret key for 2FA
+        type: String // Secret for 2FA
+    },
+    date: {
+        type: Date,
+        default: Date.now // Default to current date and time
     }
 });
 
-// Create a model from the schema
 const User = mongoose.model('User', UserSchema);
 
-// Export the model
 module.exports = User;

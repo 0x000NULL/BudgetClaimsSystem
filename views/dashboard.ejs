@@ -24,38 +24,6 @@
     </header>
     <main>
         <h2>Dashboard Analytics</h2>
-        <div class="stats">
-            <p>Total Claims: <%= totalClaims %></p>
-            <p>Open Claims: <%= openClaims %></p>
-            <p>Closed Claims: <%= closedClaims %></p>
-            <p>Average Resolution Time: <%= avgResolutionTime %> days</p>
-        </div>
-        <canvas id="claimsChart"></canvas><!-- Chart for visualizing claim data -->
-    </main>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script><!-- Chart.js library for creating charts -->
-    <script>
-        // JavaScript code to create the claims chart
-        const ctx = document.getElementById('claimsChart').getContext('2d');
-        const claimsChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Open', 'Closed'],
-                datasets: [{
-                    label: 'Number of Claims',
-                    data: [<%= openClaims %>, <%= closedClaims %>],
-                    backgroundColor: ['#ff6384', '#36a2eb'],
-                    borderColor: ['#ff6384', '#36a2eb'],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    </script>
+        <h3> stats in progress</h3>
 </body>
 </html>

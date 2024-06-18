@@ -23,13 +23,14 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (r
         });
         const avgResolutionTime = closedClaimsWithResolutionTime.length ? totalResolutionTime / closedClaimsWithResolutionTime.length : 0;
 
-        // Respond with the analytics data
-        res.json({
-            totalClaims,
-            openClaims,
-            inProgressClaims,
-            closedClaims,
-            avgResolutionTime
+        // Render the dashboard view with the analytics data
+        res.render('dashboard', {
+            title: 'Dashboard',
+            totalClaims: totalClaims || 0,
+            openClaims: openClaims || 0,
+            inProgressClaims: inProgressClaims || 0,
+            closedClaims: closedClaims || 0,
+            avgResolutionTime: avgResolutionTime || 0
         });
     } catch (err) {
         res.status(500).json({ error: err.message }); // Handle errors

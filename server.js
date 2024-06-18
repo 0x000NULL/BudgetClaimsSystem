@@ -8,16 +8,24 @@ const logger = require('morgan'); // Import Morgan for HTTP request logging
 const path = require('path'); // Import Path to handle file and directory paths
 const cors = require('cors'); // Import CORS middleware
 const fileUpload = require('express-fileupload'); // Import Express FileUpload middleware
-require('dotenv').config(); // Import and configure dotenv for environment variables
 const helmet = require('helmet'); // Import Helmet for security headers
+
+require('dotenv').config(); // Import and configure dotenv for environment variables
 
 // Import the reminder scheduler to schedule notifications
 require('./notifications/reminderScheduler');
 
-const app = express(); // Initialize the Express application
+const app = express(); 
+
+// Set EJS as the view engine
+app.set('view engine', 'ejs');
+
+// Log environment variables to ensure they are loaded
+console.log('MONGO_URI:', process.env.MONGO_URI);
+console.log('SESSION_SECRET:', process.env.SESSION_SECRET);
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
+mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true, // Use the new URL parser
     useUnifiedTopology: true // Use the new Server Discover and Monitoring engine
 })
@@ -37,7 +45,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET, // Session secret key
     resave: false, // Do not save session if unmodified
     saveUninitialized: false, // Do not create session until something is stored
-    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }) // Use MongoStore for session storage
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }) // Use MongoStore for session storage
 }));
 
 // Initialize Passport middleware for authentication

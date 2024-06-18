@@ -50,14 +50,15 @@ router.post('/register', ensureAuthenticated, ensureRole('admin'), logActivity('
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) throw err;
-        if (!user) res.status(400).json({ msg: 'No user exists' });
-        else {
+        if (!user) {
+            res.status(400).json({ msg: 'No user exists' });
+        } else {
             req.logIn(user, err => {
                 if (err) throw err;
                 if (user.twoFactorEnabled) {
                     res.json({ twoFactorRequired: true }); // Indicate that 2FA is required
                 } else {
-                    const token = jwt.sign({ id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+                    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
                     res.json({ token });
                 }
             });
@@ -119,7 +120,7 @@ router.post('/login-2fa', (req, res) => {
                     });
 
                     if (verified) {
-                        const token = jwt.sign({ id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+                        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
                         res.json({ token });
                     } else {
                         res.status(400).json({ msg: 'Invalid 2FA token' });
