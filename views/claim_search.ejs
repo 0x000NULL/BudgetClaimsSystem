@@ -3,44 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View/Edit Claim - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <title>Search Claims - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
 </head>
 <body>
     <header>
+        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>View/Edit Claim</h1>
+        <h1>Search Claims</h1>
         <nav>
             <ul>
                 <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <form action="/claims/<%= claim._id %>" method="post">
+        <!-- Form to search claims with advanced filters -->
+        <form action="/claims" method="get">
             <div>
                 <label for="mva">MVA:</label>
-                <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required>
+                <input type="text" id="mva" name="mva">
             </div>
             <div>
                 <label for="customerName">Customer Name:</label>
-                <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
-            </div>
-            <div>
-                <label for="description">Description:</label>
-                <textarea id="description" name="description" required><%= claim.description %></textarea>
+                <input type="text" id="customerName" name="customerName">
             </div>
             <div>
                 <label for="status">Status:</label>
-                <select id="status" name="status" required>
-                    <option value="Open" <%= claim.status === 'Open' ? 'selected' : '' %>>Open</option>
-                    <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
+                <select id="status" name="status">
+                    <option value="">Any</option>
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Closed">Closed</option>
                 </select>
             </div>
-            <button type="submit">Save Changes</button>
+            <div>
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="startDate" name="startDate">
+            </div>
+            <div>
+                <label for="endDate">End Date:</label>
+                <input type="date" id="endDate" name="endDate">
+            </div>
+            <button type="submit">Search</button><!-- Submit button for the form -->
         </form>
+        <!-- Section to display search results -->
+        <div id="searchResults">
+            <!-- Results will be displayed here -->
+            <% if (claims && claims.length > 0) { %>
+                <ul>
+                    <% claims.forEach(claim => { %>
+                        <li>
+                            <h3>MVA: <%= claim.mva %></h3>
+                            <p>Customer Name: <%= claim.customerName %></p>
+                            <p>Status: <%= claim.status %></p>
+                            <p>Date: <%= new Date(claim.date).toLocaleDateString() %></p>
+                            <a href="/claims/<%= claim._id %>">View Details</a>
+                        </li>
+                    <% }) %>
+                </ul>
+            <% } else { %>
+                <p>No claims found.</p>
+            <% } %>
+        </div>
     </main>
 </body>
 </html>

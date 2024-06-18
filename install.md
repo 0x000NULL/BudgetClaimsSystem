@@ -203,7 +203,7 @@ Before you begin, ensure you have the following:
     EMAIL_PASS=your_email_password
     ```
 
-4. **Start the server using PM2:**
+4. **Start the server:**
     ```bash
     npm start
     ```
@@ -212,6 +212,16 @@ Before you begin, ensure you have the following:
     - Open your browser and go to `http://localhost:5000`.
 
 ### Additional PM2 Commands
+
+- **Install PM2** (if not already installed):
+    ```bash
+    npm install pm2 -g
+    ```
+
+- **Start the application with PM2**:
+    ```bash
+    pm2 start server.js --name BudgetClaimsSystem
+    ```
 
 - **View running processes:**
     ```bash

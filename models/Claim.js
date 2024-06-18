@@ -1,6 +1,5 @@
-// Import required module
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const mongoose = require('mongoose'); // Import Mongoose to interact with MongoDB
+const Schema = mongoose.Schema; // Use Schema to define the structure of documents in the collection
 
 // Define the schema for a Claim
 const ClaimSchema = new Schema({
@@ -18,14 +17,15 @@ const ClaimSchema = new Schema({
     },
     status: {
         type: String,
-        default: 'Open' // Default status is 'Open'
+        required: true, // Status is required
+        enum: ['Open', 'In Progress', 'Closed'] // Define possible statuses
     },
     date: {
         type: Date,
-        default: Date.now // Default to the current date and time
+        default: Date.now // Default to current date and time
     },
     files: [{
-        type: String // Array of file names
+        type: String // Store file names
     }]
 });
 
