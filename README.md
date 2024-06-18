@@ -147,41 +147,41 @@ BudgetClaimsSystem/
 ```
 
 
-Detailed Documentation
-Authentication
+## Detailed Documentation
+### Authentication
 
     Login: Users can log in using their email and password. The login form is found on the /login page.
     Registration: New users can register on the system. Ensure proper validation is in place to check for existing emails.
     Sessions: User sessions are managed using express-session and stored in MongoDB via connect-mongo.
 
-Claims Management
+### Claims Management
 
     Add Claim: Navigate to the /claims/search page and click the "Add Claim" button. Fill out the form and submit.
     Edit Claim: Search for the claim you want to edit, click on it to view details, make changes, and save.
     Search Claims: Use the search form on the /claims/search page to filter claims by MVA, customer name, etc.
     Delete Claim: From the claim detail view, you can delete a claim if necessary.
 
-File Support
+### File Support
 
     Upload Files: During claim creation or editing, you can upload relevant files. These are stored in the uploads directory.
     Manage Files: Uploaded files can be accessed and managed from the claim detail view.
 
-Email Functionality
+### Email Functionality
 
     Send Emails: Use the email functionality to send notifications to customers. Configure your email settings in the .env file.
 
-Export and Reporting
+### Export and Reporting
 
     Export Claims: Export claims to CSV, Excel, or PDF formats from the /claims/search page.
     Generate Reports: Generate detailed reports from the /reports page. Select the desired format and generate the report.
 
-User Management
+### User Management
 
     Create User: Admins can create new users from the /users page.
     Delete User: Admins can delete users by entering their User ID.
     Modify Permissions: Admins can update user permissions from the user management interface.
 
-Help and Support
+## Help and Support
 
 For detailed instructions and support, visit the /help page. Here you will find step-by-step guides for all major features and contact information for support.
 Contributing
