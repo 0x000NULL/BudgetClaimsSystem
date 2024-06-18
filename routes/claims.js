@@ -2,17 +2,18 @@ const express = require('express');
 const Claim = require('../models/Claim');
 const path = require('path');
 const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth');
+const logActivity = require('../middleware/activityLogger');
 const router = express.Router();
 
 // Route to get all claims, accessible by admin, manager, and employee
-router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), (req, res) => {
+router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), (req, res) => {
     Claim.find()
         .then(claims => res.json(claims)) // Respond with all claims
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
 // Route to add a new claim, accessible by admin and manager
-router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
+router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), (req, res) => {
     const { mva, customerName, description, status } = req.body;
 
     // Initialize an array to hold uploaded file names
@@ -51,21 +52,21 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, r
 });
 
 // Route to get a specific claim by ID, accessible by admin, manager, and employee
-router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), (req, res) => {
+router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claim details'), (req, res) => {
     Claim.findById(req.params.id)
         .then(claim => res.json(claim)) // Respond with the claim
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
 // Route to update a claim by ID, accessible by admin and manager
-router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
+router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), (req, res) => {
     Claim.findByIdAndUpdate(req.params.id, req.body, { new: true })
         .then(claim => res.json(claim)) // Respond with the updated claim
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
 // Route to delete a claim by ID, accessible only by admin
-router.delete('/:id', ensureAuthenticated, ensureRole('admin'), (req, res) => {
+router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), (req, res) => {
     Claim.findByIdAndDelete(req.params.id)
         .then(() => res.json({ msg: 'Claim deleted' })) // Respond with deletion confirmation
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors

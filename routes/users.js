@@ -1,12 +1,14 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { ensureAuthenticated, ensureRole } = require('../middleware/auth');
+const logActivity = require('../middleware/activityLogger');
 const router = express.Router();
 
 // Route to register a new user, accessible only by admin
-router.post('/register', ensureAuthenticated, ensureRole('admin'), (req, res) => {
+router.post('/register', ensureAuthenticated, ensureRole('admin'), logActivity('Registered new user'), (req, res) => {
     const { name, email, password, role } = req.body;
     let errors = [];
 
@@ -42,8 +44,31 @@ router.post('/register', ensureAuthenticated, ensureRole('admin'), (req, res) =>
     }
 });
 
+// Route to login a user
+router.post('/login', (req, res, next) => {
+    passport.authenticate('local', (err, user, info) => {
+        if (err) throw err;
+        if (!user) res.status(400).json({ msg: 'No user exists' });
+        else {
+            req.logIn(user, err => {
+                if (err) throw err;
+                const token = jwt.sign({ id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+                // Log the login activity
+                const log = new ActivityLog({
+                    user: user._id,
+                    action: 'User logged in',
+                });
+                log.save((err) => {
+                    if (err) console.error('Error logging activity:', err);
+                });
+                res.json({ token });
+            });
+        }
+    })(req, res, next);
+});
+
 // Route to modify user permissions, accessible only by admin
-router.post('/permissions', ensureAuthenticated, ensureRole('admin'), (req, res) => {
+router.post('/permissions', ensureAuthenticated, ensureRole('admin'), logActivity('Modified user permissions'), (req, res) => {
     const { userId, role } = req.body;
     User.findByIdAndUpdate(userId, { role }, { new: true }, (err, user) => {
         if (err) {
