@@ -9,6 +9,8 @@ const path = require('path'); // Import Path to handle file and directory paths
 const cors = require('cors'); // Import CORS middleware
 const fileUpload = require('express-fileupload'); // Import Express FileUpload middleware
 const helmet = require('helmet'); // Import Helmet for security headers
+const redis = require('redis'); // Import Redis for caching
+const cacheManager = require('cache-manager'); // Import cache manager for caching
 require('dotenv').config(); // Import and configure dotenv for environment variables
 
 // Import the reminder scheduler to schedule notifications
@@ -23,6 +25,15 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
     .then(() => console.log('MongoDB connected')) // Log success message
     .catch(err => console.log(err)); // Log any connection errors
+
+// Redis client setup
+const redisClient = redis.createClient({
+    host: process.env.REDIS_HOST || '127.0.0.1',
+    port: process.env.REDIS_PORT || 6379
+});
+redisClient.on('error', (err) => {
+    console.log('Redis error: ', err);
+});
 
 // Middleware setup
 app.use(logger('dev')); // Use Morgan for logging HTTP requests

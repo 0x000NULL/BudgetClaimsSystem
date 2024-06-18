@@ -7,11 +7,21 @@ const { notifyNewClaim, notifyClaimStatusUpdate } = require('../notifications/no
 const csv = require('csv-express'); // Import csv-express for CSV export
 const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
 const pdfkit = require('pdfkit'); // Import PDFKit for PDF export
+const cacheManager = require('cache-manager'); // Import cache manager for caching
+const redisStore = require('cache-manager-redis-store'); // Import Redis store for cache manager
+
+// Setup cache manager with Redis
+const cache = cacheManager.caching({
+    store: redisStore,
+    host: process.env.REDIS_HOST || '127.0.0.1',
+    port: process.env.REDIS_PORT || 6379,
+    ttl: 600 // Time-to-live for cached data (in seconds)
+});
 
 const router = express.Router(); // Create a new router
 
 // Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
-router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), (req, res) => {
+router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), async (req, res) => {
     const { mva, customerName, status, startDate, endDate } = req.query; // Extract query parameters
 
     // Build a filter object based on provided query parameters
@@ -25,10 +35,25 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
         if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
     }
 
-    // Find claims based on the filter object
-    Claim.find(filter)
-        .then(claims => res.json(claims)) // Respond with filtered claims
-        .catch(err => res.status(500).json({ error: err.message })); // Handle errors
+    const cacheKey = JSON.stringify(filter); // Create a cache key based on the filter
+
+    try {
+        // Attempt to get the cached data
+        const cachedClaims = await cache.get(cacheKey);
+        if (cachedClaims) {
+            // If cached data exists, respond with it
+            return res.json(cachedClaims);
+        }
+
+        // If no cached data, fetch claims from the database
+        const claims = await Claim.find(filter).exec();
+        // Cache the fetched data
+        await cache.set(cacheKey, claims);
+        // Respond with the fetched data
+        res.json(claims);
+    } catch (err) {
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
 });
 
 // Route to add a new claim, accessible by admin and manager
@@ -69,15 +94,35 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         .then(claim => {
             res.json(claim); // Respond with the saved claim
             notifyNewClaim(req.user.email, claim); // Send notification about the new claim
+            cache.del('/claims'); // Invalidate the cache for claims list
         })
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
 // Route to get a specific claim by ID, accessible by admin, manager, and employee
-router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claim details'), (req, res) => {
-    Claim.findById(req.params.id)
-        .then(claim => res.json(claim)) // Respond with the claim
-        .catch(err => res.status(500).json({ error: err.message })); // Handle errors
+router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claim details'), async (req, res) => {
+    const cacheKey = `claim_${req.params.id}`; // Create a cache key based on the claim ID
+
+    try {
+        // Attempt to get the cached data
+        const cachedClaim = await cache.get(cacheKey);
+        if (cachedClaim) {
+            // If cached data exists, respond with it
+            return res.json(cachedClaim);
+        }
+
+        // If no cached data, fetch the claim from the database
+        const claim = await Claim.findById(req.params.id).exec();
+        if (!claim) {
+            return res.status(404).json({ msg: 'Claim not found' }); // Handle case where claim is not found
+        }
+        // Cache the fetched data
+        await cache.set(cacheKey, claim);
+        // Respond with the fetched data
+        res.json(claim);
+    } catch (err) {
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
 });
 
 // Route to update a claim by ID, accessible by admin and manager
@@ -102,6 +147,8 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
                 .then(updatedClaim => {
                     res.json(updatedClaim); // Respond with the updated claim
                     notifyClaimStatusUpdate(req.user.email, updatedClaim); // Send notification about the claim status update
+                    cache.del(`claim_${req.params.id}`); // Invalidate the cache for the updated claim
+                    cache.del('/claims'); // Invalidate the cache for claims list
                 })
                 .catch(err => res.status(500).json({ error: err.message })); // Handle errors
         })
@@ -111,7 +158,11 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
 // Route to delete a claim by ID, accessible only by admin
 router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), (req, res) => {
     Claim.findByIdAndDelete(req.params.id)
-        .then(() => res.json({ msg: 'Claim deleted' })) // Respond with deletion confirmation
+        .then(() => {
+            res.json({ msg: 'Claim deleted' }); // Respond with deletion confirmation
+            cache.del(`claim_${req.params.id}`); // Invalidate the cache for the deleted claim
+            cache.del('/claims'); // Invalidate the cache for claims list
+        })
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
@@ -121,7 +172,11 @@ router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']
 
     // Update multiple claims based on provided IDs and data
     Claim.updateMany({ _id: { $in: claimIds } }, updateData)
-        .then(result => res.json({ msg: 'Claims updated', result })) // Respond with update result
+        .then(result => {
+            res.json({ msg: 'Claims updated', result }); // Respond with update result
+            claimIds.forEach(id => cache.del(`claim_${id}`)); // Invalidate the cache for the updated claims
+            cache.del('/claims'); // Invalidate the cache for claims list
+        })
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
@@ -170,4 +225,4 @@ router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager'
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
-module.exports = router;
+module.exports = router; // Export the router
