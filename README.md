@@ -81,10 +81,9 @@ The Budget Claims System is a comprehensive application designed for the claims 
   ```bash
   pm2 list
   ```
-    Stop the application:
+Stop the application:
 
-   ```bash
-
+```bash
 pm2 stop BudgetClaimsSystem
 ```
 
