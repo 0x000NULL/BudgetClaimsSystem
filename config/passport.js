@@ -1,7 +1,7 @@
 // Import required modules
-const LocalStrategy = require('passport-local').Strategy;
-const bcrypt = require('bcryptjs');
-const User = require('../models/User');
+const LocalStrategy = require('passport-local').Strategy; // Import the local strategy from Passport.js
+const bcrypt = require('bcryptjs'); // Import Bcrypt for password hashing
+const User = require('../models/User'); // Import the User model
 
 // Export a function to configure Passport.js
 module.exports = function (passport) {
@@ -27,18 +27,18 @@ module.exports = function (passport) {
                     }
                 });
             })
-            .catch(err => console.log(err));
+            .catch(err => console.log(err)); // Log any errors that occur
     }));
 
     // Serialize user instances to the session
     passport.serializeUser((user, done) => {
-        done(null, user.id);
+        done(null, user.id); // Serialize the user ID to the session
     });
 
     // Deserialize user instances from the session
     passport.deserializeUser((id, done) => {
         User.findById(id, (err, user) => {
-            done(err, user);
+            done(err, user); // Deserialize the user ID from the session and find the user in the database
         });
     });
 };

@@ -1,17 +1,17 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const passport = require('passport');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { ensureAuthenticated, ensureRole } = require('../middleware/auth');
+const express = require('express'); // Import Express to create a router
+const bcrypt = require('bcryptjs'); // Import Bcrypt for hashing passwords
+const passport = require('passport'); // Import Passport for authentication
+const jwt = require('jsonwebtoken'); // Import JWT for token generation
+const User = require('../models/User'); // Import the User model
+const { ensureAuthenticated, ensureRole } = require('../middleware/auth'); // Import authentication middleware
 const speakeasy = require('speakeasy'); // Import Speakeasy for 2FA
 const qrcode = require('qrcode'); // Import QRCode for generating QR codes
 const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
-const router = express.Router();
+const router = express.Router(); // Create a new router
 
 // Route to register a new user, accessible only by admin
 router.post('/register', ensureAuthenticated, ensureRole('admin'), logActivity('Registered new user'), (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role } = req.body; // Extract registration details from the request body
     let errors = [];
 
     // Check required fields
@@ -141,4 +141,4 @@ router.post('/permissions', ensureAuthenticated, ensureRole('admin'), logActivit
     });
 });
 
-module.exports = router;
+module.exports = router; // Export the router

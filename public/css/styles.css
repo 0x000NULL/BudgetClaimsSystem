@@ -1,43 +1,92 @@
+/* General styles */
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f8f9fa;
+    font-family: Arial, sans-serif; /* Use Arial or a sans-serif font */
+    margin: 0; /* Remove default margin */
+    padding: 0; /* Remove default padding */
+    box-sizing: border-box; /* Ensure padding and border are included in the element's total width and height */
 }
 
 header {
-    background-color: #343a40;
-    color: white;
-    padding: 1rem;
-    display: flex;
-    align-items: center;
+    background-color: #f8f9fa; /* Light gray background color */
+    padding: 10px 20px; /* Padding around the header content */
+    display: flex; /* Use flexbox for layout */
+    justify-content: space-between; /* Space out the children evenly */
+    align-items: center; /* Center items vertically */
 }
 
     header .logo {
-        height: 50px;
-        margin-right: 1rem;
+        height: 40px; /* Set the height of the logo */
     }
 
     header h1 {
-        margin: 0;
-        flex-grow: 1;
+        margin: 0; /* Remove default margin */
+        font-size: 1.5em; /* Set font size */
     }
 
-nav ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-    nav ul li {
-        display: inline;
-        margin-right: 1rem;
+    header nav ul {
+        list-style: none; /* Remove bullet points */
+        padding: 0; /* Remove default padding */
     }
 
-        nav ul li a {
-            color: white;
-            text-decoration: none;
+        header nav ul li {
+            display: inline; /* Display list items inline */
+            margin: 0 10px; /* Margin between items */
         }
 
+            header nav ul li a {
+                text-decoration: none; /* Remove underline from links */
+                color: #007bff; /* Set link color */
+            }
+
 main {
-    padding: 1rem;
+    padding: 20px; /* Padding around the main content */
+}
+
+form div {
+    margin-bottom: 10px; /* Margin below each form div */
+}
+
+form label {
+    display: block; /* Display labels as block elements */
+    margin-bottom: 5px; /* Margin below labels */
+}
+
+form input, form select, form button {
+    width: 100%; /* Full width for inputs, selects, and buttons */
+    padding: 8px; /* Padding inside inputs, selects, and buttons */
+    margin-bottom: 10px; /* Margin below inputs, selects, and buttons */
+}
+
+form button {
+    background-color: #007bff; /* Button background color */
+    color: #fff; /* Button text color */
+    border: none; /* Remove default border */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+    form button:hover {
+        background-color: #0056b3; /* Darker background on hover */
+    }
+
+.stats p {
+    margin: 5px 0; /* Margin around stats paragraphs */
+}
+
+canvas {
+    width: 100%; /* Full width canvas */
+    max-width: 600px; /* Max width for canvas */
+    margin: 20px auto; /* Center canvas with top and bottom margin */
+}
+
+/* Mobile styles */
+@media (max-width: 600px) {
+    header {
+        flex-direction: column; /* Stack header items vertically */
+        align-items: flex-start; /* Align items to the start */
+    }
+
+        header nav ul li {
+            display: block; /* Display list items as block elements */
+            margin: 5px 0; /* Margin around list items */
+        }
 }

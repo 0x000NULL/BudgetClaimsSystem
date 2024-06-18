@@ -1,40 +1,28 @@
-// Import required modules
-const express = require('express');
-const nodemailer = require('nodemailer');
+const express = require('express'); // Import Express to create a router
+const transporter = require('../config/nodemailer'); // Import the Nodemailer configuration
+const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication middleware
+const router = express.Router(); // Create a new router
 
-// Create a new router
-const router = express.Router();
+// Route to send an email, accessible only by admin and manager
+router.post('/send', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
+    const { to, subject, text } = req.body; // Extract email details from the request body
 
-// Route to send an email
-router.post('/', (req, res) => {
-    const { email, subject, text } = req.body;
-
-    // Configure the email transporter
-    const transporter = nodemailer.createTransport({
-        service: 'Gmail',
-        auth: {
-            user: 'your_email@gmail.com',
-            pass: 'your_email_password'
-        }
-    });
-
-    // Define the email options
+    // Setup email options
     const mailOptions = {
-        from: 'your_email@gmail.com',
-        to: email,
-        subject: subject,
-        text: text
+        from: process.env.EMAIL_USER, // Sender address from environment variables
+        to, // Recipient address from the request body
+        subject, // Subject of the email from the request body
+        text // Plain text body of the email from the request body
     };
 
     // Send the email
     transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
-            return res.status(500).json({ error: error.message });
+            return res.status(500).json({ error: error.message }); // Handle errors
         } else {
-            res.json({ msg: 'Email sent: ' + info.response });
+            return res.json({ msg: 'Email sent', info }); // Respond with success message
         }
     });
 });
 
-// Export the router
-module.exports = router;
+module.exports = router; // Export the router

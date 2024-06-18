@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Budget Claims System</title>
+    <title>Register - Budget Claims System</title>
     <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
 </head>
 <body>
     <header>
         <!-- Budget logo -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Login</h1>
+        <h1>Register</h1>
     </header>
     <main>
-        <form action="/login" method="POST">
+        <form action="/register" method="POST">
+            <div>
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
             <div>
                 <label for="email">Email:</label>
                 <input type="email" id="email" name="email" required>
@@ -22,9 +26,9 @@
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit">Login</button><!-- Submit button for the form -->
+            <button type="submit">Register</button><!-- Submit button for the form -->
         </form>
-        <p>Don't have an account? <a href="/register">Register here</a></p>
+        <p>Already have an account? <a href="/login">Login here</a></p>
     </main>
 </body>
 </html>

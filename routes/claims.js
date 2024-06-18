@@ -3,10 +3,10 @@ const Claim = require('../models/Claim'); // Import the Claim model to interact 
 const path = require('path'); // Import Path to handle file and directory paths
 const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
-const {
-    notifyNewClaim,
-    notifyClaimStatusUpdate
-} = require('../notifications/notify'); // Import notification functions
+const { notifyNewClaim, notifyClaimStatusUpdate } = require('../notifications/notify'); // Import notification functions
+const csv = require('csv-express'); // Import csv-express for CSV export
+const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
+const pdfkit = require('pdfkit'); // Import PDFKit for PDF export
 
 const router = express.Router(); // Create a new router
 
@@ -132,11 +132,42 @@ router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager'
     // Find claims based on provided IDs
     Claim.find({ _id: { $in: claimIds } })
         .then(claims => {
-            // Implement export functionality based on desired format (CSV, Excel, PDF)
-            // For simplicity, we'll respond with the claims data in JSON format
-            res.json(claims);
+            if (format === 'csv') {
+                res.csv(claims, true); // Export claims to CSV
+            } else if (format === 'excel') {
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Claims');
+                worksheet.columns = [
+                    { header: 'MVA', key: 'mva', width: 10 },
+                    { header: 'Customer Name', key: 'customerName', width: 30 },
+                    { header: 'Description', key: 'description', width: 50 },
+                    { header: 'Status', key: 'status', width: 10 },
+                    { header: 'Date', key: 'date', width: 15 }
+                ];
+                claims.forEach(claim => {
+                    worksheet.addRow(claim);
+                });
+                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                res.setHeader('Content-Disposition', 'attachment; filename=claims.xlsx');
+                workbook.xlsx.write(res).then(() => res.end());
+            } else if (format === 'pdf') {
+                const doc = new pdfkit();
+                doc.pipe(res);
+                doc.text('Claims Report', { align: 'center' });
+                claims.forEach(claim => {
+                    doc.text(`MVA: ${claim.mva}`);
+                    doc.text(`Customer Name: ${claim.customerName}`);
+                    doc.text(`Description: ${claim.description}`);
+                    doc.text(`Status: ${claim.status}`);
+                    doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
+                    doc.moveDown();
+                });
+                doc.end();
+            } else {
+                res.status(400).json({ msg: 'Invalid format' });
+            }
         })
         .catch(err => res.status(500).json({ error: err.message })); // Handle errors
 });
 
-module.exports = router; // Export the router
+module.exports = router;

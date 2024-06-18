@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Budget Claims System</title>
+    <title>Customer Login - Budget Claims System</title>
     <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
 </head>
 <body>
     <header>
-        <!-- Budget logo -->
+        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Login</h1>
+        <h1>Customer Login</h1>
     </header>
     <main>
-        <form action="/login" method="POST">
+        <form action="/customer/login" method="POST">
             <div>
                 <label for="email">Email:</label>
                 <input type="email" id="email" name="email" required>
@@ -24,7 +24,7 @@
             </div>
             <button type="submit">Login</button><!-- Submit button for the form -->
         </form>
-        <p>Don't have an account? <a href="/register">Register here</a></p>
+        <p>Don't have an account? <a href="/customer/register">Register here</a></p>
     </main>
 </body>
 </html>

@@ -14,13 +14,16 @@
         <nav>
             <ul>
                 <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims">Manage Claims</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <!-- Form to search claims with advanced filters -->
-        <form action="/claims" method="get">
+        <form action="/claims/search" method="GET">
             <div>
                 <label for="mva">MVA:</label>
                 <input type="text" id="mva" name="mva">
@@ -34,7 +37,6 @@
                 <select id="status" name="status">
                     <option value="">Any</option>
                     <option value="Open">Open</option>
-                    <option value="In Progress">In Progress</option>
                     <option value="Closed">Closed</option>
                 </select>
             </div>
@@ -48,25 +50,17 @@
             </div>
             <button type="submit">Search</button><!-- Submit button for the form -->
         </form>
-        <!-- Section to display search results -->
-        <div id="searchResults">
-            <!-- Results will be displayed here -->
-            <% if (claims && claims.length > 0) { %>
-                <ul>
-                    <% claims.forEach(claim => { %>
-                        <li>
-                            <h3>MVA: <%= claim.mva %></h3>
-                            <p>Customer Name: <%= claim.customerName %></p>
-                            <p>Status: <%= claim.status %></p>
-                            <p>Date: <%= new Date(claim.date).toLocaleDateString() %></p>
-                            <a href="/claims/<%= claim._id %>">View Details</a>
-                        </li>
-                    <% }) %>
-                </ul>
-            <% } else { %>
-                <p>No claims found.</p>
-            <% } %>
-        </div>
+        <ul>
+            <% claims.forEach(claim => { %>
+                <li>
+                    <h3>MVA: <%= claim.mva %></h3>
+                    <p>Customer Name: <%= claim.customerName %></p>
+                    <p>Description: <%= claim.description %></p>
+                    <p>Status: <%= claim.status %></p>
+                    <p>Date: <%= new Date(claim.date).toLocaleDateString() %></p>
+                </li>
+            <% }) %>
+        </ul>
     </main>
 </body>
 </html>

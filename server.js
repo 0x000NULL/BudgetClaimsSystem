@@ -5,7 +5,7 @@ const session = require('express-session'); // Import Express session middleware
 const connectMongo = require('connect-mongo'); // Import Connect Mongo for session storage in MongoDB
 const flash = require('connect-flash'); // Import Connect Flash for flash messages
 const logger = require('morgan'); // Import Morgan for HTTP request logging
-const path = require('path'); // Import Path for file and directory paths
+const path = require('path'); // Import Path to handle file and directory paths
 const cors = require('cors'); // Import CORS middleware
 const fileUpload = require('express-fileupload'); // Import Express FileUpload middleware
 require('dotenv').config(); // Import and configure dotenv for environment variables
@@ -60,6 +60,11 @@ app.use('/', require('./routes/index')); // Root route
 app.use('/users', require('./routes/users')); // User routes
 app.use('/claims', require('./routes/claims')); // Claim routes
 app.use('/dashboard', require('./routes/dashboard')); // Dashboard routes
+app.use('/api', require('./routes/api')); // API routes
+app.use('/feedback', require('./routes/feedback')); // Feedback routes
+app.use('/customer', require('./routes/customers')); // Customer routes
+app.use('/employee', require('./routes/employees')); // Employee routes
+app.use('/email', require('./routes/email')); // Email routes
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));

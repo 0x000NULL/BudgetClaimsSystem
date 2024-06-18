@@ -1,30 +1,22 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer'); // Import Nodemailer for email sending
 
-// Create a transporter object using SMTP transport
+// Create a transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // Use Gmail as the email service
+    service: 'Gmail', // Use Gmail as the email service
     auth: {
-        user: process.env.EMAIL_USER, // Your email address
-        pass: process.env.EMAIL_PASS  // Your email password
+        user: process.env.EMAIL_USER, // Email user from environment variables
+        pass: process.env.EMAIL_PASS  // Email password from environment variables
     }
 });
 
-// Function to send an email
-const sendEmail = (to, subject, text) => {
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: to,
-        subject: subject,
-        text: text
-    };
+// Verify connection configuration
+transporter.verify((error, success) => {
+    if (error) {
+        console.log('Error with email configuration:', error); // Log any errors with the email configuration
+    } else {
+        console.log('Email configuration is correct.'); // Log successful email configuration
+    }
+});
 
-    transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-            console.error('Error sending email:', err);
-        } else {
-            console.log('Email sent:', info.response);
-        }
-    });
-};
-
-module.exports = sendEmail;
+// Export the transporter object for use in other modules
+module.exports = transporter;

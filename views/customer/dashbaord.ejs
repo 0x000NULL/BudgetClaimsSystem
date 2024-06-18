@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+</head>
+<body>
+    <header>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Customer Dashboard</h1>
+        <nav>
+            <ul>
+                <li><a href="/customer/dashboard">Dashboard</a></li>
+                <li><a href="/customer/submit-claim">Submit Claim</a></li>
+                <li><a href="/customer/view-claims">View Claims</a></li>
+                <li><a href="/customer/settings">Settings</a></li>
+                <li><a href="/customer/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Welcome, <%= user.name %>!</h2><!-- Welcome message with the user's name -->
+        <p>Use the navigation above to manage your claims.</p>
+    </main>
+</body>
+</html>
