@@ -2,16 +2,14 @@ const express = require('express'); // Import Express to create an application
 const mongoose = require('mongoose'); // Import Mongoose for MongoDB interaction
 const passport = require('passport'); // Import Passport for authentication
 const session = require('express-session'); // Import Express session middleware
-const connectMongo = require('connect-mongo'); // Import Connect Mongo for session storage in MongoDB
+const MongoStore = require('connect-mongo'); // Import Connect Mongo for session storage in MongoDB
 const flash = require('connect-flash'); // Import Connect Flash for flash messages
 const logger = require('morgan'); // Import Morgan for HTTP request logging
 const path = require('path'); // Import Path to handle file and directory paths
 const cors = require('cors'); // Import CORS middleware
 const fileUpload = require('express-fileupload'); // Import Express FileUpload middleware
-const helmet = require('helmet'); // Import Helmet for security headers
-const redis = require('redis'); // Import Redis for caching
-const cacheManager = require('cache-manager'); // Import cache manager for caching
 require('dotenv').config(); // Import and configure dotenv for environment variables
+const helmet = require('helmet'); // Import Helmet for security headers
 
 // Import the reminder scheduler to schedule notifications
 require('./notifications/reminderScheduler');
@@ -26,30 +24,20 @@ mongoose.connect(process.env.MONGODB_URI, {
     .then(() => console.log('MongoDB connected')) // Log success message
     .catch(err => console.log(err)); // Log any connection errors
 
-// Redis client setup
-const redisClient = redis.createClient({
-    host: process.env.REDIS_HOST || '127.0.0.1',
-    port: process.env.REDIS_PORT || 6379
-});
-redisClient.on('error', (err) => {
-    console.log('Redis error: ', err);
-});
-
 // Middleware setup
 app.use(logger('dev')); // Use Morgan for logging HTTP requests
 app.use(express.json()); // Parse incoming JSON requests
 app.use(express.urlencoded({ extended: false })); // Parse URL-encoded data
 app.use(cors()); // Enable CORS
 app.use(fileUpload()); // Enable file uploads
-app.use(helmet()); // Use Helmet to set various HTTP headers for security
+app.use(helmet()); // Set various HTTP headers for security
 
 // Configure Express session with MongoDB session store
-const MongoStore = connectMongo(session);
 app.use(session({
     secret: process.env.SESSION_SECRET, // Session secret key
     resave: false, // Do not save session if unmodified
     saveUninitialized: false, // Do not create session until something is stored
-    store: new MongoStore({ mongooseConnection: mongoose.connection }) // Use MongoStore for session storage
+    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }) // Use MongoStore for session storage
 }));
 
 // Initialize Passport middleware for authentication
