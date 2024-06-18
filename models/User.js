@@ -1,4 +1,3 @@
-// Import required module
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -6,20 +5,25 @@ const Schema = mongoose.Schema;
 const UserSchema = new Schema({
     name: {
         type: String,
-        required: true // Name is required
+        required: true // User's name is required
     },
     email: {
         type: String,
-        required: true, // Email is required
+        required: true, // User's email is required
         unique: true // Email must be unique
     },
     password: {
         type: String,
-        required: true // Password is required
+        required: true // User's password is required
+    },
+    role: {
+        type: String,
+        enum: ['admin', 'manager', 'employee'], // Define possible roles
+        default: 'employee' // Default role is 'employee'
     },
     date: {
         type: Date,
-        default: Date.now // Default to the current date and time
+        default: Date.now // Default to current date and time
     }
 });
 

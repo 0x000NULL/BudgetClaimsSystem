@@ -1,39 +1,33 @@
-// Import required modules
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const passport = require('passport');
-const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-
-// Create a new router
+const { ensureAuthenticated, ensureRole } = require('../middleware/auth');
 const router = express.Router();
 
-// Route to register a new user
-router.post('/register', (req, res) => {
-    const { name, email, password } = req.body;
+// Route to register a new user, accessible only by admin
+router.post('/register', ensureAuthenticated, ensureRole('admin'), (req, res) => {
+    const { name, email, password, role } = req.body;
     let errors = [];
 
-    // Check if all fields are provided
-    if (!name || !email || !password) {
+    // Check required fields
+    if (!name || !email || !password || !role) {
         errors.push({ msg: 'Please enter all fields' });
     }
 
-    // If there are errors, return them
+    // Handle errors if any
     if (errors.length > 0) {
         res.status(400).json({ errors });
     } else {
-        // Check if the email is already registered
+        // Check if user with the email already exists
         User.findOne({ email: email }).then(user => {
             if (user) {
                 res.status(400).json({ msg: 'Email already exists' });
             } else {
-                const newUser = new User({
-                    name,
-                    email,
-                    password
-                });
+                // Create a new user
+                const newUser = new User({ name, email, password, role });
 
-                // Hash the password before saving the user
+                // Hash password before saving
                 bcrypt.genSalt(10, (err, salt) => {
                     bcrypt.hash(newUser.password, salt, (err, hash) => {
                         if (err) throw err;
@@ -48,20 +42,15 @@ router.post('/register', (req, res) => {
     }
 });
 
-// Route to login a user
-router.post('/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
-        if (err) throw err;
-        if (!user) res.status(400).json({ msg: 'No user exists' });
-        else {
-            req.logIn(user, err => {
-                if (err) throw err;
-                const token = jwt.sign({ id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
-                res.json({ token });
-            });
+// Route to modify user permissions, accessible only by admin
+router.post('/permissions', ensureAuthenticated, ensureRole('admin'), (req, res) => {
+    const { userId, role } = req.body;
+    User.findByIdAndUpdate(userId, { role }, { new: true }, (err, user) => {
+        if (err) {
+            return res.status(500).json({ error: err.message }); // Handle errors
         }
-    })(req, res, next);
+        res.json({ msg: 'User role updated', user }); // Respond with the updated user
+    });
 });
 
-// Export the router
 module.exports = router;
