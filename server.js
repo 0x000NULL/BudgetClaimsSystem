@@ -8,6 +8,7 @@ const logger = require('morgan'); // Import Morgan for HTTP request logging
 const path = require('path'); // Import Path to handle file and directory paths
 const cors = require('cors'); // Import CORS middleware
 const fileUpload = require('express-fileupload'); // Import Express FileUpload middleware
+const helmet = require('helmet'); // Import Helmet for security headers
 require('dotenv').config(); // Import and configure dotenv for environment variables
 
 // Import the reminder scheduler to schedule notifications
@@ -29,6 +30,7 @@ app.use(express.json()); // Parse incoming JSON requests
 app.use(express.urlencoded({ extended: false })); // Parse URL-encoded data
 app.use(cors()); // Enable CORS
 app.use(fileUpload()); // Enable file uploads
+app.use(helmet()); // Use Helmet to set various HTTP headers for security
 
 // Configure Express session with MongoDB session store
 const MongoStore = connectMongo(session);
