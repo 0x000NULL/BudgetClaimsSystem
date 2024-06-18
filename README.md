@@ -80,34 +80,38 @@ The Budget Claims System is a comprehensive application designed for the claims 
 - **View running processes**:
   ```bash
   pm2 list
-
+  ```
     Stop the application:
 
-    bash
+   ```bash
 
 pm2 stop BudgetClaimsSystem
+```
 
 Restart the application:
 
-bash
+```bash
 
 pm2 restart BudgetClaimsSystem
+```
 
 View logs:
 
-bash
+```bash
 
 pm2 logs BudgetClaimsSystem
+```
 
 Delete the application from PM2:
 
-bash
+```bash
 
     pm2 delete BudgetClaimsSystem
+```
 
 Project Structure
 
-bash
+```bash
 
 BudgetClaimsSystem/
 ├── config/
@@ -140,6 +144,8 @@ BudgetClaimsSystem/
 ├── server.js                 # Main server file
 ├── package.json              # Project metadata and dependencies
 └── .env                      # Environment variables (not included in the repository)
+```
+
 
 Detailed Documentation
 Authentication
