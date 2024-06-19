@@ -9,6 +9,7 @@ const path = require('path'); // Import Path to handle file and directory paths
 const cors = require('cors'); // Import CORS middleware
 const fileUpload = require('express-fileupload'); // Import Express FileUpload middleware
 const helmet = require('helmet'); // Import Helmet for security headers
+const methodOverride = require('method-override'); // Import method-override
 
 require('dotenv').config(); // Import and configure dotenv for environment variables
 
@@ -38,6 +39,7 @@ app.use(express.json()); // Parse incoming JSON requests
 app.use(express.urlencoded({ extended: false })); // Parse URL-encoded data
 app.use(cors()); // Enable CORS
 app.use(fileUpload()); // Enable file uploads
+app.use(methodOverride('_method')); // Use method-override middleware
 
 app.use( // Set various HTTP headers for security
     helmet({
