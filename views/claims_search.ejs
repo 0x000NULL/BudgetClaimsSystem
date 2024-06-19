@@ -3,39 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Claims - Budget Claims System</title>
+    <title>Claims Search</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <header>
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Search Claims</h1>
+        <h1>Claims Search</h1>
         <nav>
             <ul>
                 <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims">Manage Claims</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <form action="/claims/search" method="get">
-            <div>
-                <label for="mva">MVA:</label>
-                <input type="text" id="mva" name="mva">
-            </div>
-            <div>
-                <label for="customerName">Customer Name:</label>
-                <input type="text" id="customerName" name="customerName">
-            </div>
-            <button type="submit">Search</button>
-        </form>
-        <% if (claims) { %>
-            <h2>Search Results</h2>
+        <h2>Search Results</h2>
+        <% if (claims.length > 0) { %>
             <ul>
                 <% claims.forEach(claim => { %>
-                    <li><a href="/claims/<%= claim._id %>"><%= claim.mva %> - <%= claim.customerName %></a></li>
+                    <li>
+                        <p>MVA: <%= claim.mva %></p>
+                        <p>Customer Name: <%= claim.customerName %></p>
+                        <p>Status: <%= claim.status %></p>
+                        <p>Date: <%= claim.date.toDateString() %></p>
+                    </li>
                 <% }) %>
             </ul>
+        <% } else { %>
+            <p>No claims found</p>
         <% } %>
     </main>
 </body>

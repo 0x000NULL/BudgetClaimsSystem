@@ -50,9 +50,8 @@ router.post('/register', ensureAuthenticated, ensureRole('admin'), logActivity('
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) throw err;
-        if (!user) {
-            res.status(400).json({ msg: 'No user exists' });
-        } else {
+        if (!user) res.status(400).json({ msg: 'No user exists' });
+        else {
             req.logIn(user, err => {
                 if (err) throw err;
                 if (user.twoFactorEnabled) {
@@ -140,6 +139,16 @@ router.post('/permissions', ensureAuthenticated, ensureRole('admin'), logActivit
         }
         res.json({ msg: 'User role updated', user }); // Respond with the updated user
     });
+});
+
+// Route to render user management page
+router.get('/user-management', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    try {
+        const users = await User.find(); // Fetch all users from the database
+        res.render('user_management', { users }); // Pass the users array to the template
+    } catch (err) {
+        res.status(500).send('Server Error');
+    }
 });
 
 module.exports = router; // Export the router

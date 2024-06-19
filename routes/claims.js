@@ -20,6 +20,27 @@ const cache = cacheManager.caching({
 
 const router = express.Router(); // Create a new router
 
+// Route to search for claims, accessible by admin, manager, and employee
+router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), (req, res) => {
+    const { mva, customerName, status, startDate, endDate } = req.query; // Extract query parameters
+
+    // Build a filter object based on provided query parameters
+    let filter = {};
+    if (mva) filter.mva = mva;
+    if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
+    if (status) filter.status = status;
+    if (startDate || endDate) {
+        filter.date = {};
+        if (startDate) filter.date.$gte = new Date(startDate); // Filter by start date
+        if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
+    }
+
+    // Find claims based on the filter object
+    Claim.find(filter)
+        .then(claims => res.render('claims_search', { claims })) // Respond with filtered claims
+        .catch(err => res.status(500).json({ error: err.message })); // Handle errors
+});
+
 // Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), async (req, res) => {
     const { mva, customerName, status, startDate, endDate } = req.query; // Extract query parameters

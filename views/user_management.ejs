@@ -3,46 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Management - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+    <title>User Management</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <header>
-        <!-- Budget logo and navigation -->
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>User Management</h1>
-        <nav>
-            <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims">Manage Claims</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/logout">Logout</a></li>
-            </ul>
-        </nav>
     </header>
     <main>
-        <h2>Manage Users</h2>
-        <form action="/user-management/create" method="POST">
-            <div>
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-            <div>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            <div>
-                <label for="role">Role:</label>
-                <select id="role" name="role" required>
-                    <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
-                    <option value="employee">Employee</option>
-                </select>
-            </div>
-            <button type="submit">Create User</button><!-- Submit button for the form -->
-        </form>
         <h2>Existing Users</h2>
         <ul>
             <% users.forEach(user => { %>
@@ -50,19 +18,6 @@
                     <p>Name: <%= user.name %></p>
                     <p>Email: <%= user.email %></p>
                     <p>Role: <%= user.role %></p>
-                    <form action="/user-management/delete" method="POST" style="display:inline;">
-                        <input type="hidden" name="userId" value="<%= user._id %>">
-                        <button type="submit">Delete</button><!-- Submit button for deleting the user -->
-                    </form>
-                    <form action="/user-management/update" method="POST" style="display:inline;">
-                        <input type="hidden" name="userId" value="<%= user._id %>">
-                        <select name="role" required>
-                            <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
-                            <option value="manager" <%= user.role === 'manager' ? 'selected' : '' %>>Manager</option>
-                            <option value="employee" <%= user.role === 'employee' ? 'selected' : '' %>>Employee</option>
-                        </select>
-                        <button type="submit">Update Role</button><!-- Submit button for updating the user role -->
-                    </form>
                 </li>
             <% }) %>
         </ul>
