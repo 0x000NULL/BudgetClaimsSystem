@@ -1,33 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claims List</title>
-</head>
-<body>
-    <h1>Claims List</h1>
-    <table>
-        <thead>
+<%- include('layout', { title: 'Claims Management - Budget Claims System' }) %>
+<h2>Claims Management</h2>
+<table>
+    <thead>
+        <tr>
+            <th>MVA</th>
+            <th>Customer Name</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% claims.forEach(claim => { %>
             <tr>
-                <th>MVA</th>
-                <th>Customer Name</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Date</th>
+                <td><%= claim.mva %></td>
+                <td><%= claim.customerName %></td>
+                <td><%= claim.description %></td>
+                <td><%= claim.status %></td>
+                <td><%= new Date(claim.date).toLocaleDateString() %></td>
+                <td>
+                    <a href="/claims/edit/<%= claim._id %>">Edit</a>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            <% claims.forEach(claim => { %>
-                <tr>
-                    <td><%= claim.mva %></td>
-                    <td><%= claim.customerName %></td>
-                    <td><%= claim.description %></td>
-                    <td><%= claim.status %></td>
-                    <td><%= new Date(claim.date).toLocaleDateString() %></td>
-                </tr>
-            <% }) %>
-        </tbody>
-    </table>
-</body>
-</html>
+        <% }) %>
+    </tbody>
+</table>

@@ -1,23 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Claims - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS file for styling -->
-</head>
-<body>
-    <header>
-        <!-- Budget logo, page title, and navigation links -->
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Search Claims</h1>
-        <nav>
-            <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/logout">Logout</a></li>
-            </ul>
-        </nav>
-    </header>
+<%- include('layout', { title: 'Dashboard - Budget Claims System' }) %>
     <main>
         <!-- Form to search for claims -->
         <form action="/claims/search" method="get">
@@ -44,5 +25,4 @@
             </ul>
         <% } %>
     </main>
-</body>
-</html>
+
