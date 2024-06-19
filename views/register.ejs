@@ -1,32 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <header>
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Register</h1>
+        <img src="/images/Budget_logo.svg" alt="Budget Claims System">
     </header>
     <main>
-        <% if (errors.length > 0) { %> <!-- If there are validation errors, display them -->
+        <h1>Register</h1>
+        <% if (errors && errors.length > 0) { %>
             <ul>
-                <% errors.forEach(function(error) { %>
-                    <li><%= error.msg %></li> <!-- Display each error message -->
+                <% errors.forEach(error => { %>
+                    <li><%= error.msg %></li>
                 <% }) %>
             </ul>
         <% } %>
         <form action="/users/register" method="POST">
             <div>
                 <label for="name">Name:</label>
-                <input type="text" id="name" name="name">
+                <input type="text" id="name" name="name" value="<%= typeof name !== 'undefined' ? name : '' %>">
             </div>
             <div>
                 <label for="email">Email:</label>
-                <input type="email" id="email" name="email">
+                <input type="email" id="email" name="email" value="<%= typeof email !== 'undefined' ? email : '' %>">
             </div>
             <div>
                 <label for="password">Password:</label>
