@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Help - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <title>Reports - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+    <link rel="stylesheet" href="/js/bootstrap-datepicker.min.css"><!-- Bootstrap Datepicker CSS -->
 </head>
 <body>
     <header>
         <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <h1>Reports</h1>
         <nav>
             <ul>
                 <li><a href="/dashboard">Dashboard</a></li>
@@ -18,24 +19,53 @@
                 <li><a href="/claims">Manage Claims</a></li>
                 <li><a href="/reports">Reports</a></li>
                 <li><a href="/user-management">User Management</a></li>
-                <li><a href="/help">Help</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <h2>Generate Reports</h2>
+        <h2>Generate Report</h2>
         <form action="/reports/generate" method="POST">
-            <div>
-                <label for="reportType">Report Type:</label>
-                <select id="reportType" name="reportType" required>
-                    <option value="pdf">PDF</option>
-                    <option value="excel">Excel</option>
-                    <option value="csv">CSV</option>
-                </select>
-            </div>
-            <button type="submit">Generate Report</button><!-- Submit button for the form -->
+            <label for="format">Select Format:</label>
+            <select name="format" id="format" required>
+                <option value="csv">CSV</option>
+                <option value="excel">Excel</option>
+                <option value="pdf">PDF</option>
+            </select>
+            <br><br>
+            <label for="startDate">Select Start Date:</label>
+            <input type="text" id="startDate" name="startDate" class="datepicker" required>
+            <br><br>
+            <label for="endDate">Select End Date:</label>
+            <input type="text" id="endDate" name="endDate" class="datepicker" required>
+            <br><br>
+            <label for="allTime">
+                <input type="checkbox" id="allTime" name="allTime"> Output All Time
+            </label>
+            <br><br>
+            <button type="submit">Generate Report</button>
         </form>
     </main>
-    </body>
-    </html>
+    <script src="/js/jquery-3.6.0.min.js"></script><!-- jQuery for easier DOM manipulation -->
+    <script src="/js/bootstrap-datepicker.min.js"></script><!-- Bootstrap Datepicker JS -->
+    <script>
+        $(function() {
+            // Initialize the datepicker
+            $('.datepicker').datepicker({
+                format: 'mm/dd/yyyy',
+                autoclose: true,
+                todayHighlight: true
+            });
+
+            // Disable the date range inputs if "Output All Time" is checked
+            $('#allTime').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('.datepicker').attr('disabled', 'disabled').val('');
+                } else {
+                    $('.datepicker').removeAttr('disabled');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
