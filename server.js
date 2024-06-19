@@ -55,6 +55,13 @@ app.use( // Set various HTTP headers for security
       },
     })
   )
+
+  // Body parser middleware
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
+
+
+
 // Configure Express session with MongoDB session store
 app.use(session({
     secret: process.env.SESSION_SECRET, // Session secret key

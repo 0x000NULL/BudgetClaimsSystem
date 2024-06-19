@@ -1,154 +1,109 @@
-const express = require('express'); // Import Express to create a router
-const bcrypt = require('bcryptjs'); // Import Bcrypt for hashing passwords
-const passport = require('passport'); // Import Passport for authentication
-const jwt = require('jsonwebtoken'); // Import JWT for token generation
+const express = require('express');
+const router = express.Router();
+const passport = require('passport');
 const User = require('../models/User'); // Import the User model
-const { ensureAuthenticated, ensureRole } = require('../middleware/auth'); // Import authentication middleware
-const speakeasy = require('speakeasy'); // Import Speakeasy for 2FA
-const qrcode = require('qrcode'); // Import QRCode for generating QR codes
-const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
-const router = express.Router(); // Create a new router
+const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
 
-// Route to register a new user, accessible only by admin
-router.post('/register', ensureAuthenticated, ensureRole('admin'), logActivity('Registered new user'), (req, res) => {
-    const { name, email, password, role } = req.body; // Extract registration details from the request body
-    let errors = [];
-
-    // Check required fields
-    if (!name || !email || !password || !role) {
-        errors.push({ msg: 'Please enter all fields' });
-    }
-
-    // Handle errors if any
-    if (errors.length > 0) {
-        res.status(400).json({ errors });
-    } else {
-        // Check if user with the email already exists
-        User.findOne({ email: email }).then(user => {
-            if (user) {
-                res.status(400).json({ msg: 'Email already exists' });
-            } else {
-                // Create a new user
-                const newUser = new User({ name, email, password, role });
-
-                // Hash password before saving
-                bcrypt.genSalt(10, (err, salt) => {
-                    bcrypt.hash(newUser.password, salt, (err, hash) => {
-                        if (err) throw err;
-                        newUser.password = hash;
-                        newUser.save()
-                            .then(user => res.json({ msg: 'User registered' }))
-                            .catch(err => console.log(err));
-                    });
-                });
-            }
-        });
-    }
+// Render login page
+router.get('/login', (req, res) => {
+    console.log('Login route accessed'); // Log route access
+    res.render('login', { title: 'Login' });
 });
 
-// Route to login a user
+// Handle login POST request
 router.post('/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
-        if (err) throw err;
-        if (!user) res.status(400).json({ msg: 'No user exists' });
-        else {
-            req.logIn(user, err => {
-                if (err) throw err;
-                if (user.twoFactorEnabled) {
-                    res.json({ twoFactorRequired: true }); // Indicate that 2FA is required
-                } else {
-                    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-                    res.json({ token });
-                }
-            });
-        }
+    console.log('Login POST request received'); // Log login attempt
+    passport.authenticate('local', {
+        successRedirect: '/dashboard',
+        failureRedirect: '/users/login',
+        failureFlash: true
     })(req, res, next);
 });
 
-// Route to setup 2FA
-router.post('/setup-2fa', ensureAuthenticated, (req, res) => {
-    const secret = speakeasy.generateSecret({ length: 20 }); // Generate a secret key
-
-    // Save the secret key to the user's account
-    User.findByIdAndUpdate(req.user._id, { twoFactorSecret: secret.base32 }, { new: true })
-        .then(user => {
-            // Generate a QR code for the secret key
-            qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
-                if (err) res.status(500).json({ error: err.message });
-                else res.json({ secret: secret.base32, qrCodeUrl: data_url });
-            });
-        })
-        .catch(err => res.status(500).json({ error: err.message }));
+// Render register page
+router.get('/register', (req, res) => {
+    console.log('Register route accessed'); // Log route access
+    res.render('register', { title: 'Register' });
 });
 
-// Route to verify 2FA code
-router.post('/verify-2fa', ensureAuthenticated, (req, res) => {
-    const { token } = req.body; // Extract the 2FA token from the request body
+// Handle registration POST request
+router.post('/register', async (req, res) => {
+    console.log('Register POST request received'); // Log registration attempt
+    const { name, email, password, password2 } = req.body;
+    let errors = [];
 
-    // Verify the token
-    const verified = speakeasy.totp.verify({
-        secret: req.user.twoFactorSecret,
-        encoding: 'base32',
-        token
-    });
+    // Basic validation
+    if (!name || !email || !password || !password2) {
+        errors.push({ msg: 'Please enter all fields' });
+    }
 
-    if (verified) {
-        User.findByIdAndUpdate(req.user._id, { twoFactorEnabled: true }, { new: true })
-            .then(user => res.json({ msg: '2FA enabled', user }))
-            .catch(err => res.status(500).json({ error: err.message }));
+    if (password !== password2) {
+        errors.push({ msg: 'Passwords do not match' });
+    }
+
+    if (password.length < 6) {
+        errors.push({ msg: 'Password must be at least 6 characters' });
+    }
+
+    if (errors.length > 0) {
+        res.render('register', {
+            errors,
+            name,
+            email,
+            password,
+            password2
+        });
     } else {
-        res.status(400).json({ msg: 'Invalid 2FA token' });
+        // Check if user exists
+        try {
+            let user = await User.findOne({ email: email });
+            if (user) {
+                errors.push({ msg: 'Email already exists' });
+                res.render('register', {
+                    errors,
+                    name,
+                    email,
+                    password,
+                    password2
+                });
+            } else {
+                const newUser = new User({
+                    name,
+                    email,
+                    password
+                });
+
+                // Save new user to the database
+                await newUser.save();
+                req.flash('success_msg', 'You are now registered and can log in');
+                res.redirect('/users/login');
+            }
+        } catch (err) {
+            console.error('Error during user registration:', err);
+            res.status(500).json({ error: err.message });
+        }
     }
 });
 
-// Route to login with 2FA
-router.post('/login-2fa', (req, res) => {
-    const { email, password, token } = req.body; // Extract email, password, and 2FA token from the request body
-
-    User.findOne({ email }).then(user => {
-        if (!user) res.status(400).json({ msg: 'No user exists' });
-        else {
-            bcrypt.compare(password, user.password, (err, isMatch) => {
-                if (err) throw err;
-                if (!isMatch) res.status(400).json({ msg: 'Incorrect password' });
-                else {
-                    const verified = speakeasy.totp.verify({
-                        secret: user.twoFactorSecret,
-                        encoding: 'base32',
-                        token
-                    });
-
-                    if (verified) {
-                        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-                        res.json({ token });
-                    } else {
-                        res.status(400).json({ msg: 'Invalid 2FA token' });
-                    }
-                }
-            });
-        }
-    });
+// Handle logout
+router.get('/logout', (req, res) => {
+    console.log('Logout route accessed'); // Log route access
+    req.logout();
+    req.flash('success_msg', 'You are logged out');
+    res.redirect('/users/login');
 });
 
-// Route to modify user permissions, accessible only by admin
-router.post('/permissions', ensureAuthenticated, ensureRole('admin'), logActivity('Modified user permissions'), (req, res) => {
-    const { userId, role } = req.body;
-    User.findByIdAndUpdate(userId, { role }, { new: true }, (err, user) => {
-        if (err) {
-            return res.status(500).json({ error: err.message }); // Handle errors
-        }
-        res.json({ msg: 'User role updated', user }); // Respond with the updated user
-    });
-});
-
-// Route to render user management page
-router.get('/user-management', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+// User Management Route
+router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    console.log('User Management route accessed'); // Log route access
     try {
-        const users = await User.find(); // Fetch all users from the database
-        res.render('user_management', { users }); // Pass the users array to the template
+        const users = await User.find(); // Fetch all users
+        console.log('Users fetched:', users); // Debug log fetched users
+        res.render('user_management', { title: 'User Management', users });
     } catch (err) {
-        res.status(500).send('Server Error');
+        console.error('Error fetching users:', err.message); // Log error
+        res.status(500).json({ error: err.message }); // Handle errors
     }
 });
 
-module.exports = router; // Export the router
+module.exports = router;
