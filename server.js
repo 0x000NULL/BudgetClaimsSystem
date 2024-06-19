@@ -110,6 +110,7 @@ app.use('/employee', require('./routes/employees')); // Employee routes
 app.use('/email', require('./routes/email')); // Email routes
 app.use('/reports', require('./routes/reports')); // Reports routes
 app.use('/audit-logs', auditLogsRouter); // Audit logs routes
+app.use('/email-templates', require('./routes/emailTemplates')); // Email templates route
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));

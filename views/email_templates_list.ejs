@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
+    <title>Email Templates - Budget Claims System</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -18,12 +18,23 @@
                 <li><a href="/reports">Reports</a></li>
                 <li><a href="/user-management">User Management</a></li>
                 <li><a href="/email-templates">Email Templates</a></li>
+                <li><a href="/help">Help</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <%- include(body, { totalClaims, openClaims, inProgressClaims, closedClaims, avgResolutionTime }) %> <!-- Main content injected here -->
+        <h2>Email Templates</h2>
+        <a href="/email-templates/add" class="edit-btn">Add New Template</a>
+        <ul>
+            <% emailTemplates.forEach(template => { %>
+                <li>
+                    <p><strong>Name:</strong> <%= template.name %></p>
+                    <p><strong>Subject:</strong> <%= template.subject %></p>
+                    <a href="/email-templates/<%= template._id %>/edit" class="edit-btn">Edit</a>
+                </li>
+            <% }) %>
+        </ul>
     </main>
 </body>
 </html>
