@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Email - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .button {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h2>Send Email</h2>
+    <form id="emailForm" action="/email/send" method="post">
+        <input type="hidden" name="claimId" value="<%= claim._id %>">
+        <div>
+            <label for="template">Template:</label>
+            <select id="template" name="template" onchange="loadTemplate()">
+                <option value="">Select Template</option>
+                <% emailTemplates.forEach(template => { %>
+                    <option value="<%= template._id %>"><%= template.name %></option>
+                <% }) %>
+            </select>
+        </div>
+        <div>
+            <label for="subject">Subject:</label>
+            <input type="text" id="subject" name="subject" required>
+        </div>
+        <div>
+            <label for="body">Body:</label>
+            <textarea id="body" name="body" rows="10" required></textarea>
+        </div>
+        <button type="submit" class="button">Send Email</button>
+    </form>
+
+    <script>
+        async function loadTemplate() {
+            const templateId = document.getElementById('template').value;
+            if (templateId) {
+                try {
+                    const response = await fetch(`/email/templates/${templateId}`);
+                    if (response.ok) {
+                        const template = await response.json();
+                        document.getElementById('subject').value = template.subject;
+                        document.getElementById('body').value = template.body;
+                    } else {
+                        console.error('Failed to fetch template');
+                    }
+                } catch (err) {
+                    console.error('Error:', err);
+                }
+            } else {
+                document.getElementById('subject').value = '';
+                document.getElementById('body').value = '';
+            }
+        }
+    </script>
+</body>
+</html>

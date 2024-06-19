@@ -80,7 +80,13 @@
                 <button type="submit" class="button">Delete Claim</button>
             </form>
             <a href="/claims/<%= claim._id %>/export" class="button">Export to PDF</a>
+            <button class="button" onclick="openEmailForm()">Send Email</button>
         </div>
     </main>
+    <script>
+        function openEmailForm() {
+            window.open('/email/form/<%= claim._id %>', 'Send Email', 'width=600,height=600');
+        }
+    </script>
 </body>
 </html>
