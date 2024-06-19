@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
+    <title>Add Email Template - Budget Claims System</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -18,12 +18,28 @@
                 <li><a href="/reports">Reports</a></li>
                 <li><a href="/user-management">User Management</a></li>
                 <li><a href="/email-templates">Email Templates</a></li>
+                <li><a href="/help">Help</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <%- include(body, { totalClaims, openClaims, inProgressClaims, closedClaims, avgResolutionTime }) %> <!-- Main content injected here -->
+        <h2>Add Email Template</h2>
+        <form action="/email-templates/add" method="post">
+            <div>
+                <label for="name">Template Name:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div>
+                <label for="subject">Subject:</label>
+                <input type="text" id="subject" name="subject" required>
+            </div>
+            <div>
+                <label for="body">Body:</label>
+                <textarea id="body" name="body" required></textarea>
+            </div>
+            <button type="submit">Add Template</button>
+        </form>
     </main>
 </body>
 </html>
