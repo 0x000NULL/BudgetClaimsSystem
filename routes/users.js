@@ -30,11 +30,11 @@ router.get('/register', (req, res) => {
 // Handle registration POST request
 router.post('/register', async (req, res) => {
     console.log('Register POST request received'); // Log registration attempt
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
     let errors = [];
 
     // Basic validation
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !role) {
         errors.push({ msg: 'Please enter all fields' });
     }
 
@@ -48,7 +48,8 @@ router.post('/register', async (req, res) => {
             errors,
             name,
             email,
-            password
+            password,
+            role
         });
     } else {
         // Check if user exists
@@ -61,13 +62,15 @@ router.post('/register', async (req, res) => {
                     errors,
                     name,
                     email,
-                    password
+                    password,
+                    role
                 });
             } else {
                 const newUser = new User({
                     name,
                     email,
-                    password
+                    password,
+                    role
                 });
 
                 // Hash password before saving in database
@@ -116,6 +119,73 @@ router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), asyn
     } catch (err) {
         console.error('Error fetching users:', err.message); // Log error
         res.status(500).json({ error: err.message }); // Handle errors
+    }
+});
+
+// Render edit user page
+router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    const userId = req.params.id;
+    console.log(`Fetching user for editing with ID: ${userId}`); // Log fetching user
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            console.error(`User with ID ${userId} not found`);
+            return res.status(404).render('404', { message: 'User not found' });
+        }
+        console.log(`User fetched for editing: ${user}`);
+        res.render('edit_user', { title: 'Edit User', user });
+    } catch (err) {
+        console.error(`Error fetching user for editing: ${err}`);
+        res.status(500).render('500', { message: 'Internal Server Error' });
+    }
+});
+
+// Handle edit user POST request
+router.post('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    const userId = req.params.id;
+    const { name, email, password, role } = req.body;
+    console.log(`Updating user with ID: ${userId}`); // Log updating user
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            console.error(`User with ID ${userId} not found`);
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.role = role || user.role;
+
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(password, salt);
+        }
+
+        await user.save();
+        console.log('User updated:', user); // Log user update
+        req.flash('success_msg', 'User updated successfully');
+        res.redirect('/user-management');
+    } catch (err) {
+        console.error(`Error updating user: ${err}`);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Handle delete user POST request
+router.post('/delete/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    const userId = req.params.id;
+    console.log(`Deleting user with ID: ${userId}`); // Log deleting user
+
+    try {
+        await User.findByIdAndDelete(userId);
+        console.log(`User with ID ${userId} deleted`);
+        req.flash('success_msg', 'User deleted successfully');
+        res.redirect('/user-management');
+    } catch (err) {
+        console.error(`Error deleting user: ${err}`);
+        res.status(500).json({ error: err.message });
     }
 });
 
