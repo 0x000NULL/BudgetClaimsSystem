@@ -6,8 +6,8 @@
     <title>User Management - Budget Claims System</title>
     <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
     <style>
-        /* Inline styles for better edit button appearance */
-        .edit-btn {
+        /* Inline styles for better button appearance */
+        .button {
             display: inline-block;
             padding: 8px 12px;
             margin: 5px 0;
@@ -18,8 +18,16 @@
             border-radius: 4px;
         }
 
-        .edit-btn:hover {
+        .button:hover {
             background-color: #0056b3;
+        }
+
+        .button.red {
+            background-color: #dc3545;
+        }
+
+        .button.red:hover {
+            background-color: #c82333;
         }
     </style>
 </head>
@@ -42,6 +50,11 @@
     </header>
     <main>
         <h2>User Management</h2>
+
+        <!-- Audit Logs Button -->
+        <div>
+            <a href="/audit-logs" class="button">Audit</a>
+        </div>
 
         <!-- Section for adding a new user -->
         <section>
@@ -67,7 +80,7 @@
                         <option value="employee">Employee</option>
                     </select>
                 </div>
-                <button type="submit">Add User</button>
+                <button type="submit" class="button">Add User</button>
             </form>
         </section>
 
@@ -80,7 +93,7 @@
                         <p><strong>Name:</strong> <%= user.name %></p>
                         <p><strong>Email:</strong> <%= user.email %></p>
                         <p><strong>Role:</strong> <%= user.role %></p>
-                        <a href="/users/<%= user._id %>/edit" class="edit-btn">Edit</a>
+                        <a href="/users/<%= user._id %>/edit" class="button">Edit</a>
                     </li>
                 <% }) %>
             </ul>
