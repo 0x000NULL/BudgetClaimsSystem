@@ -1,42 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claims Search</title>
-    <link rel="stylesheet" href="/css/styles.css">
-</head>
-<body>
-    <header>
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Claims Search</h1>
-        <nav>
-            <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims">Manage Claims</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/logout">Logout</a></li>
-            </ul>
-        </nav>
-    </header>
-    <main>
-        <h2>Search Results</h2>
-        <% if (claims.length > 0) { %>
-            <ul>
-                <% claims.forEach(claim => { %>
-                    <li>
-                        <p>MVA: <%= claim.mva %></p>
-                        <p>Customer Name: <%= claim.customerName %></p>
-                        <p>Status: <%= claim.status %></p>
-                        <p>Date: <%= claim.date.toDateString() %></p>
-                    </li>
-                <% }) %>
-            </ul>
-        <% } else { %>
-            <p>No claims found</p>
-        <% } %>
-    </main>
-</body>
-</html>
+<%- include('layout', { title: 'Claims Management - Budget Claims System' }) %>
+<h2>Claims Management</h2>
+<table>
+    <thead>
+        <tr>
+            <th>MVA</th>
+            <th>Customer Name</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% claims.forEach(claim => { %>
+            <tr>
+                <td><%= claim.mva %></td>
+                <td><%= claim.customerName %></td>
+                <td><%= claim.description %></td>
+                <td><%= claim.status %></td>
+                <td><%= new Date(claim.date).toLocaleDateString() %></td>
+                <td>
+                    <a href="/claims/edit/<%= claim._id %>">Edit</a>
+                </td>
+            </tr>
+        <% }) %>
+    </tbody>
+</table>

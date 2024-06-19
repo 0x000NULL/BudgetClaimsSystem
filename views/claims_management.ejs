@@ -1,25 +1,4 @@
-<!-- views/claims_management.ejs -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claims Management</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
-</head>
-<body>
-    <header>
-        <h1>Claims Management</h1>
-        <nav>
-            <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims">Manage Claims</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/logout">Logout</a></li>
-            </ul>
-        </nav>
-    </header>
+<%- include('layout', { title: 'Dashboard - Budget Claims System' }) %>
     <main>
         <h2>Claims List</h2>
         <table>
@@ -45,5 +24,3 @@
             </tbody>
         </table>
     </main>
-</body>
-</html>
