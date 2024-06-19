@@ -30,7 +30,7 @@ mongoose.connect(process.env.MONGO_URI, {
     useUnifiedTopology: true // Use the new Server Discover and Monitoring engine
 })
     .then(() => console.log('MongoDB connected')) // Log success message
-    .catch(err => console.log(err)); // Log any connection errors
+    .catch(err => console.error('MongoDB connection error:', err)); // Log any connection errors
 
 // Middleware setup
 app.use(logger('dev')); // Use Morgan for logging HTTP requests
@@ -38,8 +38,21 @@ app.use(express.json()); // Parse incoming JSON requests
 app.use(express.urlencoded({ extended: false })); // Parse URL-encoded data
 app.use(cors()); // Enable CORS
 app.use(fileUpload()); // Enable file uploads
-app.use(helmet()); // Set various HTTP headers for security
 
+app.use( // Set various HTTP headers for security
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'data:',
+            'localhost'
+          ],
+        },
+      },
+    })
+  )
 // Configure Express session with MongoDB session store
 app.use(session({
     secret: process.env.SESSION_SECRET, // Session secret key
@@ -61,6 +74,11 @@ app.use((req, res, next) => {
     res.locals.success_msg = req.flash('success_msg'); // Success message
     res.locals.error_msg = req.flash('error_msg'); // Error message
     res.locals.error = req.flash('error'); // Error object
+    console.log('Flash messages set:', {
+        success_msg: res.locals.success_msg,
+        error_msg: res.locals.error_msg,
+        error: res.locals.error
+    });
     next(); // Continue to the next middleware
 });
 
@@ -74,6 +92,7 @@ app.use('/feedback', require('./routes/feedback')); // Feedback routes
 app.use('/customer', require('./routes/customers')); // Customer routes
 app.use('/employee', require('./routes/employees')); // Employee routes
 app.use('/email', require('./routes/email')); // Email routes
+app.use('/reports', require('./routes/reports')); // Reports routes
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
