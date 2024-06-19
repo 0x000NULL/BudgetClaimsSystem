@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User'); // Import the User model
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
 
@@ -29,16 +30,12 @@ router.get('/register', (req, res) => {
 // Handle registration POST request
 router.post('/register', async (req, res) => {
     console.log('Register POST request received'); // Log registration attempt
-    const { name, email, password, password2 } = req.body;
+    const { name, email, password } = req.body;
     let errors = [];
 
     // Basic validation
-    if (!name || !email || !password || !password2) {
+    if (!name || !email || !password) {
         errors.push({ msg: 'Please enter all fields' });
-    }
-
-    if (password !== password2) {
-        errors.push({ msg: 'Passwords do not match' });
     }
 
     if (password.length < 6) {
@@ -46,12 +43,12 @@ router.post('/register', async (req, res) => {
     }
 
     if (errors.length > 0) {
+        console.log('Validation errors:', errors); // Log validation errors
         res.render('register', {
             errors,
             name,
             email,
-            password,
-            password2
+            password
         });
     } else {
         // Check if user exists
@@ -59,12 +56,12 @@ router.post('/register', async (req, res) => {
             let user = await User.findOne({ email: email });
             if (user) {
                 errors.push({ msg: 'Email already exists' });
+                console.log('Email already exists:', email); // Log existing email
                 res.render('register', {
                     errors,
                     name,
                     email,
-                    password,
-                    password2
+                    password
                 });
             } else {
                 const newUser = new User({
@@ -73,10 +70,26 @@ router.post('/register', async (req, res) => {
                     password
                 });
 
-                // Save new user to the database
-                await newUser.save();
-                req.flash('success_msg', 'You are now registered and can log in');
-                res.redirect('/users/login');
+                // Hash password before saving in database
+                bcrypt.genSalt(10, (err, salt) => {
+                    if (err) throw err;
+                    bcrypt.hash(newUser.password, salt, async (err, hash) => {
+                        if (err) throw err;
+                        // Set hashed password
+                        newUser.password = hash;
+
+                        // Save new user to the database
+                        try {
+                            await newUser.save();
+                            console.log('New user registered:', newUser); // Log new user registration
+                            req.flash('success_msg', 'You are now registered and can log in');
+                            res.redirect('/users/login');
+                        } catch (err) {
+                            console.error('Error during user registration:', err);
+                            res.status(500).json({ error: err.message });
+                        }
+                    });
+                });
             }
         } catch (err) {
             console.error('Error during user registration:', err);
