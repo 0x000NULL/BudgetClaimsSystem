@@ -141,30 +141,34 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req,
     }
 });
 
-// Handle edit user POST request
-router.post('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+// Update User Route
+router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     const { name, email, password, role } = req.body;
-    console.log(`Updating user with ID: ${userId}`); // Log updating user
+    console.log(`Updating user with ID: ${userId}`);
 
     try {
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).exec();
         if (!user) {
             console.error(`User with ID ${userId} not found`);
             return res.status(404).json({ error: 'User not found' });
         }
 
+        // Update user data
         user.name = name || user.name;
         user.email = email || user.email;
         user.role = role || user.role;
 
+        // Update password if provided
         if (password) {
             const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(password, salt);
+            const hash = await bcrypt.hash(password, salt);
+            user.password = hash;
         }
 
-        await user.save();
-        console.log('User updated:', user); // Log user update
+        // Save updated user
+        const updatedUser = await user.save();
+        console.log('User updated:', updatedUser);
         req.flash('success_msg', 'User updated successfully');
         res.redirect('/user-management');
     } catch (err) {
