@@ -1,0 +1,53 @@
+<!-- views/add_claim.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Claim</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Add New Claim</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims">Manage Claims</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <form action="/claims" method="post" enctype="multipart/form-data">
+            <div>
+                <label for="mva">MVA:</label>
+                <input type="text" id="mva" name="mva" required>
+            </div>
+            <div>
+                <label for="customerName">Customer Name:</label>
+                <input type="text" id="customerName" name="customerName" required>
+            </div>
+            <div>
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required></textarea>
+            </div>
+            <div>
+                <label for="status">Status:</label>
+                <select id="status" name="status" required>
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Closed">Closed</option>
+                </select>
+            </div>
+            <div>
+                <label for="files">Upload Files:</label>
+                <input type="file" id="files" name="files" multiple>
+            </div>
+            <button type="submit">Add Claim</button>
+        </form>
+    </main>
+</body>
+</html>
