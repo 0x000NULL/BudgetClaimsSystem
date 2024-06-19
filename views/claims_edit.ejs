@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Claim - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <title>Edit Claim</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <header>
-        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <h1>Edit Claim</h1>
         <nav>
             <ul>
                 <li><a href="/dashboard">Dashboard</a></li>
@@ -24,47 +23,27 @@
     </header>
     <main>
         <h2>Edit Claim</h2>
-        <!-- Form to edit an existing claim -->
         <form action="/claims/<%= claim._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
-            <!-- Field for MVA Number -->
-            <div>
-                <label for="mva">MVA Number:</label>
-                <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required>
-            </div>
-            <!-- Field for Customer Name -->
-            <div>
-                <label for="customerName">Customer Name:</label>
-                <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
-            </div>
-            <!-- Field for Description -->
-            <div>
-                <label for="description">Description:</label>
-                <textarea id="description" name="description" required><%= claim.description %></textarea>
-            </div>
-            <!-- Field for Status -->
-            <div>
-                <label for="status">Status:</label>
-                <select id="status" name="status" required>
-                    <option value="Open" <%= claim.status === 'Open' ? 'selected' : '' %>>Open</option>
-                    <option value="In Progress" <%= claim.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
-                    <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
-                </select>
-            </div>
-            <!-- Field for uploading files -->
-            <div>
-                <label for="files">Upload Files:</label>
-                <input type="file" id="files" name="files" multiple>
-                <!-- Display existing files if any -->
-                <% if (claim.files.length > 0) { %>
-                    <p>Existing Files:</p>
-                    <ul>
-                        <% claim.files.forEach(file => { %>
-                            <li><%= file %></li>
-                        <% }) %>
-                    </ul>
-                <% } %>
-            </div>
-            <button type="submit">Update Claim</button><!-- Submit button for the form -->
+            <label for="mva">MVA</label>
+            <input type="text" id="mva" name="mva" value="<%= claim.mva %>">
+            
+            <label for="customerName">Customer Name</label>
+            <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>">
+            
+            <label for="description">Description</label>
+            <textarea id="description" name="description"><%= claim.description %></textarea>
+            
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="Open" <%= claim.status === 'Open' ? 'selected' : '' %>>Open</option>
+                <option value="In Progress" <%= claim.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
+                <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
+            </select>
+            
+            <label for="files">Files</label>
+            <input type="file" id="files" name="files" multiple>
+            
+            <button type="submit">Update Claim</button>
         </form>
     </main>
 </body>

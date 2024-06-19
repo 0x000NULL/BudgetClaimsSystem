@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+    <style>
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .button-container form, .button-container a {
+            flex: 1;
+            text-align: center;
+        }
+        .button-container button, .button-container a {
+            display: inline-block;
+            padding: 10px 20px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .button-container button:hover, .button-container a:hover {
+            background-color: #0056b3;
+        }
+        .button-container form button {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Claim Details</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims/add">Add Claim</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
+                <li><a href="/help">Help</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Claim Details</h2>
+        <p><strong>MVA:</strong> <%= claim.mva %></p>
+        <p><strong>Customer Name:</strong> <%= claim.customerName %></p>
+        <p><strong>Description:</strong> <%= claim.description %></p>
+        <p><strong>Status:</strong> <%= claim.status %></p>
+        <p><strong>Date:</strong> <%= new Date(claim.date).toLocaleDateString() %></p>
+
+        <h3>Files:</h3>
+        <ul>
+            <% claim.files.forEach(file => { %>
+                <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
+            <% }); %>
+        </ul>
+
+        <div class="button-container">
+            <a href="/claims/<%= claim._id %>/edit" class="button">Edit Claim</a>
+            <form action="/claims/<%= claim._id %>?_method=DELETE" method="POST">
+                <button type="submit" class="button">Delete Claim</button>
+            </form>
+            <a href="/claims/<%= claim._id %>/export" class="button">Export to PDF</a>
+        </div>
+    </main>
+</body>
+</html>
