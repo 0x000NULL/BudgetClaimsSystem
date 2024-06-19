@@ -1,34 +1,35 @@
-<%- include('layout', { title: 'Dashboard - Budget Claims System' }) %>
-<h2>Dashboard Analytics</h2>
-<div class="stats">
-    <p>Total Claims: <%= totalClaims %></p>
-    <p>Open Claims: <%= openClaims %></p>
-    <p>In Progress Claims: <%= inProgressClaims %></p>
-    <p>Closed Claims: <%= closedClaims %></p>
-    <p>Average Resolution Time: <%= avgResolutionTime %> days</p>
-</div>
-<canvas id="claimsChart"></canvas>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    const ctx = document.getElementById('claimsChart').getContext('2d');
-    const claimsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Open', 'In Progress', 'Closed'],
-            datasets: [{
-                label: 'Number of Claims',
-                data: [<%= openClaims %>, <%= inProgressClaims %>, <%= closedClaims %>],
-                backgroundColor: ['#ff6384', '#ffcd56', '#36a2eb'],
-                borderColor: ['#ff6384', '#ffcd56', '#36a2eb'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Budget Claims System</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims">Manage Claims</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Dashboard Analytics</h2>
+        <div class="stats">
+            <p>Total Claims: <%= totalClaims %></p>
+            <p>Open Claims: <%= openClaims %></p>
+            <p>In Progress Claims: <%= inProgressClaims %></p>
+            <p>Closed Claims: <%= closedClaims %></p>
+            <p>Average Resolution Time: <%= avgResolutionTime %> days</p>
+        </div>
+    </main>
+</body>
+</html>

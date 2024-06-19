@@ -1,8 +1,33 @@
-<%- include('layout', { title: 'Dashboard - Budget Claims System' }) %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Claims - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+</head>
+<body>
+    <header>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Budget Claims System</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims">Manage Claims</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
     <main>
+        <h2>Search Claims</h2>
         <form action="/claims/search" method="GET">
+            <!-- Form to search claims based on various criteria -->
             <div>
-                <label for="mva">MVA:</label>
+                <label for="mva">MVA Number:</label>
                 <input type="text" id="mva" name="mva">
             </div>
             <div>
@@ -12,8 +37,9 @@
             <div>
                 <label for="status">Status:</label>
                 <select id="status" name="status">
-                    <option value="">Any</option>
+                    <option value="">--Select Status--</option>
                     <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
                     <option value="Closed">Closed</option>
                 </select>
             </div>
@@ -27,15 +53,35 @@
             </div>
             <button type="submit">Search</button><!-- Submit button for the form -->
         </form>
-        <ul>
-            <% claims.forEach(claim => { %>
-                <li>
-                    <h3>MVA: <%= claim.mva %></h3>
-                    <p>Customer Name: <%= claim.customerName %></p>
-                    <p>Description: <%= claim.description %></p>
-                    <p>Status: <%= claim.status %></p>
-                    <p>Date: <%= new Date(claim.date).toLocaleDateString() %></p>
-                </li>
-            <% }) %>
-        </ul>
+
+        <!-- Display search results if any claims are found -->
+        <% if (claims.length > 0) { %>
+            <h3>Search Results</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>MVA Number</th>
+                        <th>Customer Name</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% claims.forEach(claim => { %>
+                        <tr>
+                            <td><%= claim.mva %></td>
+                            <td><%= claim.customerName %></td>
+                            <td><%= claim.description %></td>
+                            <td><%= claim.status %></td>
+                            <td><%= new Date(claim.date).toLocaleDateString() %></td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <p>No claims found.</p>
+        <% } %>
     </main>
+</body>
+</html>
