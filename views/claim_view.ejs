@@ -3,33 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+    <title>View Claim - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
     <style>
-        .button-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .button-container form, .button-container a {
-            flex: 1;
-            text-align: center;
-        }
-        .button-container button, .button-container a {
+        .btn {
             display: inline-block;
-            padding: 10px 20px;
-            color: white;
+            padding: 8px 12px;
+            margin: 5px;
             background-color: #007bff;
-            border: none;
-            border-radius: 5px;
+            color: white;
+            text-align: center;
             text-decoration: none;
-            cursor: pointer;
+            border-radius: 4px;
         }
-        .button-container button:hover, .button-container a:hover {
+
+        .btn:hover {
             background-color: #0056b3;
         }
-        .button-container form button {
-            width: 100%;
+
+        .btn-delete {
+            background-color: red;
+        }
+
+        .btn-delete:hover {
+            background-color: darkred;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .claim-info {
+            margin-bottom: 20px;
+        }
+
+        .claim-info label {
+            font-weight: bold;
+        }
+
+        .claim-info p {
+            margin: 5px 0 15px 0;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
         }
     </style>
 </head>
@@ -37,7 +61,7 @@
     <header>
         <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Claim Details</h1>
+        <h1>Budget Claims System</h1>
         <nav>
             <ul>
                 <li><a href="/dashboard">Dashboard</a></li>
@@ -45,47 +69,126 @@
                 <li><a href="/claims/add">Add Claim</a></li>
                 <li><a href="/reports">Reports</a></li>
                 <li><a href="/user-management">User Management</a></li>
-                <li><a href="/email-templates">Email Templates</a></li>
                 <li><a href="/help">Help</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <h2>Claim Details</h2>
-        <p><strong>MVA:</strong> <%= claim.mva %></p>
-        <p><strong>Customer Name:</strong> <%= claim.customerName %></p>
-        <p><strong>Customer Number:</strong> <%= claim.customerNumber %></p>
-        <p><strong>Customer Email:</strong> <%= claim.customerEmail %></p>
-        <p><strong>Customer Address:</strong> <%= claim.customerAddress %></p>
-        <p><strong>Customer Drivers License:</strong> <%= claim.customerDriversLicense %></p>
-        <p><strong>Car Make:</strong> <%= claim.carMake %></p>
-        <p><strong>Car Model:</strong> <%= claim.carModel %></p>
-        <p><strong>Car Year:</strong> <%= claim.carYear %></p>
-        <p><strong>Car Color:</strong> <%= claim.carColor %></p>
-        <p><strong>Car VIN:</strong> <%= claim.carVIN %></p>
-        <p><strong>Description:</strong> <%= claim.description %></p>
-        <p><strong>Status:</strong> <%= claim.status %></p>
+        <div class="container">
+            <h2>View Claim</h2>
+            <div class="claim-info">
+                <label>MVA:</label>
+                <p><%= claim.mva %></p>
 
-        <h3>Files:</h3>
-        <ul>
-            <% claim.files.forEach(file => { %>
-                <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
-            <% }); %>
-        </ul>
+                <label>Customer Name:</label>
+                <p><%= claim.customerName %></p>
 
-        <div class="button-container">
-            <a href="/claims/<%= claim._id %>/edit" class="button">Edit Claim</a>
-            <form action="/claims/<%= claim._id %>?_method=DELETE" method="POST">
-                <button type="submit" class="button">Delete Claim</button>
-            </form>
-            <a href="/claims/<%= claim._id %>/export" class="button">Export to PDF</a>
-            <button class="button" onclick="openEmailForm()">Send Email</button>
+                <label>Customer Number:</label>
+                <p><%= claim.customerNumber %></p>
+
+                <label>Customer Email:</label>
+                <p><%= claim.customerEmail %></p>
+
+                <label>Customer Address:</label>
+                <p><%= claim.customerAddress %></p>
+
+                <label>Customer Drivers License:</label>
+                <p><%= claim.customerDriversLicense %></p>
+
+                <label>Car Make:</label>
+                <p><%= claim.carMake %></p>
+
+                <label>Car Model:</label>
+                <p><%= claim.carModel %></p>
+
+                <label>Car Year:</label>
+                <p><%= claim.carYear %></p>
+
+                <label>Car Color:</label>
+                <p><%= claim.carColor %></p>
+
+                <label>Car VIN:</label>
+                <p><%= claim.carVIN %></p>
+
+                <label>Accident Date:</label>
+                <p><%= claim.accidentDate ? new Date(claim.accidentDate).toLocaleDateString() : '' %></p>
+
+                <label>Billable:</label>
+                <p><%= claim.billable ? 'Yes' : 'No' %></p>
+
+                <label>Is Renter At Fault:</label>
+                <p><%= claim.isRenterAtFault ? 'Yes' : 'No' %></p>
+
+                <label>Damages Total:</label>
+                <p><%= claim.damagesTotal %></p>
+
+                <label>Body Shop Name:</label>
+                <p><%= claim.bodyShopName %></p>
+
+                <label>RA Number:</label>
+                <p><%= claim.raNumber %></p>
+
+                <label>Insurance Carrier:</label>
+                <p><%= claim.insuranceCarrier %></p>
+
+                <label>Insurance Agent:</label>
+                <p><%= claim.insuranceAgent %></p>
+
+                <label>Insurance Phone Number:</label>
+                <p><%= claim.insurancePhoneNumber %></p>
+
+                <label>Insurance Fax Number:</label>
+                <p><%= claim.insuranceFaxNumber %></p>
+
+                <label>Insurance Address:</label>
+                <p><%= claim.insuranceAddress %></p>
+
+                <label>Insurance Claim Number:</label>
+                <p><%= claim.insuranceClaimNumber %></p>
+
+                <label>Third Party Name:</label>
+                <p><%= claim.thirdPartyName %></p>
+
+                <label>Third Party Phone Number:</label>
+                <p><%= claim.thirdPartyPhoneNumber %></p>
+
+                <label>Third Party Insurance Name:</label>
+                <p><%= claim.thirdPartyInsuranceName %></p>
+
+                <label>Third Party Policy Number:</label>
+                <p><%= claim.thirdPartyPolicyNumber %></p>
+
+                <label>Description:</label>
+                <p><%= claim.description %></p>
+
+                <label>Status:</label>
+                <p><%= claim.status %></p>
+
+                <label>Files:</label>
+                <ul>
+                    <% claim.files.forEach(file => { %>
+                        <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
+                    <% }) %>
+                </ul>
+            </div>
+            <div class="button-group">
+                <a href="/claims/<%= claim._id %>/edit" class="btn">Edit Claim</a>
+                <a href="/claims/<%= claim._id %>/export" class="btn">Export to PDF</a>
+                <a href="#" class="btn" onclick="openEmailForm('<%= claim._id %>')">Send Email</a>
+                <form action="/claims/<%= claim._id %>?_method=DELETE" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-delete">Delete Claim</button>
+                </form>
+            </div>
         </div>
     </main>
+
     <script>
-        function openEmailForm() {
-            window.open('/email/form/<%= claim._id %>', 'Send Email', 'width=600,height=600');
+        function openEmailForm(claimId) {
+            const url = `/email/form/${claimId}`;
+            const windowName = "EmailForm";
+            const windowFeatures = "width=600,height=600";
+            window.open(url, windowName, windowFeatures);
         }
     </script>
 </body>

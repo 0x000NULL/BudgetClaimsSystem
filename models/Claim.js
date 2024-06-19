@@ -1,77 +1,36 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 
-const ClaimSchema = new Schema({
-    mva: {
-        type: String,
-        required: true
-    },
-    customerName: {
-        type: String,
-        required: true
-    },
-    customerNumber: {
-        type: String,
-        required: true
-    },
-    customerEmail: {
-        type: String,
-        required: true
-    },
-    customerAddress: {
-        type: String,
-        required: true
-    },
-    customerDriversLicense: {
-        type: String,
-        required: true
-    },
-    carMake: {
-        type: String,
-        required: true
-    },
-    carModel: {
-        type: String,
-        required: true
-    },
-    carYear: {
-        type: Number,
-        required: true
-    },
-    carColor: {
-        type: String,
-        required: true
-    },
-    carVIN: {
-        type: String,
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    status: {
-        type: String,
-        enum: ['Open', 'In Progress', 'Closed'],
-        default: 'Open'
-    },
-    files: [{
-        type: String
-    }],
-    versions: [{
-        description: String,
-        status: String,
-        files: [String],
-        updatedAt: Date
-    }],
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+const ClaimSchema = new mongoose.Schema({
+    mva: { type: String, required: true },
+    customerName: { type: String },
+    customerNumber: { type: String },
+    customerEmail: { type: String },
+    customerAddress: { type: String },
+    customerDriversLicense: { type: String },
+    carMake: { type: String },
+    carModel: { type: String },
+    carYear: { type: String },
+    carColor: { type: String },
+    carVIN: { type: String },
+    accidentDate: { type: Date },
+    billable: { type: Boolean },
+    isRenterAtFault: { type: Boolean },
+    damagesTotal: { type: Number },
+    bodyShopName: { type: String },
+    raNumber: { type: String },
+    insuranceCarrier: { type: String },
+    insuranceAgent: { type: String },
+    insurancePhoneNumber: { type: String },
+    insuranceFaxNumber: { type: String },
+    insuranceAddress: { type: String },
+    insuranceClaimNumber: { type: String },
+    thirdPartyName: { type: String },
+    thirdPartyPhoneNumber: { type: String },
+    thirdPartyInsuranceName: { type: String },
+    thirdPartyPolicyNumber: { type: String },
+    description: { type: String },
+    status: { type: String },
+    files: [{ type: String }]
+}, { timestamps: true });
 
 module.exports = mongoose.model('Claim', ClaimSchema);
