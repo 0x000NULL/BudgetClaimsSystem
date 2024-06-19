@@ -96,53 +96,71 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
 
 // Route to add a new claim, accessible by admin and manager
 router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), (req, res) => {
-    const { mva, customerName, description, status } = req.body; // Extract claim details from the request body
+    const { 
+        mva, 
+        customerName, 
+        customerNumber, 
+        customerEmail, 
+        customerAddress, 
+        customerDriversLicense, 
+        carMake, 
+        carModel, 
+        carYear, 
+        carColor, 
+        carVIN, 
+        description, 
+        status 
+    } = req.body;
 
     console.log('Adding new claim with data:', req.body);
 
-    // Initialize an array to hold uploaded file names
     let filesArray = [];
 
-    // Check if files were uploaded
     if (req.files) {
         const files = req.files.files;
-        if (!Array.isArray(files)) filesArray.push(files); // Ensure files is always an array
+        if (!Array.isArray(files)) filesArray.push(files);
         else filesArray = files;
 
-        // Save each file to the uploads directory
         filesArray.forEach(file => {
             const filePath = path.join(__dirname, '../uploads', file.name);
             file.mv(filePath, err => {
                 if (err) {
                     console.error('Error uploading file:', err);
-                    return res.status(500).json({ error: err.message }); // Handle file upload error
+                    return res.status(500).json({ error: err.message });
                 }
                 console.log('File uploaded successfully:', file.name);
             });
         });
     }
 
-    // Create a new claim object
     const newClaim = new Claim({
         mva,
         customerName,
+        customerNumber,
+        customerEmail,
+        customerAddress,
+        customerDriversLicense,
+        carMake,
+        carModel,
+        carYear,
+        carColor,
+        carVIN,
         description,
         status,
-        files: filesArray.map(file => file.name) // Store file names in the claim
+        files: filesArray.map(file => file.name)
     });
 
-    // Save the claim to the database
     newClaim.save()
         .then(claim => {
             console.log('New claim added:', claim);
-            notifyNewClaim(req.user.email, claim); // Send notification about the new claim
-            cache.del('/claims'); // Invalidate the cache for claims list
-            res.redirect('/dashboard'); // Redirect to the dashboard page
+            notifyNewClaim(req.user.email, claim);
+            cache.del('/claims');
+            res.redirect('/dashboard');
         })
         .catch(err => {
             console.error('Error adding new claim:', err);
             res.status(500).json({ error: err.message });
-        }); // Handle errors
+        });
 });
 
 // Route to get a specific claim by ID for editing, accessible by admin and manager
@@ -187,6 +205,15 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             // Update the claim with new data
             claim.mva = req.body.mva || claim.mva;
             claim.customerName = req.body.customerName || claim.customerName;
+            claim.customerNumber = req.body.customerNumber || claim.customerNumber;
+            claim.customerEmail = req.body.customerEmail || claim.customerEmail;
+            claim.customerAddress = req.body.customerAddress || claim.customerAddress;
+            claim.customerDriversLicense = req.body.customerDriversLicense || claim.customerDriversLicense;
+            claim.carMake = req.body.carMake || claim.carMake;
+            claim.carModel = req.body.carModel || claim.carModel;
+            claim.carYear = req.body.carYear || claim.carYear;
+            claim.carColor = req.body.carColor || claim.carColor;
+            claim.carVIN = req.body.carVIN || claim.carVIN;
             claim.description = req.body.description || claim.description;
             claim.status = req.body.status || claim.status;
             claim.files = req.body.files || claim.files;

@@ -1,45 +1,77 @@
-const mongoose = require('mongoose'); // Import Mongoose to interact with MongoDB
-const Schema = mongoose.Schema; // Use Schema to define the structure of documents in the collection
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-// Define the schema for a Claim
 const ClaimSchema = new Schema({
     mva: {
         type: String,
-        required: true // MVA is required
+        required: true
     },
     customerName: {
         type: String,
-        required: true // Customer name is required
+        required: true
+    },
+    customerNumber: {
+        type: String,
+        required: true
+    },
+    customerEmail: {
+        type: String,
+        required: true
+    },
+    customerAddress: {
+        type: String,
+        required: true
+    },
+    customerDriversLicense: {
+        type: String,
+        required: true
+    },
+    carMake: {
+        type: String,
+        required: true
+    },
+    carModel: {
+        type: String,
+        required: true
+    },
+    carYear: {
+        type: Number,
+        required: true
+    },
+    carColor: {
+        type: String,
+        required: true
+    },
+    carVIN: {
+        type: String,
+        required: true
     },
     description: {
         type: String,
-        required: true // Description is required
+        required: true
     },
     status: {
         type: String,
-        required: true, // Status is required
-        enum: ['Open', 'In Progress', 'Closed'] // Define possible statuses
-    },
-    date: {
-        type: Date,
-        default: Date.now // Default to current date and time
+        enum: ['Open', 'In Progress', 'Closed'],
+        default: 'Open'
     },
     files: [{
-        type: String // Store file names
+        type: String
     }],
     versions: [{
-        description: String, // Description of the claim
-        status: String, // Status of the claim
-        files: [String], // Files associated with the claim
-        updatedAt: {
-            type: Date,
-            default: Date.now // Default to current date and time
-        }
-    }]
-}, { timestamps: true }); // Enable timestamps to keep track of creation and update times
+        description: String,
+        status: String,
+        files: [String],
+        updatedAt: Date
+    }],
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    }
+});
 
-// Create a model from the schema
-const Claim = mongoose.model('Claim', ClaimSchema);
-
-// Export the model
-module.exports = Claim;
+module.exports = mongoose.model('Claim', ClaimSchema);
