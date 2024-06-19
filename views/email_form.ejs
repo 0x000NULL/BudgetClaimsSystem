@@ -5,68 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Send Email - Budget Claims System</title>
     <link rel="stylesheet" href="/css/styles.css">
-    <style>
-        .button {
-            display: inline-block;
-            padding: 8px 12px;
-            margin: 5px 0;
-            background-color: #007bff;
-            color: white;
-            text-align: center;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-
-        .button:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <h2>Send Email</h2>
-    <form id="emailForm" action="/email/send" method="post">
-        <input type="hidden" name="claimId" value="<%= claim._id %>">
-        <div>
-            <label for="template">Template:</label>
-            <select id="template" name="template" onchange="loadTemplate()">
-                <option value="">Select Template</option>
-                <% emailTemplates.forEach(template => { %>
-                    <option value="<%= template._id %>"><%= template.name %></option>
-                <% }) %>
-            </select>
-        </div>
-        <div>
-            <label for="subject">Subject:</label>
-            <input type="text" id="subject" name="subject" required>
-        </div>
-        <div>
-            <label for="body">Body:</label>
-            <textarea id="body" name="body" rows="10" required></textarea>
-        </div>
-        <button type="submit" class="button">Send Email</button>
-    </form>
-
     <script>
-        async function loadTemplate() {
-            const templateId = document.getElementById('template').value;
-            if (templateId) {
-                try {
-                    const response = await fetch(`/email/templates/${templateId}`);
-                    if (response.ok) {
-                        const template = await response.json();
-                        document.getElementById('subject').value = template.subject;
-                        document.getElementById('body').value = template.body;
-                    } else {
-                        console.error('Failed to fetch template');
-                    }
-                } catch (err) {
-                    console.error('Error:', err);
-                }
-            } else {
-                document.getElementById('subject').value = '';
-                document.getElementById('body').value = '';
-            }
+        async function loadTemplate(templateId) {
+            const claimId = "<%= claim._id %>";
+            const response = await fetch(`/email/templates/${templateId}?claimId=${claimId}`);
+            const template = await response.json();
+            document.getElementById('subject').value = template.subject;
+            document.getElementById('body').value = template.body;
+        }
+
+        function closeWindow() {
+            window.close();
         }
     </script>
+</head>
+<body>
+    <header>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Send Email</h1>
+    </header>
+    <main>
+        <form action="/email/send" method="post">
+            <div>
+                <label for="template">Choose a Template:</label>
+                <select id="template" name="template" onchange="loadTemplate(this.value)">
+                    <option value="">Select a template</option>
+                    <% templates.forEach(template => { %>
+                        <option value="<%= template._id %>"><%= template.name %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div>
+                <label for="email">To:</label>
+                <input type="email" id="email" name="email" value="<%= claim.customerEmail %>" required>
+            </div>
+            <div>
+                <label for="subject">Subject:</label>
+                <input type="text" id="subject" name="subject" required>
+            </div>
+            <div>
+                <label for="body">Body:</label>
+                <textarea id="body" name="body" rows="10" required></textarea>
+            </div>
+            <button type="submit">Send</button>
+            <button type="button" onclick="closeWindow()">Cancel</button>
+        </form>
+    </main>
 </body>
 </html>

@@ -12,6 +12,7 @@ const helmet = require('helmet'); // Import Helmet for security headers
 const methodOverride = require('method-override'); // Import method-override for supporting PUT and DELETE methods in forms
 const auditLogsRouter = require('./routes/auditLogs'); // Import the audit logs router
 
+
 require('dotenv').config(); // Import and configure dotenv for environment variables
 
 // Import the reminder scheduler to schedule notifications
