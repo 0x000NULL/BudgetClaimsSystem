@@ -20,15 +20,8 @@ const cache = cacheManager.caching({
 
 const router = express.Router(); // Create a new router
 
-// Route to render the add claim form
-router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
-    console.log('Rendering add claim form');
-    res.render('add_claim'); // Render the add claim form
-});
-
 // Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), async (req, res) => {
-    console.log('Fetching claims with query:', req.query);
     const { mva, customerName, status, startDate, endDate } = req.query; // Extract query parameters
 
     // Build a filter object based on provided query parameters
@@ -43,35 +36,36 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
     }
 
     const cacheKey = JSON.stringify(filter); // Create a cache key based on the filter
+    console.log('Fetching claims with query:', filter); // Debug log for query parameters
 
     try {
         // Attempt to get the cached data
         const cachedClaims = await cache.get(cacheKey);
         if (cachedClaims) {
-            console.log('Returning cached claims data:', cachedClaims);
-            return res.render('claims_list', { claims: cachedClaims }); // Render the claims list view with cached data
+            console.log('Returning cached claims data:', cachedClaims); // Debug log for cached data
+            return res.render('claims_search', { claims: cachedClaims }); // Render the claims search view with cached data
         }
 
         // If no cached data, fetch claims from the database
         const claims = await Claim.find(filter).exec();
-        console.log('Claims fetched from database:', claims);
+        console.log('Claims fetched from database:', claims); // Debug log for fetched data
 
         // Cache the fetched data
         await cache.set(cacheKey, claims);
-        console.log('Claims data cached with key:', cacheKey);
+        console.log('Claims data cached with key:', cacheKey); // Debug log for caching
 
-        // Render the claims list view with the fetched data
-        res.render('claims_list', { claims });
+        // Render the claims search view with fetched data
+        res.render('claims_search', { claims });
     } catch (err) {
-        console.error('Error fetching claims:', err);
+        console.error('Error fetching claims:', err); // Debug log for errors
         res.status(500).json({ error: err.message }); // Handle errors
     }
 });
 
 // Route to add a new claim, accessible by admin and manager
 router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), (req, res) => {
-    console.log('Adding new claim with data:', req.body);
     const { mva, customerName, description, status } = req.body; // Extract claim details from the request body
+    console.log('Adding new claim with data:', req.body); // Debug log for claim data
 
     // Initialize an array to hold uploaded file names
     let filesArray = [];
@@ -87,10 +81,10 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
             const filePath = path.join(__dirname, '../uploads', file.name);
             file.mv(filePath, err => {
                 if (err) {
-                    console.error('Error uploading file:', file.name, err);
+                    console.error('File upload error:', err); // Debug log for file upload error
                     return res.status(500).json({ error: err.message }); // Handle file upload error
                 }
-                console.log('File uploaded successfully:', file.name);
+                console.log('File uploaded successfully:', file.name); // Debug log for successful upload
             });
         });
     }
@@ -107,13 +101,13 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
     // Save the claim to the database
     newClaim.save()
         .then(claim => {
-            console.log('New claim added:', claim);
-            res.redirect('/claims'); // Redirect to the claims list page
+            console.log('New claim added:', claim); // Debug log for added claim
+            res.json(claim); // Respond with the saved claim
             notifyNewClaim(req.user.email, claim); // Send notification about the new claim
             cache.del('/claims'); // Invalidate the cache for claims list
         })
         .catch(err => {
-            console.error('Error saving new claim:', err);
+            console.error('Error adding claim:', err); // Debug log for error
             res.status(500).json({ error: err.message }); // Handle errors
         });
 });
@@ -121,111 +115,122 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
 // Route to get a specific claim by ID, accessible by admin, manager, and employee
 router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claim details'), async (req, res) => {
     const cacheKey = `claim_${req.params.id}`; // Create a cache key based on the claim ID
+    console.log('Fetching claim with ID:', req.params.id); // Debug log for claim ID
 
     try {
         // Attempt to get the cached data
         const cachedClaim = await cache.get(cacheKey);
         if (cachedClaim) {
-            console.log('Returning cached claim data for ID:', req.params.id);
-            return res.json(cachedClaim); // If cached data exists, respond with it
+            console.log('Returning cached claim data:', cachedClaim); // Debug log for cached data
+            return res.json(cachedClaim); // Respond with cached data
         }
 
         // If no cached data, fetch the claim from the database
         const claim = await Claim.findById(req.params.id).exec();
         if (!claim) {
-            console.warn('Claim not found for ID:', req.params.id);
+            console.log('Claim not found:', req.params.id); // Debug log for not found
             return res.status(404).json({ msg: 'Claim not found' }); // Handle case where claim is not found
         }
+        console.log('Claim fetched from database:', claim); // Debug log for fetched data
 
         // Cache the fetched data
         await cache.set(cacheKey, claim);
-        console.log('Claim data cached with key:', cacheKey);
+        console.log('Claim data cached with key:', cacheKey); // Debug log for caching
 
         // Respond with the fetched data
         res.json(claim);
     } catch (err) {
-        console.error('Error fetching claim by ID:', err);
+        console.error('Error fetching claim:', err); // Debug log for errors
         res.status(500).json({ error: err.message }); // Handle errors
     }
 });
 
 // Route to update a claim by ID, accessible by admin and manager
-router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), (req, res) => {
-    console.log('Updating claim with ID:', req.params.id);
-    Claim.findById(req.params.id)
-        .then(claim => {
-            // Save the current version of the claim before updating
-            claim.versions.push({
-                description: claim.description,
-                status: claim.status,
-                files: claim.files,
-                updatedAt: claim.updatedAt
-            });
+router.post('/edit/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), async (req, res) => {
+    try {
+        let claim = await Claim.findById(req.params.id).exec();
+        if (!claim) {
+            console.log('Claim not found:', req.params.id); // Debug log for not found
+            return res.status(404).json({ msg: 'Claim not found' });
+        }
 
-            // Update the claim with new data
-            claim.description = req.body.description || claim.description;
-            claim.status = req.body.status || claim.status;
-            claim.files = req.body.files || claim.files;
+        console.log('Updating claim with data:', req.body); // Debug log for claim data
 
-            // Save the updated claim to the database
-            claim.save()
-                .then(updatedClaim => {
-                    console.log('Claim updated:', updatedClaim);
-                    res.json(updatedClaim); // Respond with the updated claim
-                    notifyClaimStatusUpdate(req.user.email, updatedClaim); // Send notification about the claim status update
-                    cache.del(`claim_${req.params.id}`); // Invalidate the cache for the updated claim
-                    cache.del('/claims'); // Invalidate the cache for claims list
-                })
-                .catch(err => {
-                    console.error('Error saving updated claim:', err);
-                    res.status(500).json({ error: err.message }); // Handle errors
+        // Update claim details
+        claim.mva = req.body.mva;
+        claim.customerName = req.body.customerName;
+        claim.description = req.body.description;
+        claim.status = req.body.status;
+
+        // Handle file uploads if any
+        if (req.files && req.files.files) {
+            let filesArray = req.files.files;
+            if (!Array.isArray(filesArray)) {
+                filesArray = [filesArray];
+            }
+
+            filesArray.forEach(file => {
+                const filePath = path.join(__dirname, '../uploads', file.name);
+                file.mv(filePath, err => {
+                    if (err) {
+                        console.error('File upload error:', err); // Debug log for file upload error
+                        return res.status(500).json({ error: err.message }); // Handle file upload error
+                    }
+                    console.log('File uploaded successfully:', file.name); // Debug log for successful upload
                 });
-        })
-        .catch(err => {
-            console.error('Error finding claim by ID:', err);
-            res.status(500).json({ error: err.message }); // Handle errors
-        });
+                claim.files.push(file.name); // Add the new file to the claim's files array
+            });
+        }
+
+        claim = await claim.save();
+        console.log('Claim updated:', claim); // Debug log for updated claim
+        cache.del(`claim_${req.params.id}`); // Invalidate cache for the updated claim
+        cache.del('/claims'); // Invalidate cache for claims list
+        res.redirect('/claims');
+    } catch (err) {
+        console.error('Error updating claim:', err); // Debug log for errors
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Route to delete a claim by ID, accessible only by admin
 router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), (req, res) => {
-    console.log('Deleting claim with ID:', req.params.id);
     Claim.findByIdAndDelete(req.params.id)
         .then(() => {
-            console.log('Claim deleted:', req.params.id);
+            console.log('Claim deleted:', req.params.id); // Debug log for deleted claim
             res.json({ msg: 'Claim deleted' }); // Respond with deletion confirmation
             cache.del(`claim_${req.params.id}`); // Invalidate the cache for the deleted claim
             cache.del('/claims'); // Invalidate the cache for claims list
         })
         .catch(err => {
-            console.error('Error deleting claim by ID:', err);
-            res.status(500).json({ error: err.message }); // Handle errors
+            console.error('Error deleting claim:', err); // Debug log for errors
+            res.status(500).json({ error: err.message });
         });
 });
 
 // Route for bulk updating claims, accessible by admin and manager
 router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk updated claims'), (req, res) => {
     const { claimIds, updateData } = req.body; // Extract claim IDs and update data from the request body
-    console.log('Bulk updating claims:', claimIds, 'with data:', updateData);
+    console.log('Bulk updating claims with IDs:', claimIds, 'and data:', updateData); // Debug log for bulk update
 
     // Update multiple claims based on provided IDs and data
     Claim.updateMany({ _id: { $in: claimIds } }, updateData)
         .then(result => {
-            console.log('Bulk update result:', result);
+            console.log('Claims bulk updated:', result); // Debug log for bulk update result
             res.json({ msg: 'Claims updated', result }); // Respond with update result
             claimIds.forEach(id => cache.del(`claim_${id}`)); // Invalidate the cache for the updated claims
             cache.del('/claims'); // Invalidate the cache for claims list
         })
         .catch(err => {
-            console.error('Error in bulk updating claims:', err);
-            res.status(500).json({ error: err.message }); // Handle errors
+            console.error('Error bulk updating claims:', err); // Debug log for errors
+            res.status(500).json({ error: err.message });
         });
 });
 
 // Route for bulk exporting claims, accessible by admin and manager
 router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk exported claims'), (req, res) => {
     const { claimIds, format } = req.body; // Extract claim IDs and export format from the request body
-    console.log('Bulk exporting claims:', claimIds, 'in format:', format);
+    console.log('Bulk exporting claims with IDs:', claimIds, 'and format:', format); // Debug log for bulk export
 
     // Find claims based on provided IDs
     Claim.find({ _id: { $in: claimIds } })
@@ -266,15 +271,15 @@ router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager'
             }
         })
         .catch(err => {
-            console.error('Error in bulk exporting claims:', err);
-            res.status(500).json({ error: err.message }); // Handle errors
+            console.error('Error bulk exporting claims:', err); // Debug log for errors
+            res.status(500).json({ error: err.message });
         });
 });
 
 // Route to search for claims, accessible by admin, manager, and employee
 router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), (req, res) => {
     const { mva, customerName, status, startDate, endDate } = req.query; // Extract query parameters
-    console.log('Searching claims with query:', req.query);
+    console.log('Searching claims with query:', req.query); // Debug log for query parameters
 
     // Build a filter object based on provided query parameters
     let filter = {};
@@ -290,12 +295,12 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
     // Find claims based on the filter object
     Claim.find(filter)
         .then(claims => {
-            console.log('Claims found:', claims);
+            console.log('Claims search result:', claims); // Debug log for search result
             res.render('claims_search', { claims }); // Respond with filtered claims
         })
         .catch(err => {
-            console.error('Error searching claims:', err);
-            res.status(500).json({ error: err.message }); // Handle errors
+            console.error('Error searching claims:', err); // Debug log for errors
+            res.status(500).json({ error: err.message });
         });
 });
 

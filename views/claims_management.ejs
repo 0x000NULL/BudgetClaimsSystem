@@ -1,26 +1,61 @@
-<%- include('layout', { title: 'Dashboard - Budget Claims System' }) %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claims Management - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+</head>
+<body>
+    <header>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Budget Claims System</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims">Manage Claims</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
     <main>
-        <h2>Claims List</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>MVA</th>
-                    <th>Customer Name</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% claims.forEach(claim => { %>
+        <h2>Claims Management</h2>
+        <!-- Display list of claims -->
+        <% if (claims.length > 0) { %>
+            <table>
+                <thead>
                     <tr>
-                        <td><%= claim.mva %></td>
-                        <td><%= claim.customerName %></td>
-                        <td><%= claim.description %></td>
-                        <td><%= claim.status %></td>
-                        <td><%= new Date(claim.date).toLocaleDateString() %></td>
+                        <th>MVA Number</th>
+                        <th>Customer Name</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
                     </tr>
-                <% }) %>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <% claims.forEach(claim => { %>
+                        <tr>
+                            <td><%= claim.mva %></td>
+                            <td><%= claim.customerName %></td>
+                            <td><%= claim.description %></td>
+                            <td><%= claim.status %></td>
+                            <td><%= new Date(claim.date).toLocaleDateString() %></td>
+                            <td>
+                                <a href="/claims/<%= claim._id %>/edit">Edit</a> | 
+                                <a href="/claims/<%= claim._id %>" onclick="return confirm('Are you sure you want to delete this claim?');">Delete</a>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <p>No claims found.</p><!-- Message if no claims are found -->
+        <% } %>
     </main>
+</body>
+</html>

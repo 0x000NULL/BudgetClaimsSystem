@@ -1,8 +1,33 @@
-<%- include('layout', { title: 'Dashboard - Budget Claims System' }) %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Claim - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+</head>
+<body>
+    <header>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Budget Claims System</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims">Manage Claims</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
     <main>
-        <form action="/claims" method="post" enctype="multipart/form-data">
+        <h2>Add New Claim</h2>
+        <form action="/claims" method="POST" enctype="multipart/form-data">
+            <!-- Form to submit new claim data -->
             <div>
-                <label for="mva">MVA:</label>
+                <label for="mva">MVA Number:</label>
                 <input type="text" id="mva" name="mva" required>
             </div>
             <div>
@@ -25,6 +50,8 @@
                 <label for="files">Upload Files:</label>
                 <input type="file" id="files" name="files" multiple>
             </div>
-            <button type="submit">Add Claim</button>
+            <button type="submit">Submit</button><!-- Submit button for the form -->
         </form>
     </main>
+</body>
+</html>

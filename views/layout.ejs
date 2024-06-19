@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <header>
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"><!-- Budget logo -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>Budget Claims System</h1>
         <nav>
             <ul>
@@ -17,13 +17,12 @@
                 <li><a href="/claims">Manage Claims</a></li>
                 <li><a href="/reports">Reports</a></li>
                 <li><a href="/user-management">User Management</a></li>
-                <li><a href="/help">Help</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <%= body %><!-- Main content injected here -->
+        <%- include(body, { totalClaims, openClaims, inProgressClaims, closedClaims, avgResolutionTime }) %> <!-- Main content injected here -->
     </main>
 </body>
 </html>
