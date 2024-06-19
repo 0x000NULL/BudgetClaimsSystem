@@ -17,7 +17,6 @@
                 <li><a href="/claims/add">Add Claim</a></li>
                 <li><a href="/reports">Reports</a></li>
                 <li><a href="/user-management">User Management</a></li>
-                <li><a href="/email-templates">Email Templates</a></li>
                 <li><a href="/help">Help</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
@@ -32,64 +31,127 @@
             </div>
             <div>
                 <label for="customerName">Customer Name:</label>
-                <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
+                <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>">
             </div>
             <div>
                 <label for="customerNumber">Customer Number:</label>
-                <input type="text" id="customerNumber" name="customerNumber" value="<%= claim.customerNumber %>" required>
+                <input type="text" id="customerNumber" name="customerNumber" value="<%= claim.customerNumber %>">
             </div>
             <div>
                 <label for="customerEmail">Customer Email:</label>
-                <input type="email" id="customerEmail" name="customerEmail" value="<%= claim.customerEmail %>" required>
+                <input type="email" id="customerEmail" name="customerEmail" value="<%= claim.customerEmail %>">
             </div>
             <div>
                 <label for="customerAddress">Customer Address:</label>
-                <input type="text" id="customerAddress" name="customerAddress" value="<%= claim.customerAddress %>" required>
+                <input type="text" id="customerAddress" name="customerAddress" value="<%= claim.customerAddress %>">
             </div>
             <div>
                 <label for="customerDriversLicense">Customer Drivers License:</label>
-                <input type="text" id="customerDriversLicense" name="customerDriversLicense" value="<%= claim.customerDriversLicense %>" required>
+                <input type="text" id="customerDriversLicense" name="customerDriversLicense" value="<%= claim.customerDriversLicense %>">
             </div>
             <div>
                 <label for="carMake">Car Make:</label>
-                <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>" required>
+                <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>">
             </div>
             <div>
                 <label for="carModel">Car Model:</label>
-                <input type="text" id="carModel" name="carModel" value="<%= claim.carModel %>" required>
+                <input type="text" id="carModel" name="carModel" value="<%= claim.carModel %>">
             </div>
             <div>
                 <label for="carYear">Car Year:</label>
-                <input type="number" id="carYear" name="carYear" value="<%= claim.carYear %>" required>
+                <input type="text" id="carYear" name="carYear" value="<%= claim.carYear %>">
             </div>
             <div>
                 <label for="carColor">Car Color:</label>
-                <input type="text" id="carColor" name="carColor" value="<%= claim.carColor %>" required>
+                <input type="text" id="carColor" name="carColor" value="<%= claim.carColor %>">
             </div>
             <div>
                 <label for="carVIN">Car VIN:</label>
-                <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>" required>
+                <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>">
+            </div>
+            <div>
+                <label for="accidentDate">Accident Date:</label>
+                <input type="date" id="accidentDate" name="accidentDate" value="<%= claim.accidentDate ? claim.accidentDate.toISOString().substr(0, 10) : '' %>">
+            </div>
+            <div>
+                <label for="billable">Billable:</label>
+                <select id="billable" name="billable">
+                    <option value="true" <%= claim.billable ? 'selected' : '' %>>Yes</option>
+                    <option value="false" <%= !claim.billable ? 'selected' : '' %>>No</option>
+                </select>
+            </div>
+            <div>
+                <label for="isRenterAtFault">Is Renter at Fault?</label>
+                <select id="isRenterAtFault" name="isRenterAtFault">
+                    <option value="true" <%= claim.isRenterAtFault ? 'selected' : '' %>>Yes</option>
+                    <option value="false" <%= !claim.isRenterAtFault ? 'selected' : '' %>>No</option>
+                </select>
+            </div>
+            <div>
+                <label for="damagesTotal">Damages Total:</label>
+                <input type="number" id="damagesTotal" name="damagesTotal" step="0.01" value="<%= claim.damagesTotal %>">
+            </div>
+            <div>
+                <label for="bodyShopName">Body Shop Name:</label>
+                <input type="text" id="bodyShopName" name="bodyShopName" value="<%= claim.bodyShopName %>">
+            </div>
+            <div>
+                <label for="raNumber">RA Number:</label>
+                <input type="text" id="raNumber" name="raNumber" value="<%= claim.raNumber %>">
+            </div>
+            <div>
+                <label for="insuranceCarrier">Insurance Carrier:</label>
+                <input type="text" id="insuranceCarrier" name="insuranceCarrier" value="<%= claim.insuranceCarrier %>">
+            </div>
+            <div>
+                <label for="insuranceAgent">Insurance Agent:</label>
+                <input type="text" id="insuranceAgent" name="insuranceAgent" value="<%= claim.insuranceAgent %>">
+            </div>
+            <div>
+                <label for="insurancePhoneNumber">Insurance Phone Number:</label>
+                <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber" value="<%= claim.insurancePhoneNumber %>">
+            </div>
+            <div>
+                <label for="insuranceFaxNumber">Insurance Fax Number:</label>
+                <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber" value="<%= claim.insuranceFaxNumber %>">
+            </div>
+            <div>
+                <label for="insuranceAddress">Insurance Address:</label>
+                <input type="text" id="insuranceAddress" name="insuranceAddress" value="<%= claim.insuranceAddress %>">
+            </div>
+            <div>
+                <label for="insuranceClaimNumber">Insurance Claim Number:</label>
+                <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber" value="<%= claim.insuranceClaimNumber %>">
+            </div>
+            <div>
+                <label for="thirdPartyName">Third Party Name:</label>
+                <input type="text" id="thirdPartyName" name="thirdPartyName" value="<%= claim.thirdPartyName %>">
+            </div>
+            <div>
+                <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
+                <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber" value="<%= claim.thirdPartyPhoneNumber %>">
+            </div>
+            <div>
+                <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
+                <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName" value="<%= claim.thirdPartyInsuranceName %>">
+            </div>
+            <div>
+                <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
+                <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber" value="<%= claim.thirdPartyPolicyNumber %>">
             </div>
             <div>
                 <label for="description">Description:</label>
-                <textarea id="description" name="description" required><%= claim.description %></textarea>
+                <textarea id="description" name="description"><%= claim.description %></textarea>
             </div>
             <div>
                 <label for="status">Status:</label>
-                <select id="status" name="status" required>
-                    <option value="Open" <%= claim.status === 'Open' ? 'selected' : '' %>>Open</option>
-                    <option value="In Progress" <%= claim.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
-                    <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
-                </select>
+                <input type="text" id="status" name="status" value="<%= claim.status %>">
             </div>
             <div>
                 <label for="files">Files:</label>
                 <input type="file" id="files" name="files" multiple>
             </div>
             <button type="submit">Update Claim</button>
-        </form>
-        <form action="/claims/<%= claim._id %>?_method=DELETE" method="post">
-            <button type="submit" class="delete-btn">Delete Claim</button>
         </form>
     </main>
 </body>
