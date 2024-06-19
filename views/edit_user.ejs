@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <style>
+        /* Inline styles for the buttons */
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px 0;
+            font-size: 16px;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-update {
+            background-color: #007bff; /* Green for update */
+        }
+
+        .btn-delete {
+            background-color: #dc3545; /* Red for delete */
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Budget Claims System</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims/add">Add Claim</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
+                <li><a href="/help">Help</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Edit User</h2>
+
+        <form action="/users/<%= user._id %>?_method=PUT" method="post">
+            <div>
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" value="<%= user.name %>" required>
+            </div>
+            <div>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="<%= user.email %>" required>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password">
+            </div>
+            <div>
+                <label for="role">Role:</label>
+                <select id="role" name="role" required>
+                    <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                    <option value="manager" <%= user.role === 'manager' ? 'selected' : '' %>>Manager</option>
+                    <option value="employee" <%= user.role === 'employee' ? 'selected' : '' %>>Employee</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-update">Update User</button>
+        </form>
+
+        <form action="/users/<%= user._id %>?_method=DELETE" method="post">
+            <button type="submit" class="btn btn-delete">Delete User</button>
+        </form>
+    </main>
+</body>
+</html>

@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - Budget Claims System</title>
     <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <style>
+        /* Inline styles for better edit button appearance */
+        .edit-btn {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .edit-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -60,12 +77,10 @@
             <ul>
                 <% users.forEach(user => { %>
                     <li>
-                        <p>Name: <%= user.name %></p>
-                        <p>Email: <%= user.email %></p>
-                        <p>Role: <%= user.role %></p>
-                        <form action="/users/delete/<%= user._id %>" method="post">
-                            <button type="submit">Delete</button>
-                        </form>
+                        <p><strong>Name:</strong> <%= user.name %></p>
+                        <p><strong>Email:</strong> <%= user.email %></p>
+                        <p><strong>Role:</strong> <%= user.role %></p>
+                        <a href="/users/<%= user._id %>/edit" class="edit-btn">Edit</a>
                     </li>
                 <% }) %>
             </ul>
