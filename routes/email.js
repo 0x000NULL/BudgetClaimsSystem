@@ -1,83 +1,100 @@
 const express = require('express');
+const router = express.Router();
+const nodemailer = require('nodemailer');
 const EmailTemplate = require('../models/EmailTemplate');
 const Claim = require('../models/Claim');
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
-const nodemailer = require('nodemailer');
-const router = express.Router();
 
-// Route to render the email form
-router.get('/form/:claimId', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    try {
-        const claim = await Claim.findById(req.params.claimId);
-        if (!claim) {
-            return res.status(404).render('404', { message: 'Claim not found' });
-        }
-        const emailTemplates = await EmailTemplate.find();
-        res.render('email_form', { claim, emailTemplates });
-    } catch (err) {
-        console.error('Error rendering email form:', err.message);
-        res.status(500).json({ error: err.message });
+// Function to replace template variables with actual claim data
+const replaceVariables = (template, claim) => {
+    let body = template.body;
+    const variables = {
+        MVA: claim.mva,
+        CustomerName: claim.customerName,
+        CustomerEmail: claim.customerEmail,
+        CustomerNumber: claim.customerNumber,
+        CustomerAddress: claim.customerAddress,
+        CustomerDriversLicense: claim.customerDriversLicense,
+        CarMake: claim.carMake,
+        CarModel: claim.carModel,
+        CarYear: claim.carYear,
+        CarColor: claim.carColor,
+        CarVIN: claim.carVIN,
+        AccidentDate: claim.accidentDate ? claim.accidentDate.toLocaleDateString() : '',
+        Billable: claim.billable ? 'Yes' : 'No',
+        IsRenterAtFault: claim.isRenterAtFault ? 'Yes' : 'No',
+        DamagesTotal: claim.damagesTotal,
+        BodyShopName: claim.bodyShopName,
+        RANumber: claim.raNumber,
+        InsuranceCarrier: claim.insuranceCarrier,
+        InsuranceAgent: claim.insuranceAgent,
+        InsurancePhoneNumber: claim.insurancePhoneNumber,
+        InsuranceFaxNumber: claim.insuranceFaxNumber,
+        InsuranceAddress: claim.insuranceAddress,
+        InsuranceClaimNumber: claim.insuranceClaimNumber,
+        ThirdPartyName: claim.thirdPartyName,
+        ThirdPartyPhoneNumber: claim.thirdPartyPhoneNumber,
+        ThirdPartyInsuranceName: claim.thirdPartyInsuranceName,
+        ThirdPartyPolicyNumber: claim.thirdPartyPolicyNumber,
+    };
+
+    // Replace variables in the template body
+    for (const [key, value] of Object.entries(variables)) {
+        body = body.replace(new RegExp(`{${key}}`, 'g'), value);
     }
+
+    return { subject: template.subject, body };
+};
+
+// Route to display the email form
+router.get('/form/:id', ensureAuthenticated, async (req, res) => {
+    const claim = await Claim.findById(req.params.id);
+    const templates = await EmailTemplate.find();
+    res.render('email_form', { claim, templates, template: { subject: '', body: '' } });
 });
 
-// Route to fetch a single email template by ID
-router.get('/templates/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    try {
-        const template = await EmailTemplate.findById(req.params.id);
-        if (!template) {
-            return res.status(404).json({ message: 'Template not found' });
-        }
-        res.json(template);
-    } catch (err) {
-        console.error('Error fetching email template:', err.message);
-        res.status(500).json({ error: err.message });
-    }
+// Route to get a specific email template and replace variables
+router.get('/templates/:templateId', ensureAuthenticated, async (req, res) => {
+    const template = await EmailTemplate.findById(req.params.templateId);
+    const claim = await Claim.findById(req.query.claimId);
+    const populatedTemplate = replaceVariables(template, claim);
+    res.json(populatedTemplate);
 });
 
 // Route to send an email
-router.post('/send', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    const { claimId, subject, body } = req.body;
-    console.log('Sending email with the following details:', { claimId, subject, body }); // Debugging log
-    try {
-        const claim = await Claim.findById(claimId);
-        if (!claim) {
-            return res.status(404).render('404', { message: 'Claim not found' });
+router.post('/send', ensureAuthenticated, async (req, res) => {
+    const { email, subject, body } = req.body;
+
+    // Create a transporter object using the Office365 SMTP transport
+    const transporter = nodemailer.createTransport({
+        host: 'smtp.office365.com', // SMTP server address for Office365
+        port: 587, // Port number for TLS/STARTTLS
+        secure: false, // Set to true if using port 465, false for other ports
+        auth: {
+            user: process.env.EMAIL_USER, // Email user from environment variables
+            pass: process.env.EMAIL_PASS  // Email password from environment variables
+        },
+        tls: {
+            ciphers: 'SSLv3' // Use SSLv3 for TLS
+        },
+        debug: true, // Enable debug output
+        logger: true // Enable logger
+    });
+
+    // Send mail with defined transport object
+    transporter.sendMail({
+        from: process.env.EMAIL_USER, // Sender address
+        to: email, // List of receivers
+        subject: subject, // Subject line
+        text: body, // Plain text body
+    }, (error, info) => {
+        if (error) {
+            console.error('Error sending email:', error);
+            return res.status(500).json({ error: 'Failed to send email' });
         }
-
-        // Create a transporter object using the Office365 SMTP transport
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.office365.com', // SMTP server address for Office365
-            port: 587, // Port number for TLS/STARTTLS
-            secure: false, // Set to true if using port 465, false for other ports
-            auth: {
-                user: process.env.EMAIL_USER, // Email user from environment variables
-                pass: process.env.EMAIL_PASS  // Email password from environment variables
-            },
-            tls: {
-                ciphers: 'SSLv3' // Use SSLv3 for TLS
-            }
-        });
-
-        // Send email
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: claim.customerEmail, // The customer's email
-            subject: subject,
-            text: body
-        };
-
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending email:', error);
-                return res.status(500).json({ error: error.message });
-            }
-            console.log('Email sent:', info.response); // Log the response from the email service
-            res.status(200).json({ message: 'Email sent successfully' });
-        });
-    } catch (err) {
-        console.error('Error sending email:', err.message);
-        res.status(500).json({ error: err.message });
-    }
+        console.log('Message sent:', info.messageId);
+        res.json({ success: 'Email sent successfully' });
+    });
 });
 
 module.exports = router;

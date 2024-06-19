@@ -82,7 +82,74 @@
                 <li><strong>View Logs:</strong> Admins can view activity logs to monitor user actions such as logins, claim submissions, edits, and deletions.</li>
             </ul>
         </section>
-        
+        <section>
+            <h3>Email Templates</h3>
+            <p>When creating email templates, you can use the following variables to automatically fill in information from the claims:</p>
+            <ul>
+                <li>{MVA}: The Motor Vehicle Accident number.</li>
+                <li>{CustomerName}: The name of the customer.</li>
+                <li>{CustomerEmail}: The email of the customer.</li>
+                <li>{CustomerNumber}: The phone number of the customer.</li>
+                <li>{CustomerAddress}: The address of the customer.</li>
+                <li>{CustomerDriversLicense}: The driver's license number of the customer.</li>
+                <li>{CarMake}: The make of the car.</li>
+                <li>{CarModel}: The model of the car.</li>
+                <li>{CarYear}: The year of the car.</li>
+                <li>{CarColor}: The color of the car.</li>
+                <li>{CarVIN}: The Vehicle Identification Number of the car.</li>
+                <li>{AccidentDate}: The date of the accident.</li>
+                <li>{Billable}: Whether the claim is billable.</li>
+                <li>{IsRenterAtFault}: Whether the renter is at fault.</li>
+                <li>{DamagesTotal}: The total amount of damages.</li>
+                <li>{BodyShopName}: The name of the body shop.</li>
+                <li>{RANumber}: The RA number.</li>
+                <li>{InsuranceCarrier}: The insurance carrier.</li>
+                <li>{InsuranceAgent}: The insurance agent.</li>
+                <li>{InsurancePhoneNumber}: The phone number of the insurance agent.</li>
+                <li>{InsuranceFaxNumber}: The fax number of the insurance agent.</li>
+                <li>{InsuranceAddress}: The address of the insurance agent.</li>
+                <li>{InsuranceClaimNumber}: The insurance claim number.</li>
+                <li>{ThirdPartyName}: The name of the third party.</li>
+                <li>{ThirdPartyPhoneNumber}: The phone number of the third party.</li>
+                <li>{ThirdPartyInsuranceName}: The name of the third party's insurance.</li>
+                <li>{ThirdPartyPolicyNumber}: The policy number of the third party's insurance.</li>
+            </ul>
+            <h4>Example Template</h4>
+            <p><strong>Subject:</strong> Claim Update for {CustomerName}</p>
+            <p><strong>Body:</strong></p>
+            <pre>
+Dear {CustomerName},
+
+We wanted to provide you with an update on your claim regarding the accident on {AccidentDate}.
+
+Details of your claim:
+- MVA Number: {MVA}
+- Customer Email: {CustomerEmail}
+- Phone Number: {CustomerNumber}
+- Address: {CustomerAddress}
+- Car: {CarYear} {CarMake} {CarModel} ({CarColor})
+- VIN: {CarVIN}
+
+Insurance Information:
+- Carrier: {InsuranceCarrier}
+- Agent: {InsuranceAgent}
+- Phone: {InsurancePhoneNumber}
+- Fax: {InsuranceFaxNumber}
+- Address: {InsuranceAddress}
+- Claim Number: {InsuranceClaimNumber}
+
+Third Party Information:
+- Name: {ThirdPartyName}
+- Phone: {ThirdPartyPhoneNumber}
+- Insurance: {ThirdPartyInsuranceName}
+- Policy Number: {ThirdPartyPolicyNumber}
+
+Please let us know if you have any questions or need further assistance.
+
+Best regards,
+The Budget Claims System Team
+            </pre>
+        </section>
         <section>
             <h3>Additional Support</h3>
             <p>If you need further assistance or encounter any issues, please contact our support team at:</p>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Templates - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+</head>
+<body>
+    <header>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Budget Claims System</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims/add">Add Claim</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
+                <li><a href="/email-templates">Email Templates</a></li>
+                <li><a href="/help">Help</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Email Templates</h2>
+
+        <!-- Section for adding a new email template -->
+        <section>
+            <h3>Add New Template</h3>
+            <form action="/email-templates/add" method="post">
+                <div>
+                    <label for="name">Template Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div>
+                    <label for="subject">Subject:</label>
+                    <input type="text" id="subject" name="subject" required>
+                </div>
+                <div>
+                    <label for="body">Body:</label>
+                    <textarea id="body" name="body" required></textarea>
+                </div>
+                <button type="submit">Add Template</button>
+            </form>
+        </section>
+
+        <!-- Section for listing existing email templates -->
+        <section>
+            <h3>Existing Templates</h3>
+            <ul>
+                <% emailTemplates.forEach(template => { %>
+                    <li>
+                        <p><strong>Name:</strong> <%= template.name %></p>
+                        <p><strong>Subject:</strong> <%= template.subject %></p>
+                        <p><strong>Body:</strong> <%= template.body %></p>
+                        <a href="/email-templates/<%= template._id %>/edit" class="edit-btn">Edit</a>
+                        <form action="/email-templates/<%= template._id %>/delete" method="post">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </li>
+                <% }) %>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

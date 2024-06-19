@@ -1,10 +1,12 @@
-const mongoose = require('mongoose');
+// models/EmailTemplate.js
 
-const EmailTemplateSchema = new mongoose.Schema({
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const EmailTemplateSchema = new Schema({
     name: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     subject: {
         type: String,
@@ -14,14 +16,9 @@ const EmailTemplateSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
-    }
+    variables: [{
+        type: String
+    }]
 });
 
 module.exports = mongoose.model('EmailTemplate', EmailTemplateSchema);

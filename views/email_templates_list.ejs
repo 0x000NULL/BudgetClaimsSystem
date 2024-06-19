@@ -1,3 +1,4 @@
+<!-- views/email_templates.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,13 +26,36 @@
     </header>
     <main>
         <h2>Email Templates</h2>
-        <a href="/email-templates/add" class="edit-btn">Add New Template</a>
+        <form action="/email-templates" method="post">
+            <div>
+                <label for="name">Template Name:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div>
+                <label for="subject">Subject:</label>
+                <input type="text" id="subject" name="subject" required>
+            </div>
+            <div>
+                <label for="body">Body:</label>
+                <textarea id="body" name="body" required></textarea>
+            </div>
+            <div>
+                <label for="variables">Variables (comma separated):</label>
+                <input type="text" id="variables" name="variables">
+            </div>
+            <button type="submit">Save Template</button>
+        </form>
+        <h3>Existing Templates</h3>
         <ul>
             <% emailTemplates.forEach(template => { %>
                 <li>
                     <p><strong>Name:</strong> <%= template.name %></p>
                     <p><strong>Subject:</strong> <%= template.subject %></p>
-                    <a href="/email-templates/<%= template._id %>/edit" class="edit-btn">Edit</a>
+                    <p><strong>Body:</strong> <%= template.body %></p>
+                    <p><strong>Variables:</strong> <%= template.variables.join(', ') %></p>
+                    <form action="/email-templates/<%= template._id %>/delete" method="post">
+                        <button type="submit">Delete</button>
+                    </form>
                 </li>
             <% }) %>
         </ul>
