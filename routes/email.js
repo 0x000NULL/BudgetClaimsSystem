@@ -55,9 +55,7 @@ router.post('/send', ensureAuthenticated, ensureRoles(['admin', 'manager']), asy
             },
             tls: {
                 ciphers: 'SSLv3' // Use SSLv3 for TLS
-            },
-            debug: true, // Enable debug output
-            logger: true // Enable logger
+            }
         });
 
         // Send email
