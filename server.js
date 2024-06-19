@@ -9,19 +9,21 @@ const path = require('path'); // Import Path to handle file and directory paths
 const cors = require('cors'); // Import CORS middleware
 const fileUpload = require('express-fileupload'); // Import Express FileUpload middleware
 const helmet = require('helmet'); // Import Helmet for security headers
-const methodOverride = require('method-override'); // Import method-override
+const methodOverride = require('method-override'); // Import method-override for supporting PUT and DELETE methods in forms
+const auditLogsRouter = require('./routes/auditLogs'); // Import the audit logs router
 
 require('dotenv').config(); // Import and configure dotenv for environment variables
 
 // Import the reminder scheduler to schedule notifications
 require('./notifications/reminderScheduler');
 
+// Initialize the Express application
 const app = express(); 
 
 // Set EJS as the view engine
 app.set('view engine', 'ejs');
 
-// Log environment variables to ensure they are loaded
+// Log environment variables to ensure they are loaded correctly
 console.log('MONGO_URI:', process.env.MONGO_URI);
 console.log('SESSION_SECRET:', process.env.SESSION_SECRET);
 
@@ -37,30 +39,29 @@ mongoose.connect(process.env.MONGO_URI, {
 app.use(logger('dev')); // Use Morgan for logging HTTP requests
 app.use(express.json()); // Parse incoming JSON requests
 app.use(express.urlencoded({ extended: false })); // Parse URL-encoded data
-app.use(cors()); // Enable CORS
+app.use(cors()); // Enable CORS for all routes
 app.use(fileUpload()); // Enable file uploads
-app.use(methodOverride('_method')); // Use method-override middleware
+app.use(methodOverride('_method')); // Use method-override middleware to support PUT and DELETE methods
 
-app.use( // Set various HTTP headers for security
+// Set various HTTP headers for security using Helmet
+app.use(
     helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: [
-            "'self'",
-            "'unsafe-inline'",
-            'data:',
-            'localhost'
-          ],
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: [
+                    "'self'",
+                    "'unsafe-inline'",
+                    'data:',
+                    'localhost'
+                ],
+            },
         },
-      },
     })
-  )
+);
 
-  // Body parser middleware
+// Body parser middleware (redundant here since already added earlier)
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
-
-
 
 // Configure Express session with MongoDB session store
 app.use(session({
@@ -97,7 +98,7 @@ app.use((err, req, res, next) => {
     res.status(500).render('500', { message: 'Internal Server Error' });
 });
 
-// Routes
+// Routes setup
 app.use('/', require('./routes/index')); // Root route
 app.use('/users', require('./routes/users')); // User routes
 app.use('/claims', require('./routes/claims')); // Claim routes
@@ -108,6 +109,7 @@ app.use('/customer', require('./routes/customers')); // Customer routes
 app.use('/employee', require('./routes/employees')); // Employee routes
 app.use('/email', require('./routes/email')); // Email routes
 app.use('/reports', require('./routes/reports')); // Reports routes
+app.use('/audit-logs', auditLogsRouter); // Audit logs routes
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));

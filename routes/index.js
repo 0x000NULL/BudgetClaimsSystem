@@ -1,6 +1,7 @@
 const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
 const User = require('../models/User'); // Import the User model to interact with the users collection in MongoDB
+const AuditLog = require('../models/AuditLog'); // Import the AuditLog model
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const router = express.Router(); // Create a new router
 
@@ -97,6 +98,19 @@ router.get('/logout', (req, res) => {
     console.log('Logout route accessed'); // Log route access
     req.logout();
     res.redirect('/');
+});
+
+// Audit Logs Route
+router.get('/audit-logs', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    console.log('Audit Logs route accessed');
+    try {
+        const auditLogs = await AuditLog.find().populate('user', 'name email').sort({ timestamp: -1 }).exec();
+        console.log('Audit logs fetched:', auditLogs);
+        res.render('audit_logs', { title: 'Audit Logs', auditLogs });
+    } catch (err) {
+        console.error('Error fetching audit logs:', err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 module.exports = router; // Export the router

@@ -1,4 +1,4 @@
-# TODO.md
+### TODO.md
 
 ## Features to Add
 
@@ -54,6 +54,36 @@
 
 ### User Activity Dashboard
 - Provide a dashboard for admins to monitor user activity, login attempts, and other relevant user actions to enhance security and oversight.
+
+### Enhanced Security Measures
+- Implement security measures such as IP whitelisting, account lockout mechanisms, and security question prompts to further protect user accounts.
+
+### Advanced Search Capabilities
+- Integrate a full-text search engine like Elasticsearch to enhance search performance and capabilities across large datasets.
+
+### Claim Templates
+- Allow users to create and save claim templates for frequently filed claims to streamline the claim submission process.
+
+### Integration with External Systems
+- Provide integration options with popular CRM, ERP, and accounting systems to enable seamless data flow between the Budget Claims System and other business tools.
+
+### Custom User Preferences
+- Allow users to customize their profile settings, notification preferences, and interface themes for a more personalized user experience.
+
+### SLA Tracking
+- Implement Service Level Agreement (SLA) tracking to ensure claims are handled within the agreed time frames and to trigger alerts/escalations for breaches.
+
+### Training and Documentation
+- Develop comprehensive user manuals, training videos, and a knowledge base to assist users in navigating and utilizing the system effectively.
+
+### Bulk Actions
+- Provide functionality for users to perform bulk actions on claims and users, such as bulk updating status, bulk deleting, and bulk exporting.
+
+### Incident Management
+- Integrate incident management features to allow tracking of incidents related to claims, improving oversight and resolution of issues.
+
+### GDPR Compliance Features
+- Implement features to support General Data Protection Regulation (GDPR) compliance, including data access requests, data anonymization, and user consent management.
 
 ---
 
