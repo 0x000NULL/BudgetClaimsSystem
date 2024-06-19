@@ -145,25 +145,6 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         }); // Handle errors
 });
 
-// Route to get a specific claim by ID for viewing, accessible by admin, manager, and employee
-router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claim details'), async (req, res) => {
-    const claimId = req.params.id;
-    console.log(`Fetching claim with ID: ${claimId}`);
-
-    try {
-        const claim = await Claim.findById(claimId).exec();
-        if (!claim) {
-            console.error(`Claim with ID ${claimId} not found`);
-            return res.status(404).render('404', { message: 'Claim not found' });
-        }
-        console.log(`Claim fetched: ${claim}`);
-        res.render('claim_view', { title: 'View Claim', claim });
-    } catch (err) {
-        console.error(`Error fetching claim: ${err}`);
-        res.status(500).render('500', { message: 'Internal Server Error' });
-    }
-});
-
 // Route to get a specific claim by ID for editing, accessible by admin and manager
 router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Viewed claim edit form'), async (req, res) => {
     const claimId = req.params.id;
@@ -319,10 +300,10 @@ router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager'
         }); // Handle errors
 });
 
-// Route to export a single claim to PDF
+// Route to export a claim as PDF
 router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
     const claimId = req.params.id;
-    console.log(`Exporting claim to PDF with ID: ${claimId}`);
+    console.log('Exporting claim to PDF with ID:', claimId);
 
     try {
         const claim = await Claim.findById(claimId).exec();
@@ -332,25 +313,61 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
         }
 
         const doc = new pdfkit();
+        const filename = `claim_${claimId}.pdf`;
+
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=claim_${claimId}.pdf`);
+
         doc.pipe(res);
+
         doc.text('Claim Report', { align: 'center' });
         doc.text(`MVA: ${claim.mva}`);
         doc.text(`Customer Name: ${claim.customerName}`);
         doc.text(`Description: ${claim.description}`);
         doc.text(`Status: ${claim.status}`);
         doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
-        claim.files.forEach(file => {
+        doc.moveDown();
+
+        doc.text('Files:');
+        for (const file of claim.files) {
+            doc.text(file);
+
             const filePath = path.join(__dirname, '../uploads', file);
-            doc.addPage().text(`File: ${file}`).image(filePath, {
-                fit: [500, 400],
-                align: 'center'
-            });
-        });
+            try {
+                if (file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg')) {
+                    doc.image(filePath, { fit: [250, 300], align: 'center' });
+                } else {
+                    doc.text('Unsupported file format for image preview.');
+                }
+            } catch (error) {
+                console.error('Error adding image to PDF:', error);
+                doc.text('Error loading image.');
+            }
+            doc.moveDown();
+        }
+
         doc.end();
     } catch (err) {
-        console.error(`Error exporting claim to PDF: ${err}`);
+        console.error('Error exporting claim to PDF:', err);
+        res.status(500).render('500', { message: 'Internal Server Error' });
+    }
+});
+
+// Route to view a specific claim by ID, with options to edit or delete, accessible by admin, manager, and employee
+router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claim details'), async (req, res) => {
+    const claimId = req.params.id;
+    console.log('Fetching claim details with ID:', claimId);
+
+    try {
+        const claim = await Claim.findById(claimId).exec();
+        if (!claim) {
+            console.error(`Claim with ID ${claimId} not found`);
+            return res.status(404).render('404', { message: 'Claim not found' });
+        }
+        console.log(`Claim details fetched: ${claim}`);
+        res.render('claim_view', { title: 'View Claim', claim });
+    } catch (err) {
+        console.error(`Error fetching claim details: ${err}`);
         res.status(500).render('500', { message: 'Internal Server Error' });
     }
 });
