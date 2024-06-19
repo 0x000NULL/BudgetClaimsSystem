@@ -84,6 +84,12 @@ app.use((req, res, next) => {
     next(); // Continue to the next middleware
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).render('500', { message: 'Internal Server Error' });
+});
+
 // Routes
 app.use('/', require('./routes/index')); // Root route
 app.use('/users', require('./routes/users')); // User routes
