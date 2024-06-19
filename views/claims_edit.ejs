@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Claim</title>
+    <title>Edit Claim - Budget Claims System</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <header>
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Edit Claim</h1>
+        <h1>Budget Claims System</h1>
         <nav>
             <ul>
                 <li><a href="/dashboard">Dashboard</a></li>
@@ -17,33 +17,78 @@
                 <li><a href="/claims/add">Add Claim</a></li>
                 <li><a href="/reports">Reports</a></li>
                 <li><a href="/user-management">User Management</a></li>
+                <li><a href="/help">Help</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
         <h2>Edit Claim</h2>
-        <form action="/claims/<%= claim._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
-            <label for="mva">MVA</label>
-            <input type="text" id="mva" name="mva" value="<%= claim.mva %>">
-            
-            <label for="customerName">Customer Name</label>
-            <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>">
-            
-            <label for="description">Description</label>
-            <textarea id="description" name="description"><%= claim.description %></textarea>
-            
-            <label for="status">Status</label>
-            <select id="status" name="status">
-                <option value="Open" <%= claim.status === 'Open' ? 'selected' : '' %>>Open</option>
-                <option value="In Progress" <%= claim.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
-                <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
-            </select>
-            
-            <label for="files">Files</label>
-            <input type="file" id="files" name="files" multiple>
-            
+        <form action="/claims/<%= claim._id %>?_method=PUT" method="post" enctype="multipart/form-data">
+            <div>
+                <label for="mva">MVA:</label>
+                <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required>
+            </div>
+            <div>
+                <label for="customerName">Customer Name:</label>
+                <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
+            </div>
+            <div>
+                <label for="customerNumber">Customer Number:</label>
+                <input type="text" id="customerNumber" name="customerNumber" value="<%= claim.customerNumber %>" required>
+            </div>
+            <div>
+                <label for="customerEmail">Customer Email:</label>
+                <input type="email" id="customerEmail" name="customerEmail" value="<%= claim.customerEmail %>" required>
+            </div>
+            <div>
+                <label for="customerAddress">Customer Address:</label>
+                <input type="text" id="customerAddress" name="customerAddress" value="<%= claim.customerAddress %>" required>
+            </div>
+            <div>
+                <label for="customerDriversLicense">Customer Drivers License:</label>
+                <input type="text" id="customerDriversLicense" name="customerDriversLicense" value="<%= claim.customerDriversLicense %>" required>
+            </div>
+            <div>
+                <label for="carMake">Car Make:</label>
+                <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>" required>
+            </div>
+            <div>
+                <label for="carModel">Car Model:</label>
+                <input type="text" id="carModel" name="carModel" value="<%= claim.carModel %>" required>
+            </div>
+            <div>
+                <label for="carYear">Car Year:</label>
+                <input type="number" id="carYear" name="carYear" value="<%= claim.carYear %>" required>
+            </div>
+            <div>
+                <label for="carColor">Car Color:</label>
+                <input type="text" id="carColor" name="carColor" value="<%= claim.carColor %>" required>
+            </div>
+            <div>
+                <label for="carVIN">Car VIN:</label>
+                <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>" required>
+            </div>
+            <div>
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required><%= claim.description %></textarea>
+            </div>
+            <div>
+                <label for="status">Status:</label>
+                <select id="status" name="status" required>
+                    <option value="Open" <%= claim.status === 'Open' ? 'selected' : '' %>>Open</option>
+                    <option value="In Progress" <%= claim.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
+                    <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
+                </select>
+            </div>
+            <div>
+                <label for="files">Files:</label>
+                <input type="file" id="files" name="files" multiple>
+            </div>
             <button type="submit">Update Claim</button>
+        </form>
+        <form action="/claims/<%= claim._id %>?_method=DELETE" method="post">
+            <button type="submit" class="delete-btn">Delete Claim</button>
         </form>
     </main>
 </body>
