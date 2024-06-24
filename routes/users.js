@@ -58,9 +58,9 @@ router.post('/register', (req, res) => {
 
     // Basic validation
     let errors = [];
-    if (!name || !email || !password || !role) {
-        errors.push({ msg: 'Please enter all fields' });
-    }
+    //if (!name || !email || !password || !role) {
+    //    errors.push({ msg: 'Please enter all fields' });
+    //}
 
     if (errors.length > 0) {
         console.log('Validation errors:', errors);
@@ -74,22 +74,13 @@ router.post('/register', (req, res) => {
             } else {
                 const newUser = new User({ name, email, password, role });
 
-                // Hash the password before saving
-                bcrypt.genSalt(10, (err, salt) => {
-                    if (err) throw err;
-                    bcrypt.hash(newUser.password, salt, (err, hash) => {
-                        if (err) throw err;
-                        newUser.password = hash;
-
-                        newUser.save()
-                            .then(user => {
-                                console.log('New user registered:', user);
-                                req.flash('success_msg', 'You are now registered and can log in');
-                                res.redirect('/login'); // Redirect to the login page
-                            })
-                            .catch(err => console.error(err));
-                    });
-                });
+                newUser.save()
+                .then(user => {
+                    console.log('New user registered:', user);
+                    req.flash('success_msg', 'You are now registered and can log in');
+                    res.redirect('/login'); // Redirect to the login page
+                })
+                .catch(err => console.error(err));
             }
         });
     }
@@ -166,13 +157,6 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res)
         }
 
         const { name, email, role, password } = req.body;
-
-        if (password) {
-            // Hash the new password before saving
-            const salt = await bcrypt.genSalt(10);
-            const hash = await bcrypt.hash(password, salt);
-            user.password = hash;
-        }
 
         user.name = name || user.name;
         user.email = email || user.email;
