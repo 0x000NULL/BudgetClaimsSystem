@@ -1,9 +1,49 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
 const User = require('../models/User');
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
 const router = express.Router();
+
+// Passport Local Strategy
+passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, done) => {
+    console.log('Authenticating user:', email);
+    User.findOne({ email: email.toLowerCase() }, (err, user) => {
+        if (err) {
+            console.error('Error fetching user:', err);
+            return done(err);
+        }
+        if (!user) {
+            console.log('No user found with email:', email);
+            return done(null, false, { message: 'That email is not registered' });
+        }
+
+        console.log('Stored password hash:', user.password);
+        console.log('Entered password:', password);
+
+        bcrypt.compare(password, user.password, (err, isMatch) => {
+            if (err) {
+                console.error('Error comparing passwords:', err);
+                return done(err);
+            }
+            console.log('Password match status:', isMatch);
+            if (isMatch) {
+                return done(null, user);
+            } else {
+                return done(null, false, { message: 'Password incorrect' });
+            }
+        });
+    });
+}));
+
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser((id, done) => {
+    User.findById(id, (err, user) => done(err, user));
+});
 
 // Route to display the registration form
 router.get('/register', (req, res) => {

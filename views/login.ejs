@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <header>
-        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Login</h1>
+        <h1>Budget Claims System</h1>
     </header>
     <main>
-        <% if (error_msg) { %>
-            <div class="error"><%= error_msg %></div>
-        <% } %>
-        <form action="/login" method="POST">
+        <h2>Login</h2>
+        <form action="/users/login" method="POST">
+            <% if (error && error.length > 0) { %>
+                <div class="error-message"><%= error[0] %></div>
+            <% } %>
             <div>
                 <label for="email">Email:</label>
                 <input type="email" id="email" name="email" required>
@@ -27,6 +27,7 @@
             </div>
             <button type="submit">Login</button>
         </form>
+        <p>Don't have an account? <a href="/users/register">Register here</a></p>
     </main>
 </body>
 </html>
