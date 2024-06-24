@@ -1,96 +1,83 @@
-const express = require('express'); // Import Express to create an application
-const mongoose = require('mongoose'); // Import Mongoose for MongoDB interaction
-const passport = require('passport'); // Import Passport for authentication
-const session = require('express-session'); // Import Express session middleware
-const MongoStore = require('connect-mongo'); // Import Connect Mongo for session storage in MongoDB
-const flash = require('connect-flash'); // Import Connect Flash for flash messages
-const logger = require('morgan'); // Import Morgan for HTTP request logging
-const path = require('path'); // Import Path to handle file and directory paths
-const cors = require('cors'); // Import CORS middleware
-const fileUpload = require('express-fileupload'); // Import Express FileUpload middleware
-const helmet = require('helmet'); // Import Helmet for security headers
-const methodOverride = require('method-override'); // Import method-override for supporting PUT and DELETE methods in forms
-const auditLogsRouter = require('./routes/auditLogs'); // Import the audit logs router
+const express = require('express');
+const mongoose = require('mongoose');
+const passport = require('passport');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const flash = require('connect-flash');
+const logger = require('morgan');
+const path = require('path');
+const cors = require('cors');
+const fileUpload = require('express-fileupload');
+const helmet = require('helmet');
+const methodOverride = require('method-override');
 
-
-require('dotenv').config(); // Import and configure dotenv for environment variables
-
-// Import the reminder scheduler to schedule notifications
+require('dotenv').config();
 require('./notifications/reminderScheduler');
 
-// Initialize the Express application
-const app = express(); 
+const app = express();
 
 // Set EJS as the view engine
 app.set('view engine', 'ejs');
 
-// Log environment variables to ensure they are loaded correctly
+// Log environment variables to ensure they are loaded
 console.log('MONGO_URI:', process.env.MONGO_URI);
 console.log('SESSION_SECRET:', process.env.SESSION_SECRET);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true, // Use the new URL parser
-    useUnifiedTopology: true // Use the new Server Discover and Monitoring engine
+    useNewUrlParser: true,
+    useUnifiedTopology: true
 })
-    .then(() => console.log('MongoDB connected')) // Log success message
-    .catch(err => console.error('MongoDB connection error:', err)); // Log any connection errors
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
 // Middleware setup
-app.use(logger('dev')); // Use Morgan for logging HTTP requests
-app.use(express.json()); // Parse incoming JSON requests
-app.use(express.urlencoded({ extended: false })); // Parse URL-encoded data
-app.use(cors()); // Enable CORS for all routes
-app.use(fileUpload()); // Enable file uploads
-app.use(methodOverride('_method')); // Use method-override middleware to support PUT and DELETE methods
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cors());
+app.use(fileUpload());
+app.use(methodOverride('_method'));
 
-// Set various HTTP headers for security using Helmet
-app.use(
-    helmet({
-        contentSecurityPolicy: {
-            directives: {
-                defaultSrc: [
-                    "'self'",
-                    "'unsafe-inline'",
-                    'data:',
-                    'localhost'
-                ],
-            },
-        },
-    })
-);
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'", "'unsafe-inline'", 'data:', 'localhost']
+        }
+    }
+}));
 
-// Body parser middleware (redundant here since already added earlier)
+// Body parser middleware
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 // Configure Express session with MongoDB session store
 app.use(session({
-    secret: process.env.SESSION_SECRET, // Session secret key
-    resave: false, // Do not save session if unmodified
-    saveUninitialized: false, // Do not create session until something is stored
-    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }) // Use MongoStore for session storage
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI })
 }));
 
 // Initialize Passport middleware for authentication
 app.use(passport.initialize());
 app.use(passport.session());
-require('./config/passport')(passport); // Import Passport configuration
+require('./config/passport')(passport);
 
 // Initialize Connect Flash middleware for flash messages
 app.use(flash());
 
 // Set global variables for flash messages
 app.use((req, res, next) => {
-    res.locals.success_msg = req.flash('success_msg'); // Success message
-    res.locals.error_msg = req.flash('error_msg'); // Error message
-    res.locals.error = req.flash('error'); // Error object
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
     console.log('Flash messages set:', {
         success_msg: res.locals.success_msg,
         error_msg: res.locals.error_msg,
         error: res.locals.error
     });
-    next(); // Continue to the next middleware
+    next();
 });
 
 // Error handling middleware
@@ -99,7 +86,7 @@ app.use((err, req, res, next) => {
     res.status(500).render('500', { message: 'Internal Server Error' });
 });
 
-// Routes setup
+// Routes
 app.use('/', require('./routes/index')); // Root route
 app.use('/users', require('./routes/users')); // User routes
 app.use('/claims', require('./routes/claims')); // Claim routes
@@ -110,8 +97,7 @@ app.use('/customer', require('./routes/customers')); // Customer routes
 app.use('/employee', require('./routes/employees')); // Employee routes
 app.use('/email', require('./routes/email')); // Email routes
 app.use('/reports', require('./routes/reports')); // Reports routes
-app.use('/audit-logs', auditLogsRouter); // Audit logs routes
-app.use('/email-templates', require('./routes/emailTemplates')); // Email templates route
+app.use('/audit-logs', require('./routes/auditLogs')); // Audit logs route
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));

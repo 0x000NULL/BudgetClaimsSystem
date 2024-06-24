@@ -10,13 +10,6 @@
     </header>
     <main>
         <h1>Register</h1>
-        <% if (errors && errors.length > 0) { %>
-            <ul>
-                <% errors.forEach(error => { %>
-                    <li><%= error.msg %></li>
-                <% }) %>
-            </ul>
-        <% } %>
         <form action="/users/register" method="POST">
             <div>
                 <label for="name">Name:</label>
@@ -29,6 +22,10 @@
             <div>
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password">
+            </div>
+            <div>
+                <label for="password2">Confirm Password:</label>
+                <input type="password" id="password" name="password2">
             </div>
             <button type="submit">Register</button>
         </form>
