@@ -87,25 +87,23 @@ app.use((err, req, res, next) => {
 });
 
 // Routes
-app.use('/', require('./routes/index')); // Root route
-app.use('/users', require('./routes/users')); // User routes
-app.use('/claims', require('./routes/claims')); // Claim routes
-app.use('/dashboard', require('./routes/dashboard')); // Dashboard routes
-app.use('/api', require('./routes/api')); // API routes
-app.use('/feedback', require('./routes/feedback')); // Feedback routes
-app.use('/customer', require('./routes/customers')); // Customer routes
-app.use('/employee', require('./routes/employees')); // Employee routes
-app.use('/email', require('./routes/email')); // Email routes
-app.use('/reports', require('./routes/reports')); // Reports routes
-app.use('/audit-logs', require('./routes/auditLogs')); // Audit logs route
+app.use('/', require('./routes/index'));
+app.use('/users', require('./routes/users'));
+app.use('/claims', require('./routes/claims'));
+app.use('/dashboard', require('./routes/dashboard'));
+app.use('/api', require('./routes/api'));
+app.use('/feedback', require('./routes/feedback'));
+app.use('/customer', require('./routes/customers'));
+app.use('/employee', require('./routes/employees'));
+app.use('/email', require('./routes/email'));
+app.use('/reports', require('./routes/reports'));
+app.use('/audit-logs', require('./routes/auditLogs'));
+app.use('/email-templates', require('./routes/emailTemplates'));
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Define the port for the server to listen on
 const PORT = process.env.PORT || 5000;
-
-// Start the server and listen on the defined port
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
