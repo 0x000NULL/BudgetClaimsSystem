@@ -18,52 +18,59 @@
                 <li><a href="/claims/add">Add Claim</a></li>
                 <li><a href="/reports">Reports</a></li>
                 <li><a href="/user-management">User Management</a></li>
-                <li><a href="/email-templates">Email Templates</a></li>
+                <li><a href="/help">Help</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <h2>Search Claims</h2>
-        <form action="/claims/search" method="get">
-            <label for="mva">MVA:</label>
-            <input type="text" id="mva" name="mva">
-
-            <label for="customerName">Customer Name:</label>
-            <input type="text" id="customerName" name="customerName">
-
-            <label for="status">Status:</label>
-            <select id="status" name="status">
-                <option value="">Select Status</option>
-                <option value="Open">Open</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Closed">Closed</option>
-            </select>
-
-            <label for="startDate">Start Date:</label>
-            <input type="date" id="startDate" name="startDate">
-
-            <label for="endDate">End Date:</label>
-            <input type="date" id="endDate" name="endDate">
-
-            <button type="submit">Search</button>
-        </form>
-
-        <h2>Results</h2>
-        <% if (claims.length > 0) { %>
-            <ul>
-                <% claims.forEach(claim => { %>
-                    <li>
-                        <p>MVA: <%= claim.mva %></p>
-                        <p>Customer Name: <%= claim.customerName %></p>
-                        <p>Status: <%= claim.status %></p>
-                        <a href="/claims/<%= claim._id %>">View Claim</a>
-                    </li>
-                <% }) %>
-            </ul>
-        <% } else { %>
-            <p>No claims found</p>
-        <% } %>
+        <div class="container">
+            <h2>Search Claims</h2>
+            <form action="/claims/search" method="get">
+                <div>
+                    <label for="mva">MVA:</label>
+                    <input type="text" id="mva" name="mva">
+                </div>
+                <div>
+                    <label for="customerName">Renter Name:</label>
+                    <input type="text" id="customerName" name="customerName">
+                </div>
+                <div>
+                    <label for="raNumber">RA Number:</label>
+                    <input type="text" id="raNumber" name="raNumber">
+                </div>
+                <div>
+                    <label for="dateOfLoss">Date of Loss:</label>
+                    <input type="date" id="dateOfLoss" name="dateOfLoss">
+                </div>
+                <div>
+                    <label for="startDate">Start Date:</label>
+                    <input type="date" id="startDate" name="startDate">
+                </div>
+                <div>
+                    <label for="endDate">End Date:</label>
+                    <input type="date" id="endDate" name="endDate">
+                </div>
+                <button type="submit">Search</button>
+            </form>
+            <% if (claims && claims.length > 0) { %>
+                <h3>Search Results</h3>
+                <ul>
+                    <% claims.forEach(claim => { %>
+                        <li>
+                            <p><strong>MVA:</strong> <%= claim.mva %></p>
+                            <p><strong>Renter Name:</strong> <%= claim.customerName %></p>
+                            <p><strong>RA Number:</strong> <%= claim.raNumber %></p>
+                            <p><strong>Date of Loss:</strong> <%= claim.dateOfLoss ? new Date(claim.dateOfLoss).toLocaleDateString() : '' %></p>
+                            <p><strong>Status:</strong> <%= claim.status %></p>
+                            <a href="/claims/<%= claim._id %>">View Claim</a>
+                        </li>
+                    <% }) %>
+                </ul>
+            <% } else { %>
+                <p>No claims found matching the search criteria.</p>
+            <% } %>
+        </div>
     </main>
 </body>
 </html>
