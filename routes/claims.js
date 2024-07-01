@@ -203,17 +203,21 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             if (!Array.isArray(files)) newFilesArray.push(files);
             else newFilesArray = files;
 
-            newFilesArray.forEach(file => {
+            for (const file of newFilesArray) {
                 const filePath = path.join(__dirname, '../public/uploads', file.name);
-                file.mv(filePath, err => {
-                    if (err) {
-                        console.error('Error uploading file:', err);
-                        return res.status(500).json({ error: err.message });
-                    }
-                    console.log('File uploaded successfully:', file.name);
-                    existingFiles.push(file.name); // Add new file to existing files array
+                await new Promise((resolve, reject) => {
+                    file.mv(filePath, err => {
+                        if (err) {
+                            console.error('Error uploading file:', err);
+                            reject(err);
+                        } else {
+                            console.log('File uploaded successfully:', file.name);
+                            existingFiles.push(file.name); // Add new file to existing files array
+                            resolve();
+                        }
+                    });
                 });
-            });
+            }
         }
 
         claim.files = existingFiles;
