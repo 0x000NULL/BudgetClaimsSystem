@@ -104,7 +104,7 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
     let filesArray = [];
 
     // Check if files were uploaded
-    if (req.files) {
+    if (req.files && req.files.files) {
         const files = req.files.files;
         if (!Array.isArray(files)) filesArray.push(files); // Ensure files is always an array
         else filesArray = files;
@@ -165,51 +165,70 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
 });
 
 // Route to update a claim by ID, accessible by admin and manager
-router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), (req, res) => {
+router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), async (req, res) => {
     const claimId = req.params.id;
     console.log(`Updating claim with ID: ${claimId}`);
 
-    Claim.findById(claimId)
-        .then(claim => {
-            if (!claim) {
-                console.error(`Claim with ID ${claimId} not found`);
-                return res.status(404).json({ error: 'Claim not found' });
-            }
+    try {
+        const claim = await Claim.findById(claimId).exec();
+        if (!claim) {
+            console.error(`Claim with ID ${claimId} not found`);
+            return res.status(404).json({ error: 'Claim not found' });
+        }
 
-            // Initialize versions array if it doesn't exist
-            if (!claim.versions) {
-                claim.versions = [];
-            }
+        // Initialize versions array if it doesn't exist
+        if (!claim.versions) {
+            claim.versions = [];
+        }
 
-            // Save the current version of the claim before updating
-            claim.versions.push({
-                description: claim.description,
-                status: claim.status,
-                files: claim.files,
-                updatedAt: claim.updatedAt
-            });
-
-            // Update the claim with new data
-            claim.mva = req.body.mva || claim.mva;
-            claim.customerName = req.body.customerName || claim.customerName;
-            claim.description = req.body.description || claim.description;
-            claim.status = req.body.status || claim.status;
-            claim.files = req.body.files || claim.files;
-
-            // Save the updated claim to the database
-            return claim.save();
-        })
-        .then(updatedClaim => {
-            console.log('Claim updated:', updatedClaim);
-            notifyClaimStatusUpdate(req.user.email, updatedClaim); // Send notification about the claim status update
-            cache.del(`claim_${claimId}`); // Invalidate the cache for the updated claim
-            cache.del('/claims'); // Invalidate the cache for claims list
-            res.redirect('/dashboard'); // Redirect to the dashboard page
-        })
-        .catch(err => {
-            console.error(`Error updating claim: ${err}`);
-            res.status(500).json({ error: err.message }); // Handle errors
+        // Save the current version of the claim before updating
+        claim.versions.push({
+            description: claim.description,
+            status: claim.status,
+            files: claim.files,
+            updatedAt: claim.updatedAt
         });
+
+        // Update the claim with new data
+        claim.mva = req.body.mva || claim.mva;
+        claim.customerName = req.body.customerName || claim.customerName;
+        claim.description = req.body.description || claim.description;
+        claim.status = req.body.status || claim.status;
+
+        // Handle file updates
+        let existingFiles = claim.files || [];
+        if (req.files && req.files.files) {
+            let newFilesArray = [];
+            const files = req.files.files;
+            if (!Array.isArray(files)) newFilesArray.push(files);
+            else newFilesArray = files;
+
+            newFilesArray.forEach(file => {
+                const filePath = path.join(__dirname, '../public/uploads', file.name);
+                file.mv(filePath, err => {
+                    if (err) {
+                        console.error('Error uploading file:', err);
+                        return res.status(500).json({ error: err.message });
+                    }
+                    console.log('File uploaded successfully:', file.name);
+                    existingFiles.push(file.name); // Add new file to existing files array
+                });
+            });
+        }
+
+        claim.files = existingFiles;
+
+        // Save the updated claim to the database
+        const updatedClaim = await claim.save();
+        console.log('Claim updated:', updatedClaim);
+        notifyClaimStatusUpdate(req.user.email, updatedClaim); // Send notification about the claim status update
+        cache.del(`claim_${claimId}`); // Invalidate the cache for the updated claim
+        cache.del('/claims'); // Invalidate the cache for claims list
+        res.redirect('/dashboard'); // Redirect to the dashboard page
+    } catch (err) {
+        console.error(`Error updating claim: ${err}`);
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
 });
 
 // Route to delete a claim by ID, accessible only by admin
