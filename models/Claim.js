@@ -1,42 +1,166 @@
 const mongoose = require('mongoose');
 
 const ClaimSchema = new mongoose.Schema({
-    mva: { type: String, required: true },
-    customerName: { type: String },
-    customerNumber: { type: String },
-    customerEmail: { type: String },
-    customerAddress: { type: String },
-    customerDriversLicense: { type: String },
-    carMake: { type: String },
-    carModel: { type: String },
-    carYear: { type: String },
-    carColor: { type: String },
-    carVIN: { type: String },
-    accidentDate: { type: Date },
-    billable: { type: Boolean },
-    isRenterAtFault: { type: Boolean },
-    damagesTotal: { type: Number },
-    bodyShopName: { type: String },
-    raNumber: { type: String },
-    insuranceCarrier: { type: String },
-    insuranceAgent: { type: String },
-    insurancePhoneNumber: { type: String },
-    insuranceFaxNumber: { type: String },
-    insuranceAddress: { type: String },
-    insuranceClaimNumber: { type: String },
-    thirdPartyName: { type: String },
-    thirdPartyPhoneNumber: { type: String },
-    thirdPartyInsuranceName: { type: String },
-    thirdPartyPolicyNumber: { type: String },
-    description: { type: String },
-    rentingLocation: { type: String, enum: ['LAS Airport', 'Henderson Executive Airport', 'Toyota Las Vegas', 'Center Strip', 'Losee', 'Tropicana', 'West Sahara', 'Gibson', 'Golden Nugget'] },
-    ldwAccepted: { type: Boolean },
-    policeDepartment: { type: String },
-    policeReportNumber: { type: String },
-    claimCloseDate: { type: Date },
-    vehicleOdometer: { type: Number },
-    status: { type: String },
-    files: [{ type: String }]
-}, { timestamps: true });
+    mva: {
+        type: String,
+        required: false
+    },
+    customerName: {
+        type: String,
+        required: false
+    },
+    customerNumber: {
+        type: String,
+        required: false
+    },
+    customerEmail: {
+        type: String,
+        required: false
+    },
+    customerAddress: {
+        type: String,
+        required: false
+    },
+    customerDriversLicense: {
+        type: String,
+        required: false
+    },
+    carMake: {
+        type: String,
+        required: false
+    },
+    carModel: {
+        type: String,
+        required: false
+    },
+    carYear: {
+        type: String,
+        required: false
+    },
+    carColor: {
+        type: String,
+        required: false
+    },
+    carVIN: {
+        type: String,
+        required: false
+    },
+    accidentDate: {
+        type: Date,
+        required: false
+    },
+    billable: {
+        type: Boolean,
+        required: false
+    },
+    isRenterAtFault: {
+        type: Boolean,
+        required: false
+    },
+    damagesTotal: {
+        type: Number,
+        required: false
+    },
+    bodyShopName: {
+        type: String,
+        required: false
+    },
+    raNumber: {
+        type: String,
+        required: false
+    },
+    insuranceCarrier: {
+        type: String,
+        required: false
+    },
+    insuranceAgent: {
+        type: String,
+        required: false
+    },
+    insurancePhoneNumber: {
+        type: String,
+        required: false
+    },
+    insuranceFaxNumber: {
+        type: String,
+        required: false
+    },
+    insuranceAddress: {
+        type: String,
+        required: false
+    },
+    insuranceClaimNumber: {
+        type: String,
+        required: false
+    },
+    thirdPartyName: {
+        type: String,
+        required: false
+    },
+    thirdPartyPhoneNumber: {
+        type: String,
+        required: false
+    },
+    thirdPartyInsuranceName: {
+        type: String,
+        required: false
+    },
+    thirdPartyPolicyNumber: {
+        type: String,
+        required: false
+    },
+    rentingLocation: {
+        type: String,
+        enum: ['LAS Airport', 'Henderson Executive Airport', 'Toyota Las Vegas', 'Center Strip', 'Losee', 'Tropicana', 'West Sahara', 'Gibson', 'Golden Nugget'],
+        required: false
+    },
+    ldwAccepted: {
+        type: Boolean,
+        required: false
+    },
+    policeDepartment: {
+        type: String,
+        required: false
+    },
+    policeReportNumber: {
+        type: String,
+        required: false
+    },
+    claimCloseDate: {
+        type: Date,
+        required: false
+    },
+    vehicleOdometer: {
+        type: Number,
+        required: false
+    },
+    description: {
+        type: String,
+        required: false
+    },
+    status: {
+        type: String,
+        required: false
+    },
+    files: {
+        incidentReports: [String],
+        correspondence: [String],
+        rentalAgreement: [String],
+        policeReport: [String],
+        invoices: [String],
+        photos: [String]
+    },
+    versions: {
+        type: [Object]
+    },
+    date: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    }
+});
 
 module.exports = mongoose.model('Claim', ClaimSchema);

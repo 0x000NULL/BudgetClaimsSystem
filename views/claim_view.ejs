@@ -159,24 +159,6 @@
                 <label>Third Party Policy Number:</label>
                 <p><%= claim.thirdPartyPolicyNumber %></p>
 
-                <label>Renting Location:</label>
-                <p><%= claim.rentingLocation %></p>
-
-                <label>LDW Accepted:</label>
-                <p><%= claim.ldwAccepted ? 'Yes' : 'No' %></p>
-
-                <label>Police Department:</label>
-                <p><%= claim.policeDepartment %></p>
-
-                <label>Police Report Number:</label>
-                <p><%= claim.policeReportNumber %></p>
-
-                <label>Claim Close Date:</label>
-                <p><%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toLocaleDateString() : '' %></p>
-
-                <label>Vehicle Odometer:</label>
-                <p><%= claim.vehicleOdometer %></p>
-
                 <label>Description:</label>
                 <p><%= claim.description %></p>
 
@@ -185,8 +167,21 @@
 
                 <label>Files:</label>
                 <ul>
-                    <% claim.files.forEach(file => { %>
-                        <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
+                    <% const fileCategories = [
+                        { title: 'Incident Reports', files: claim.files.incidentReports || [] },
+                        { title: 'Correspondence', files: claim.files.correspondence || [] },
+                        { title: 'Rental Agreement', files: claim.files.rentalAgreement || [] },
+                        { title: 'Police Report', files: claim.files.policeReport || [] },
+                        { title: 'Invoices', files: claim.files.invoices || [] },
+                        { title: 'Photos', files: claim.files.photos || [] }
+                    ]; %>
+                    <% fileCategories.forEach(category => { %>
+                        <h4><%= category.title %>:</h4>
+                        <ul>
+                            <% category.files.forEach(file => { %>
+                                <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
+                            <% }) %>
+                        </ul>
                     <% }) %>
                 </ul>
             </div>

@@ -4,10 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Claim - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <style>
+        .btn {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .claim-info {
+            margin-bottom: 20px;
+        }
+
+        .claim-info label {
+            font-weight: bold;
+        }
+
+        .claim-info input, .claim-info textarea, .claim-info select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .file-section {
+            margin-bottom: 20px;
+        }
+
+        .file-section h3 {
+            margin-bottom: 10px;
+        }
+
+        .file-section input {
+            margin-bottom: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+    </style>
 </head>
 <body>
     <header>
+        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>Budget Claims System</h1>
         <nav>
@@ -23,173 +83,141 @@
         </nav>
     </header>
     <main>
-        <h2>Add Claim</h2>
-        <form action="/claims" method="post" enctype="multipart/form-data">
-            <div>
-                <label for="mva">MVA:</label>
-                <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required>
-            </div>
-            <div>
-                <label for="customerName">Customer Name:</label>
-                <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>">
-            </div>
-            <div>
-                <label for="customerNumber">Customer Number:</label>
-                <input type="text" id="customerNumber" name="customerNumber" value="<%= claim.customerNumber %>">
-            </div>
-            <div>
-                <label for="customerEmail">Customer Email:</label>
-                <input type="email" id="customerEmail" name="customerEmail" value="<%= claim.customerEmail %>">
-            </div>
-            <div>
-                <label for="customerAddress">Customer Address:</label>
-                <input type="text" id="customerAddress" name="customerAddress" value="<%= claim.customerAddress %>">
-            </div>
-            <div>
-                <label for="customerDriversLicense">Customer Drivers License:</label>
-                <input type="text" id="customerDriversLicense" name="customerDriversLicense" value="<%= claim.customerDriversLicense %>">
-            </div>
-            <div>
-                <label for="carMake">Car Make:</label>
-                <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>">
-            </div>
-            <div>
-                <label for="carModel">Car Model:</label>
-                <input type="text" id="carModel" name="carModel" value="<%= claim.carModel %>">
-            </div>
-            <div>
-                <label for="carYear">Car Year:</label>
-                <input type="text" id="carYear" name="carYear" value="<%= claim.carYear %>">
-            </div>
-            <div>
-                <label for="carColor">Car Color:</label>
-                <input type="text" id="carColor" name="carColor" value="<%= claim.carColor %>">
-            </div>
-            <div>
-                <label for="carVIN">Car VIN:</label>
-                <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>">
-            </div>
-            <div>
-                <label for="vehicleOdometer">Vehicle Odometer:</label>
-                <input type="number" id="vehicleOdometer" name="vehicleOdometer" value="<%= claim.vehicleOdometer %>">
-            </div>
-            <div>
-                <label for="accidentDate">Accident Date:</label>
-                <input type="date" id="accidentDate" name="accidentDate" value="<%= claim.accidentDate ? claim.accidentDate.toISOString().substr(0, 10) : '' %>">
-            </div>
-            <div>
-                <label for="rentingLocation">Renting Location:</label>
-                <select id="rentingLocation" name="rentingLocation">
-                    <option value="LAS Airport" <%= claim.rentingLocation === 'LAS Airport' ? 'selected' : '' %>>LAS Airport</option>
-                    <option value="Henderson Executive Airport" <%= claim.rentingLocation === 'Henderson Executive Airport' ? 'selected' : '' %>>Henderson Executive Airport</option>
-                    <option value="Toyota Las Vegas" <%= claim.rentingLocation === 'Toyota Las Vegas' ? 'selected' : '' %>>Toyota Las Vegas</option>
-                    <option value="Center Strip" <%= claim.rentingLocation === 'Center Strip' ? 'selected' : '' %>>Center Strip</option>
-                    <option value="Losee" <%= claim.rentingLocation === 'Losee' ? 'selected' : '' %>>Losee</option>
-                    <option value="Tropicana" <%= claim.rentingLocation === 'Tropicana' ? 'selected' : '' %>>Tropicana</option>
-                    <option value="West Sahara" <%= claim.rentingLocation === 'West Sahara' ? 'selected' : '' %>>West Sahara</option>
-                    <option value="Gibson" <%= claim.rentingLocation === 'Gibson' ? 'selected' : '' %>>Gibson</option>
-                    <option value="Golden Nugget" <%= claim.rentingLocation === 'Golden Nugget' ? 'selected' : '' %>>Golden Nugget</option>
-                </select>
-            </div>
-            <div>
-                <label for="ldwAccepted">LDW Accepted:</label>
-                <select id="ldwAccepted" name="ldwAccepted">
-                    <option value="true" <%= claim.ldwAccepted ? 'selected' : '' %>>Yes</option>
-                    <option value="false" <%= !claim.ldwAccepted ? 'selected' : '' %>>No</option>
-                </select>
-            </div>
-            <div>
-                <label for="policeDepartment">Police Department:</label>
-                <input type="text" id="policeDepartment" name="policeDepartment" value="<%= claim.policeDepartment %>">
-            </div>
-            <div>
-                <label for="policeReportNumber">Police Report Number:</label>
-                <input type="text" id="policeReportNumber" name="policeReportNumber" value="<%= claim.policeReportNumber %>">
-            </div>
-            <div>
-                <label for="billable">Billable:</label>
-                <select id="billable" name="billable">
-                    <option value="true" <%= claim.billable ? 'selected' : '' %>>Yes</option>
-                    <option value="false" <%= !claim.billable ? 'selected' : '' %>>No</option>
-                </select>
-            </div>
-            <div>
-                <label for="isRenterAtFault">Is Renter at Fault?</label>
-                <select id="isRenterAtFault" name="isRenterAtFault">
-                    <option value="true" <%= claim.isRenterAtFault ? 'selected' : '' %>>Yes</option>
-                    <option value="false" <%= !claim.isRenterAtFault ? 'selected' : '' %>>No</option>
-                </select>
-            </div>
-            <div>
-                <label for="damagesTotal">Damages Total:</label>
-                <input type="number" id="damagesTotal" name="damagesTotal" step="0.01" value="<%= claim.damagesTotal %>">
-            </div>
-            <div>
-                <label for="bodyShopName">Body Shop Name:</label>
-                <input type="text" id="bodyShopName" name="bodyShopName" value="<%= claim.bodyShopName %>">
-            </div>
-            <div>
-                <label for="raNumber">RA Number:</label>
-                <input type="text" id="raNumber" name="raNumber" value="<%= claim.raNumber %>">
-            </div>
-            <div>
-                <label for="insuranceCarrier">Insurance Carrier:</label>
-                <input type="text" id="insuranceCarrier" name="insuranceCarrier" value="<%= claim.insuranceCarrier %>">
-            </div>
-            <div>
-                <label for="insuranceAgent">Insurance Agent:</label>
-                <input type="text" id="insuranceAgent" name="insuranceAgent" value="<%= claim.insuranceAgent %>">
-            </div>
-            <div>
-                <label for="insurancePhoneNumber">Insurance Phone Number:</label>
-                <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber" value="<%= claim.insurancePhoneNumber %>">
-            </div>
-            <div>
-                <label for="insuranceFaxNumber">Insurance Fax Number:</label>
-                <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber" value="<%= claim.insuranceFaxNumber %>">
-            </div>
-            <div>
-                <label for="insuranceAddress">Insurance Address:</label>
-                <input type="text" id="insuranceAddress" name="insuranceAddress" value="<%= claim.insuranceAddress %>">
-            </div>
-            <div>
-                <label for="insuranceClaimNumber">Insurance Claim Number:</label>
-                <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber" value="<%= claim.insuranceClaimNumber %>">
-            </div>
-            <div>
-                <label for="thirdPartyName">Third Party Name:</label>
-                <input type="text" id="thirdPartyName" name="thirdPartyName" value="<%= claim.thirdPartyName %>">
-            </div>
-            <div>
-                <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
-                <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber" value="<%= claim.thirdPartyPhoneNumber %>">
-            </div>
-            <div>
-                <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
-                <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName" value="<%= claim.thirdPartyInsuranceName %>">
-            </div>
-            <div>
-                <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
-                <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber" value="<%= claim.thirdPartyPolicyNumber %>">
-            </div>
-            <div>
-                <label for="description">Description:</label>
-                <textarea id="description" name="description"><%= claim.description %></textarea>
-            </div>
-            <div>
-                <label for="status">Status:</label>
-                <input type="text" id="status" name="status" value="<%= claim.status %>">
-            </div>
-            <div>
-                <label for="claimCloseDate">Claim Close Date:</label>
-                <input type="date" id="claimCloseDate" name="claimCloseDate" value="<%= claim.claimCloseDate ? claim.claimCloseDate.toISOString().substr(0, 10) : '' %>">
-            </div>
-            <div>
-                <label for="files">Files:</label>
-                <input type="file" id="files" name="files" multiple>
-            </div>
-            <button type="submit">Submit</button>
-        </form>
+        <div class="container">
+            <h2>Add Claim</h2>
+            <form action="/claims" method="POST" enctype="multipart/form-data">
+                <div class="claim-info">
+                    <label for="mva">MVA:</label>
+                    <input type="text" id="mva" name="mva" required>
+
+                    <label for="customerName">Customer Name:</label>
+                    <input type="text" id="customerName" name="customerName" required>
+
+                    <label for="customerNumber">Customer Number:</label>
+                    <input type="text" id="customerNumber" name="customerNumber" required>
+
+                    <label for="customerEmail">Customer Email:</label>
+                    <input type="email" id="customerEmail" name="customerEmail" required>
+
+                    <label for="customerAddress">Customer Address:</label>
+                    <input type="text" id="customerAddress" name="customerAddress" required>
+
+                    <label for="customerDriversLicense">Customer Drivers License:</label>
+                    <input type="text" id="customerDriversLicense" name="customerDriversLicense" required>
+
+                    <label for="carMake">Car Make:</label>
+                    <input type="text" id="carMake" name="carMake" required>
+
+                    <label for="carModel">Car Model:</label>
+                    <input type="text" id="carModel" name="carModel" required>
+
+                    <label for="carYear">Car Year:</label>
+                    <input type="text" id="carYear" name="carYear" required>
+
+                    <label for="carColor">Car Color:</label>
+                    <input type="text" id="carColor" name="carColor" required>
+
+                    <label for="carVIN">Car VIN:</label>
+                    <input type="text" id="carVIN" name="carVIN" required>
+
+                    <label for="accidentDate">Accident Date:</label>
+                    <input type="date" id="accidentDate" name="accidentDate" required>
+
+                    <label for="billable">Billable:</label>
+                    <select id="billable" name="billable" required>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+
+                    <label for="isRenterAtFault">Is Renter At Fault:</label>
+                    <select id="isRenterAtFault" name="isRenterAtFault" required>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+
+                    <label for="damagesTotal">Damages Total:</label>
+                    <input type="text" id="damagesTotal" name="damagesTotal" required>
+
+                    <label for="bodyShopName">Body Shop Name:</label>
+                    <input type="text" id="bodyShopName" name="bodyShopName" required>
+
+                    <label for="raNumber">RA Number:</label>
+                    <input type="text" id="raNumber" name="raNumber" required>
+
+                    <label for="insuranceCarrier">Insurance Carrier:</label>
+                    <input type="text" id="insuranceCarrier" name="insuranceCarrier" required>
+
+                    <label for="insuranceAgent">Insurance Agent:</label>
+                    <input type="text" id="insuranceAgent" name="insuranceAgent" required>
+
+                    <label for="insurancePhoneNumber">Insurance Phone Number:</label>
+                    <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber" required>
+
+                    <label for="insuranceFaxNumber">Insurance Fax Number:</label>
+                    <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber" required>
+
+                    <label for="insuranceAddress">Insurance Address:</label>
+                    <input type="text" id="insuranceAddress" name="insuranceAddress" required>
+
+                    <label for="insuranceClaimNumber">Insurance Claim Number:</label>
+                    <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber" required>
+
+                    <label for="thirdPartyName">Third Party Name:</label>
+                    <input type="text" id="thirdPartyName" name="thirdPartyName" required>
+
+                    <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
+                    <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber" required>
+
+                    <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
+                    <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName" required>
+
+                    <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
+                    <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber" required>
+
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" required></textarea>
+
+                    <label for="status">Status:</label>
+                    <input type="text" id="status" name="status" required>
+                </div>
+
+                <!-- File upload sections -->
+                <div class="file-section">
+                    <h3>Incident Reports</h3>
+                    <input type="file" id="incidentReports" name="incidentReports" multiple>
+                </div>
+
+                <div class="file-section">
+                    <h3>Correspondence</h3>
+                    <input type="file" id="correspondence" name="correspondence" multiple>
+                </div>
+
+                <div class="file-section">
+                    <h3>Rental Agreement</h3>
+                    <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
+                </div>
+
+                <div class="file-section">
+                    <h3>Police Report</h3>
+                    <input type="file" id="policeReport" name="policeReport" multiple>
+                </div>
+
+                <div class="file-section">
+                    <h3>Invoices</h3>
+                    <input type="file" id="invoices" name="invoices" multiple>
+                </div>
+
+                <div class="file-section">
+                    <h3>Photos</h3>
+                    <input type="file" id="photos" name="photos" multiple>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn">Add Claim</button>
+                    <a href="/claims" class="btn">Cancel</a>
+                </div>
+            </form>
+        </div>
     </main>
 </body>
 </html>
