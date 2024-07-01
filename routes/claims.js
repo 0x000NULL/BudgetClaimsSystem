@@ -111,7 +111,7 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
 
         // Save each file to the uploads directory
         filesArray.forEach(file => {
-            const filePath = path.join(__dirname, '../uploads', file.name);
+            const filePath = path.join(__dirname, '../public/uploads', file.name);
             file.mv(filePath, err => {
                 if (err) {
                     console.error('Error uploading file:', err);
@@ -337,9 +337,9 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
         for (const file of claim.files) {
             doc.text(file);
 
-            const filePath = path.join(__dirname, '../uploads', file);
+            const filePath = path.join(__dirname, '../public/uploads', file);
             try {
-                if (file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg')) {
+                if (file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.PNG') || file.endsWith('.JPG') || file.endsWith('.JPEG')) {
                     doc.image(filePath, { fit: [250, 300], align: 'center' });
                 } else {
                     doc.text('Unsupported file format for image preview.');
