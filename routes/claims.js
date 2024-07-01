@@ -109,42 +109,30 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
 
 // Route to add a new claim, accessible by admin and manager
 router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), (req, res) => {
-    const { mva, customerName, description, status } = req.body; // Extract claim details from the request body
+    const { mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation, ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer } = req.body; // Extract claim details from the request body
 
     console.log('Adding new claim with data:', req.body);
 
-    // Initialize an object to hold uploaded file names for each category
-    let filesObject = {
-        incidentReports: [],
-        correspondence: [],
-        rentalAgreement: [],
-        policeReport: [],
-        invoices: [],
-        photos: []
-    };
+    // Initialize an array to hold uploaded file names
+    let filesArray = [];
 
     // Check if files were uploaded
-    if (req.files) {
-        for (const category in filesObject) {
-            if (req.files[category]) {
-                let newFilesArray = [];
-                const files = req.files[category];
-                if (!Array.isArray(files)) newFilesArray.push(files);
-                else newFilesArray = files;
+    if (req.files && req.files.files) {
+        const files = req.files.files;
+        if (!Array.isArray(files)) filesArray.push(files); // Ensure files is always an array
+        else filesArray = files;
 
-                newFilesArray.forEach(file => {
-                    const filePath = path.join(__dirname, '../public/uploads', file.name);
-                    file.mv(filePath, err => {
-                        if (err) {
-                            console.error('Error uploading file:', err);
-                            return res.status(500).json({ error: err.message }); // Handle file upload error
-                        }
-                        console.log(`File uploaded successfully for ${category}:`, file.name);
-                        filesObject[category].push(file.name); // Add file name to the respective category
-                    });
-                });
-            }
-        }
+        // Save each file to the uploads directory
+        filesArray.forEach(file => {
+            const filePath = path.join(__dirname, '../public/uploads', file.name);
+            file.mv(filePath, err => {
+                if (err) {
+                    console.error('Error uploading file:', err);
+                    return res.status(500).json({ error: err.message }); // Handle file upload error
+                }
+                console.log('File uploaded successfully:', file.name);
+            });
+        });
     }
 
     // Create a new claim object
@@ -153,7 +141,16 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         customerName,
         description,
         status,
-        files: filesObject // Store file names in the claim
+        damageType, // Added damageType
+        dateOfLoss,
+        raNumber,
+        rentingLocation,
+        ldwAccepted,
+        policeDepartment,
+        policeReportNumber,
+        claimCloseDate,
+        vehicleOdometer,
+        files: filesArray.map(file => file.name) // Store file names in the claim
     });
 
     // Save the claim to the database
@@ -223,29 +220,38 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         claim.customerName = req.body.customerName || claim.customerName;
         claim.description = req.body.description || claim.description;
         claim.status = req.body.status || claim.status;
+        claim.damageType = req.body.damageType || claim.damageType; // Added damageType
+        claim.dateOfLoss = req.body.dateOfLoss || claim.dateOfLoss;
+        claim.raNumber = req.body.raNumber || claim.raNumber;
+        claim.rentingLocation = req.body.rentingLocation || claim.rentingLocation;
+        claim.ldwAccepted = req.body.ldwAccepted || claim.ldwAccepted;
+        claim.policeDepartment = req.body.policeDepartment || claim.policeDepartment;
+        claim.policeReportNumber = req.body.policeReportNumber || claim.policeReportNumber;
+        claim.claimCloseDate = req.body.claimCloseDate || claim.claimCloseDate;
+        claim.vehicleOdometer = req.body.vehicleOdometer || claim.vehicleOdometer;
 
         // Handle file updates
-        const fileCategories = ['incidentReports', 'correspondence', 'rentalAgreement', 'policeReport', 'invoices', 'photos'];
-        let filesObject = claim.files || {};
+        let existingFiles = claim.files || [];
+        if (req.files && req.files.files) {
+            let newFilesArray = [];
+            const files = req.files.files;
+            if (!Array.isArray(files)) newFilesArray.push(files);
+            else newFilesArray = files;
 
-        for (const category of fileCategories) {
-            if (req.files && req.files[category]) {
-                let newFilesArray = [];
-                const files = req.files[category];
-                if (!Array.isArray(files)) newFilesArray.push(files);
-                else newFilesArray = files;
-
-                for (const file of newFilesArray) {
-                    const filePath = path.join(__dirname, '../public/uploads', file.name);
-                    await file.mv(filePath);
-                    console.log(`File uploaded successfully for ${category}:`, file.name);
-                    if (!filesObject[category]) filesObject[category] = [];
-                    filesObject[category].push(file.name); // Add new file to existing files array
-                }
-            }
+            newFilesArray.forEach(file => {
+                const filePath = path.join(__dirname, '../public/uploads', file.name);
+                file.mv(filePath, err => {
+                    if (err) {
+                        console.error('Error uploading file:', err);
+                        return res.status(500).json({ error: err.message });
+                    }
+                    console.log('File uploaded successfully:', file.name);
+                    existingFiles.push(file.name); // Add new file to existing files array
+                });
+            });
         }
 
-        claim.files = filesObject;
+        claim.files = existingFiles;
 
         // Save the updated claim to the database
         const updatedClaim = await claim.save();
@@ -253,7 +259,7 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         notifyClaimStatusUpdate(req.user.email, updatedClaim); // Send notification about the claim status update
         cache.del(`claim_${claimId}`); // Invalidate the cache for the updated claim
         cache.del('/claims'); // Invalidate the cache for claims list
-        res.redirect(`/claims/${claimId}`); // Redirect to the claim view page
+        res.redirect('/dashboard'); // Redirect to the dashboard page
     } catch (err) {
         console.error(`Error updating claim: ${err}`);
         res.status(500).json({ error: err.message }); // Handle errors

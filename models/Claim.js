@@ -138,6 +138,7 @@ const ClaimSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    damageType: { type: String, enum: ['Heavy hit', 'Light hit', 'Mystery'], required: false },
     status: {
         type: String,
         required: false
