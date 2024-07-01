@@ -70,8 +70,41 @@
                 <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>">
             </div>
             <div>
+                <label for="vehicleOdometer">Vehicle Odometer:</label>
+                <input type="number" id="vehicleOdometer" name="vehicleOdometer" value="<%= claim.vehicleOdometer %>">
+            </div>
+            <div>
                 <label for="accidentDate">Accident Date:</label>
                 <input type="date" id="accidentDate" name="accidentDate" value="<%= claim.accidentDate ? claim.accidentDate.toISOString().substr(0, 10) : '' %>">
+            </div>
+            <div>
+                <label for="rentingLocation">Renting Location:</label>
+                <select id="rentingLocation" name="rentingLocation">
+                    <option value="LAS Airport" <%= claim.rentingLocation === 'LAS Airport' ? 'selected' : '' %>>LAS Airport</option>
+                    <option value="Henderson Executive Airport" <%= claim.rentingLocation === 'Henderson Executive Airport' ? 'selected' : '' %>>Henderson Executive Airport</option>
+                    <option value="Toyota Las Vegas" <%= claim.rentingLocation === 'Toyota Las Vegas' ? 'selected' : '' %>>Toyota Las Vegas</option>
+                    <option value="Center Strip" <%= claim.rentingLocation === 'Center Strip' ? 'selected' : '' %>>Center Strip</option>
+                    <option value="Losee" <%= claim.rentingLocation === 'Losee' ? 'selected' : '' %>>Losee</option>
+                    <option value="Tropicana" <%= claim.rentingLocation === 'Tropicana' ? 'selected' : '' %>>Tropicana</option>
+                    <option value="West Sahara" <%= claim.rentingLocation === 'West Sahara' ? 'selected' : '' %>>West Sahara</option>
+                    <option value="Gibson" <%= claim.rentingLocation === 'Gibson' ? 'selected' : '' %>>Gibson</option>
+                    <option value="Golden Nugget" <%= claim.rentingLocation === 'Golden Nugget' ? 'selected' : '' %>>Golden Nugget</option>
+                </select>
+            </div>
+            <div>
+                <label for="ldwAccepted">LDW Accepted:</label>
+                <select id="ldwAccepted" name="ldwAccepted">
+                    <option value="true" <%= claim.ldwAccepted ? 'selected' : '' %>>Yes</option>
+                    <option value="false" <%= !claim.ldwAccepted ? 'selected' : '' %>>No</option>
+                </select>
+            </div>
+            <div>
+                <label for="policeDepartment">Police Department:</label>
+                <input type="text" id="policeDepartment" name="policeDepartment" value="<%= claim.policeDepartment %>">
+            </div>
+            <div>
+                <label for="policeReportNumber">Police Report Number:</label>
+                <input type="text" id="policeReportNumber" name="policeReportNumber" value="<%= claim.policeReportNumber %>">
             </div>
             <div>
                 <label for="billable">Billable:</label>
@@ -146,6 +179,10 @@
             <div>
                 <label for="status">Status:</label>
                 <input type="text" id="status" name="status" value="<%= claim.status %>">
+            </div>
+            <div>
+                <label for="claimCloseDate">Claim Close Date:</label>
+                <input type="date" id="claimCloseDate" name="claimCloseDate" value="<%= claim.claimCloseDate ? claim.claimCloseDate.toISOString().substr(0, 10) : '' %>">
             </div>
             <div>
                 <label for="files">Files:</label>

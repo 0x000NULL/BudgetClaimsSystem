@@ -96,7 +96,7 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
 
 // Route to add a new claim, accessible by admin and manager
 router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), (req, res) => {
-    const { mva, customerName, description, status } = req.body; // Extract claim details from the request body
+    const { mva, customerName, description, status, rentingLocation, raNumber, ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer } = req.body; // Extract claim details from the request body
 
     console.log('Adding new claim with data:', req.body);
 
@@ -128,6 +128,13 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         customerName,
         description,
         status,
+        rentingLocation,
+        raNumber,
+        ldwAccepted: ldwAccepted === 'true',
+        policeDepartment,
+        policeReportNumber,
+        claimCloseDate,
+        vehicleOdometer,
         files: filesArray.map(file => file.name) // Store file names in the claim
     });
 
@@ -194,6 +201,13 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         claim.customerName = req.body.customerName || claim.customerName;
         claim.description = req.body.description || claim.description;
         claim.status = req.body.status || claim.status;
+        claim.rentingLocation = req.body.rentingLocation || claim.rentingLocation;
+        claim.raNumber = req.body.raNumber || claim.raNumber;
+        claim.ldwAccepted = req.body.ldwAccepted === 'true';
+        claim.policeDepartment = req.body.policeDepartment || claim.policeDepartment;
+        claim.policeReportNumber = req.body.policeReportNumber || claim.policeReportNumber;
+        claim.claimCloseDate = req.body.claimCloseDate || claim.claimCloseDate;
+        claim.vehicleOdometer = req.body.vehicleOdometer || claim.vehicleOdometer;
 
         // Handle file updates
         let existingFiles = claim.files || [];
@@ -203,21 +217,17 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             if (!Array.isArray(files)) newFilesArray.push(files);
             else newFilesArray = files;
 
-            for (const file of newFilesArray) {
+            newFilesArray.forEach(file => {
                 const filePath = path.join(__dirname, '../public/uploads', file.name);
-                await new Promise((resolve, reject) => {
-                    file.mv(filePath, err => {
-                        if (err) {
-                            console.error('Error uploading file:', err);
-                            reject(err);
-                        } else {
-                            console.log('File uploaded successfully:', file.name);
-                            existingFiles.push(file.name); // Add new file to existing files array
-                            resolve();
-                        }
-                    });
+                file.mv(filePath, err => {
+                    if (err) {
+                        console.error('Error uploading file:', err);
+                        return res.status(500).json({ error: err.message });
+                    }
+                    console.log('File uploaded successfully:', file.name);
+                    existingFiles.push(file.name); // Add new file to existing files array
                 });
-            }
+            });
         }
 
         claim.files = existingFiles;

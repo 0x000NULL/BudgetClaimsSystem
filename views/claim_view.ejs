@@ -159,6 +159,24 @@
                 <label>Third Party Policy Number:</label>
                 <p><%= claim.thirdPartyPolicyNumber %></p>
 
+                <label>Renting Location:</label>
+                <p><%= claim.rentingLocation %></p>
+
+                <label>LDW Accepted:</label>
+                <p><%= claim.ldwAccepted ? 'Yes' : 'No' %></p>
+
+                <label>Police Department:</label>
+                <p><%= claim.policeDepartment %></p>
+
+                <label>Police Report Number:</label>
+                <p><%= claim.policeReportNumber %></p>
+
+                <label>Claim Close Date:</label>
+                <p><%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toLocaleDateString() : '' %></p>
+
+                <label>Vehicle Odometer:</label>
+                <p><%= claim.vehicleOdometer %></p>
+
                 <label>Description:</label>
                 <p><%= claim.description %></p>
 

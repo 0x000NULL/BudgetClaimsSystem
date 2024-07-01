@@ -29,6 +29,12 @@ const ClaimSchema = new mongoose.Schema({
     thirdPartyInsuranceName: { type: String },
     thirdPartyPolicyNumber: { type: String },
     description: { type: String },
+    rentingLocation: { type: String, enum: ['LAS Airport', 'Henderson Executive Airport', 'Toyota Las Vegas', 'Center Strip', 'Losee', 'Tropicana', 'West Sahara', 'Gibson', 'Golden Nugget'] },
+    ldwAccepted: { type: Boolean },
+    policeDepartment: { type: String },
+    policeReportNumber: { type: String },
+    claimCloseDate: { type: Date },
+    vehicleOdometer: { type: Number },
     status: { type: String },
     files: [{ type: String }]
 }, { timestamps: true });
