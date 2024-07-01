@@ -267,6 +267,16 @@
                     <textarea id="description" name="description"><%= claim.description %></textarea>
                 </div>
 
+                <div>
+                    <label for="damageType">Damage Type:</label>
+                    <select id="damageType" name="damageType" required>
+                        <option value="">Select Damage Type</option>
+                        <option value="Heavy hit" <%= claim.damageType === 'Heavy hit' ? 'selected' : '' %>>Heavy hit</option>
+                        <option value="Light hit" <%= claim.damageType === 'Light hit' ? 'selected' : '' %>>Light hit</option>
+                        <option value="Mystery" <%= claim.damageType === 'Mystery' ? 'selected' : '' %>>Mystery</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label for="status">Status:</label>
                     <input type="text" id="status" name="status" value="<%= claim.status %>">
