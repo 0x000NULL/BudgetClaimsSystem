@@ -41,17 +41,18 @@ router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req,
 // Route to search for claims, accessible by admin, manager, and employee
 router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), (req, res) => {
     console.log('Claims search route accessed');
-    const { mva, customerName, status, startDate, endDate } = req.query; // Extract query parameters
+    const { mva, customerName, raNumber, dateOfLoss, startDate, endDate } = req.query; // Extract query parameters
 
     // Build a filter object based on provided query parameters
     let filter = {};
     if (mva) filter.mva = mva;
     if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
-    if (status) filter.status = status;
+    if (raNumber) filter.raNumber = raNumber;
+    if (dateOfLoss) filter.dateOfLoss = new Date(dateOfLoss); // Assuming dateOfLoss is a single date
     if (startDate || endDate) {
-        filter.date = {};
-        if (startDate) filter.date.$gte = new Date(startDate); // Filter by start date
-        if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
+        filter.dateOfLoss = {};
+        if (startDate) filter.dateOfLoss.$gte = new Date(startDate); // Filter by start date
+        if (endDate) filter.dateOfLoss.$lte = new Date(endDate); // Filter by end date
     }
 
     // Find claims based on the filter object
