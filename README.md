@@ -46,6 +46,29 @@ To start the application in production mode using PM2:
 
 pm2 start server.js
 ```
+
+## User Role and Permission Management
+
+### Modify User Roles
+
+Admins can modify user roles from the "Modify Roles" page available under the "User Management" section.
+
+1. Navigate to "User Management" -> "Modify Roles".
+2. Select the user whose role you want to change.
+3. Select the new role from the dropdown.
+4. Click "Update Role".
+
+### Permissions
+
+Permissions are assigned based on roles:
+
+- **Admin**: Full access to all features.
+- **Manager**: Limited access to manage claims and view user data.
+- **Employee**: Access to create and read claims.
+
+Custom permissions can be assigned by modifying the `permissions` field in the user document.
+
+
 API Documentation
 
 The application provides several API endpoints for managing claims, customers, and users. For detailed API documentation, please refer to the routes/api.js file.
