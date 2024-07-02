@@ -113,7 +113,7 @@ router.get('/audit-logs', ensureAuthenticated, ensureRoles(['admin']), async (re
     }
 });
 
-//Import route
+//Import routegood!
 router.get('/import', (req, res) => {
     res.render('import', { title: 'Import Data - Budget Claims System' });
 });
