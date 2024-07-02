@@ -13,16 +13,16 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
-describe('Email Routes', () => {
-  it('should send an email', async () => {
-    const res = await request(app)
-      .post('/email/send')
-      .send({
-        to: 'test@example.com',
-        subject: 'Test Email',
-        body: 'This is a test email.'
-      });
-    expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty('msg', 'Email sent successfully');
+describe('Performance Tests', () => {
+  it('should handle a high number of requests', async () => {
+    const requests = [];
+    for (let i = 0; i < 100; i++) {
+      requests.push(request(app).get('/claims'));
+    }
+
+    const responses = await Promise.all(requests);
+    responses.forEach(res => {
+      expect(res.statusCode).toEqual(200);
+    });
   });
 });
