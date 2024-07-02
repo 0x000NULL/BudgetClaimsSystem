@@ -10,7 +10,7 @@ const getPendingTasks = (userId) => {
 };
 
 // Schedule a task to run every day at 8 AM
-cron.schedule('365 8 * * *', () => {
+cron.schedule('0 8 * * *', () => {
     // Fetch all users from the database
     User.find()
         .then(users => {

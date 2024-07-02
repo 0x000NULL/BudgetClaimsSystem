@@ -1,0 +1,70 @@
+<!-- views/modify_roles.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modify Roles - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Budget Claims System</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/claims/search">Search Claims</a></li>
+                <li><a href="/claims/add">Add Claim</a></li>
+                <li><a href="/reports">Reports</a></li>
+                <li><a href="/user-management">User Management</a></li>
+                <li><a href="/email-templates">Email Templates</a></li>
+                <li><a href="/help">Help</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Modify User Roles</h2>
+        <form id="modify-roles-form">
+            <div>
+                <label for="username">Username:</label>
+                <select id="username" name="username">
+                    <% users.forEach(user => { %>
+                        <option value="<%= user.username %>"><%= user.username %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div>
+                <label for="role">Role:</label>
+                <select id="role" name="role">
+                    <option value="admin">Admin</option>
+                    <option value="manager">Manager</option>
+                    <option value="employee">Employee</option>
+                </select>
+            </div>
+            <button type="submit">Update Role</button>
+        </form>
+    </main>
+    <script>
+        document.getElementById('modify-roles-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const role = document.getElementById('role').value;
+            
+            const response = await fetch('/user-management/modify-roles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, role })
+            });
+
+            if (response.ok) {
+                alert('User role updated successfully');
+            } else {
+                alert('Error updating user role');
+            }
+        });
+    </script>
+</body>
+</html>
