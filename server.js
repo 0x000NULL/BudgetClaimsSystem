@@ -38,14 +38,18 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cors());
 app.use(fileUpload());
 app.use(methodOverride('_method'));
-
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
-            defaultSrc: ["'self'", "'unsafe-inline'", 'data:', 'localhost']
+            defaultSrc: ["'self'", "data:", "http://localhost"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+            styleSrc: ["'self'", "'unsafe-inline'"]
         }
     }
 }));
+
+// Serve static files from the "public" directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Body parser middleware
 app.use(express.urlencoded({ extended: false }));
@@ -99,9 +103,6 @@ app.use('/email', require('./routes/email'));
 app.use('/reports', require('./routes/reports'));
 app.use('/audit-logs', require('./routes/auditLogs'));
 app.use('/email-templates', require('./routes/emailTemplates'));
-
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -3,8 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Budget Claims System</title>
+    <title><%= title %></title>
     <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .btn {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header>
@@ -29,8 +46,35 @@
             <p>Open Claims: <%= openClaims %></p>
             <p>In Progress Claims: <%= inProgressClaims %></p>
             <p>Closed Claims: <%= closedClaims %></p>
-            <p>Average Resolution Time: <%= avgResolutionTime %> days</p>
+        </div>
+        <div class="chart-container">
+            <canvas id="claimsStatusChart"></canvas>
+        </div>
+        <div class="quick-actions">
+            <button class="btn" onclick="location.href='/claims/add'">Add New Claim</button>
+            <button class="btn" onclick="location.href='/reports'">Generate Reports</button>
         </div>
     </main>
+    <script>
+        // Chart for Claims Status
+        const ctxStatus = document.getElementById('claimsStatusChart').getContext('2d');
+        const claimsStatusChart = new Chart(ctxStatus, {
+            type: 'bar',
+            data: {
+                labels: ['Open', 'In Progress', 'Closed'],
+                datasets: [{
+                    label: 'Claims Status',
+                    data: [<%= openClaims %>, <%= inProgressClaims %>, <%= closedClaims %>],
+                    backgroundColor: ['#007bff', '#ffc107', '#28a745']
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

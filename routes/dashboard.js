@@ -1,40 +1,54 @@
-const express = require('express'); // Import Express to create a router
-const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
-const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
-const router = express.Router(); // Create a new router
+const express = require('express');
+const router = express.Router();
+const Claim = require('../models/Claim');
+const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
 
-// Route to get dashboard analytics, accessible by admin and manager
-router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+router.get('/dashboard', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     try {
-        // Get total number of claims
-        const totalClaims = await Claim.countDocuments();
-
-        // Get number of claims by status
+        const totalClaims = await Claim.countDocuments({});
         const openClaims = await Claim.countDocuments({ status: 'Open' });
         const inProgressClaims = await Claim.countDocuments({ status: 'In Progress' });
         const closedClaims = await Claim.countDocuments({ status: 'Closed' });
+        const heavyHitClaims = await Claim.countDocuments({ damageType: 'Heavy hit' });
+        const lightHitClaims = await Claim.countDocuments({ damageType: 'Light hit' });
+        const mysteryClaims = await Claim.countDocuments({ damageType: 'Mystery' });
 
-        // Calculate average resolution time
-        const closedClaimsWithResolutionTime = await Claim.find({ status: 'Closed' });
-        let totalResolutionTime = 0;
-        closedClaimsWithResolutionTime.forEach(claim => {
-            const resolutionTime = (claim.updatedAt - claim.createdAt) / (1000 * 60 * 60 * 24); // Time in days
-            totalResolutionTime += resolutionTime;
-        });
-        const avgResolutionTime = closedClaimsWithResolutionTime.length ? totalResolutionTime / closedClaimsWithResolutionTime.length : 0;
+        const avgResolutionTime = await Claim.aggregate([
+            { $match: { status: 'Closed' } },
+            {
+                $group: {
+                    _id: null,
+                    avgResolutionTime: { $avg: { $subtract: ['$updatedAt', '$createdAt'] } }
+                }
+            }
+        ]);
 
-        // Render the dashboard view with the analytics data
+        const recentActivities = await Claim.find({})
+            .sort({ updatedAt: -1 })
+            .limit(10)
+            .select('customerName mva updatedAt')
+            .lean();
+
+        const recentActivityMessages = recentActivities.map(activity => 
+            `Claim ${activity.mva} for ${activity.customerName} was updated on ${new Date(activity.updatedAt).toLocaleDateString()}`
+        );
+
         res.render('dashboard', {
-            title: 'Dashboard',
-            totalClaims: totalClaims || 0,
-            openClaims: openClaims || 0,
-            inProgressClaims: inProgressClaims || 0,
-            closedClaims: closedClaims || 0,
-            avgResolutionTime: avgResolutionTime || 0
+            title: 'Dashboard - Budget Claims System',
+            totalClaims,
+            openClaims,
+            inProgressClaims,
+            closedClaims,
+            heavyHitClaims,
+            lightHitClaims,
+            mysteryClaims,
+            avgResolutionTime: avgResolutionTime[0] ? (avgResolutionTime[0].avgResolutionTime / (1000 * 60 * 60 * 24)).toFixed(2) : 'N/A', // Convert ms to days
+            recentActivities: recentActivityMessages
         });
     } catch (err) {
-        res.status(500).json({ error: err.message }); // Handle errors
+        console.error('Error fetching dashboard data:', err);
+        res.status(500).send('Server Error');
     }
 });
 
-module.exports = router; // Export the router
+module.exports = router;
