@@ -10,7 +10,6 @@ const cors = require('cors');
 const fileUpload = require('express-fileupload');
 const helmet = require('helmet');
 const methodOverride = require('method-override');
-const exportRoutes = require('./routes/export');
 
 require('dotenv').config();
 require('./notifications/reminderScheduler');
@@ -104,7 +103,8 @@ app.use('/email', require('./routes/email'));
 app.use('/reports', require('./routes/reports'));
 app.use('/audit-logs', require('./routes/auditLogs'));
 app.use('/email-templates', require('./routes/emailTemplates'));
-app.use('/export', exportRoutes);
+app.use('/export', require('./routes/export'));
+app.use('/import', require('./routes/import'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

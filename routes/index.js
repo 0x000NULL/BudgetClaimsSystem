@@ -113,4 +113,9 @@ router.get('/audit-logs', ensureAuthenticated, ensureRoles(['admin']), async (re
     }
 });
 
+//Import route
+router.get('/import', (req, res) => {
+    res.render('import', { title: 'Import Data - Budget Claims System' });
+});
+
 module.exports = router; // Export the router
