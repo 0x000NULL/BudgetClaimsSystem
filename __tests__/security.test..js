@@ -13,16 +13,21 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
-describe('Email Routes', () => {
-  it('should send an email', async () => {
+describe('Security Tests', () => {
+  it('should prevent SQL injection', async () => {
     const res = await request(app)
-      .post('/email/send')
+      .get('/claims?mva=1; DROP TABLE users;');
+    expect(res.statusCode).toEqual(400);
+  });
+
+  it('should prevent XSS', async () => {
+    const res = await request(app)
+      .post('/claims')
       .send({
-        to: 'test@example.com',
-        subject: 'Test Email',
-        body: 'This is a test email.'
+        mva: '123456',
+        customerName: '<script>alert("XSS")</script>',
+        description: 'Test Claim'
       });
-    expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty('msg', 'Email sent successfully');
+    expect(res.statusCode).toEqual(400);
   });
 });

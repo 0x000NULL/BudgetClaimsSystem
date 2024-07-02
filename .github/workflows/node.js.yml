@@ -10,6 +10,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      mongo:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
     strategy:
       matrix:
         node-version: [14.x, 16.x]
@@ -28,6 +34,12 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Install Cypress
+        run: npm install cypress
+
+      - name: Run Cypress tests
+        run: npx cypress run
 
       - name: Archive test results
         uses: actions/upload-artifact@v2
