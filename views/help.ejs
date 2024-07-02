@@ -181,7 +181,34 @@ The Budget Claims System Team
                 <li><strong>Restore Data:</strong> In case of data loss, admins can restore data from the backup files. Follow the instructions on the "Settings" page to perform a restore.</li>
             </ul>
         </section>
-
+        <section>
+            <h3>Import and Export Data</h3>
+            <p>The Budget Claims System supports importing and exporting data for backup and restoration purposes.</p>
+            <h4>Export Data</h4>
+            <p>To export all data and associated files:</p>
+            <ul>
+                <li>Navigate to <a href="/export/full">Export Data</a> or go to <code>http://localhost:5000/export/full</code>.</li>
+                <li>This will generate a ZIP file containing:
+                    <ul>
+                        <li>All user data</li>
+                        <li>All claims data</li>
+                        <li>All associated files from the <code>uploads</code> directory</li>
+                    </ul>
+                </li>
+            </ul>
+            <h4>Import Data</h4>
+            <p>To import data from a previously exported ZIP file:</p>
+            <ul>
+                <li>Navigate to <a href="/import">Import Data</a> or go to <code>http://localhost:5000/import</code>.</li>
+                <li>Upload the ZIP file, and it will:
+                    <ul>
+                        <li>Insert users into the database</li>
+                        <li>Insert claims into the database</li>
+                        <li>Copy uploaded files to the <code>uploads</code> directory</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
         <section>
             <h3>Additional Support</h3>
             <p>If you need further assistance or encounter any issues, please contact our support team at:</p>
