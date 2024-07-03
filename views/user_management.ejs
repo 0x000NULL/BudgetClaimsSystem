@@ -53,11 +53,8 @@
         <h2>User Management</h2>
 
         <!-- Audit Logs Button -->
-        <div class="button-group">
-            <a href="/audit-logs" class="btn">Audit Logs</a>
-            <% if (user.permissions && user.permissions.get('users_update')) { %>
-                <a href="/user-management/modify-roles" class="btn">Roles</a>
-            <% } %>
+        <div>
+            <a href="/audit-logs" class="button">Audit</a>
         </div>
 
         <!-- Section for adding a new user -->
