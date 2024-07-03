@@ -105,7 +105,6 @@ app.use('/audit-logs', require('./routes/auditLogs'));
 app.use('/email-templates', require('./routes/emailTemplates'));
 app.use('/export', require('./routes/export'));
 app.use('/import', require('./routes/import'));
-app.use('/user-management', require('./routes/userManagement'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

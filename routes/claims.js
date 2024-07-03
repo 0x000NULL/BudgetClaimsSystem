@@ -114,7 +114,7 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
 });
 
 // Route to add a new claim, accessible by admin and manager
-router.post('/', checkPermissions([permissions.CLAIMS.CREATE]), logActivity('Added new claim'), (req, res) => {
+router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), (req, res) => {
     const { mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation, ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer } = req.body; // Extract claim details from the request body
 
     console.log('Adding new claim with data:', req.body);
@@ -197,7 +197,7 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
 });
 
 // Route to update a claim by ID, accessible by admin and manager
-router.put('/:id', checkPermissions([permissions.CLAIMS.UPDATE]), logActivity('Updated claim'), async (req, res) => {
+router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), async (req, res) => {
     const claimId = req.params.id;
     console.log(`Updating claim with ID: ${claimId}`);
 
@@ -273,7 +273,7 @@ router.put('/:id', checkPermissions([permissions.CLAIMS.UPDATE]), logActivity('U
 });
 
 // Route to delete a claim by ID, accessible only by admin
-router.delete('/:id', checkPermissions([permissions.CLAIMS.DELETE]), logActivity('Deleted claim'), (req, res) => {
+router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), (req, res) => {
     const claimId = req.params.id;
 
     console.log('Deleting claim with ID:', claimId);

@@ -21,10 +21,6 @@ const userSchema = new mongoose.Schema({
         enum: ['admin', 'manager', 'employee'],
         default: 'employee'
     },
-    permissions: {
-        type: Map,
-        of: Boolean
-    },
     password: {
         type: String,
         required: true,
