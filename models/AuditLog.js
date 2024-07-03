@@ -1,13 +1,11 @@
 // models/AuditLog.js
-
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 
-const AuditLogSchema = new Schema({
+const AuditLogSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     action: { type: String, required: true },
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    timestamp: { type: Date, default: Date.now },
-    details: { type: String }
+    details: { type: String },
+    timestamp: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('AuditLog', AuditLogSchema);

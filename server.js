@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const passport = require('passport');
@@ -10,6 +11,8 @@ const cors = require('cors');
 const fileUpload = require('express-fileupload');
 const helmet = require('helmet');
 const methodOverride = require('method-override');
+const exportRoutes = require('./routes/export');
+const auditLogRoutes = require('./routes/auditLogs');
 
 require('dotenv').config();
 require('./notifications/reminderScheduler');
@@ -76,6 +79,7 @@ app.use((req, res, next) => {
     res.locals.success_msg = req.flash('success_msg');
     res.locals.error_msg = req.flash('error_msg');
     res.locals.error = req.flash('error');
+    res.locals.user = req.user; // Ensure user is set globally
     console.log('Flash messages set:', {
         success_msg: res.locals.success_msg,
         error_msg: res.locals.error_msg,
@@ -101,12 +105,12 @@ app.use('/customer', require('./routes/customers'));
 app.use('/employee', require('./routes/employees'));
 app.use('/email', require('./routes/email'));
 app.use('/reports', require('./routes/reports'));
-app.use('/audit-logs', require('./routes/auditLogs'));
+app.use('/audit-logs', auditLogRoutes);
 app.use('/email-templates', require('./routes/emailTemplates'));
-app.use('/export', require('./routes/export'));
+app.use('/export', exportRoutes);
 app.use('/import', require('./routes/import'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-});  
+});
