@@ -10,21 +10,21 @@ const getPendingTasks = (userId) => {
 };
 
 // Schedule a task to run every day at 8 AM
-cron.schedule('365 8 * * *', () => {
-    // Fetch all users from the database
-    User.find()
-        .then(users => {
-            // Iterate over each user
-            users.forEach(user => {
-                // Get pending tasks for the user
-                const pendingTasks = getPendingTasks(user._id);
-                if (pendingTasks.length > 0) {
-                    // Send a notification to the user about pending tasks
-                    notifyPendingTasks(user.email, pendingTasks);
-                }
-            });
-        })
-        .catch(err => {
-            console.error('Error retrieving users:', err); // Log any errors that occur while fetching users
-        });
-});
+//cron.schedule('* 8 * * *', () => {
+//    // Fetch all users from the database
+//    User.find()
+//        .then(users => {
+//            // Iterate over each user
+//            users.forEach(user => {
+//                // Get pending tasks for the user
+//                const pendingTasks = getPendingTasks(user._id);
+//                if (pendingTasks.length > 0) {
+//                    // Send a notification to the user about pending tasks
+//                    notifyPendingTasks(user.email, pendingTasks);
+//                }
+//            });
+//        })
+//        .catch(err => {
+//            console.error('Error retrieving users:', err); // Log any errors that occur while fetching users
+//        });
+//});

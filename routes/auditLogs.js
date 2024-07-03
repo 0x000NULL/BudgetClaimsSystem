@@ -1,22 +1,17 @@
 // routes/auditLogs.js
-
 const express = require('express');
-const mongoose = require('mongoose');
-const AuditLog = require('../models/AuditLog'); // Import the AuditLog model
-const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication middleware
-
 const router = express.Router();
+const AuditLog = require('../models/AuditLog');
+const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
 
-// Route to fetch and display audit logs
-router.get('/', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
-    console.log('Audit Logs route accessed');
+router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     try {
-        const auditLogs = await AuditLog.find().populate('user').exec(); // Fetch audit logs with user details
-        console.log('Audit logs fetched:', auditLogs);
-        res.render('audit_logs', { title: 'Audit Logs', auditLogs });
+        const logs = await AuditLog.find().populate('user', 'username').sort({ timestamp: -1 }).lean();
+        console.log('Audit logs fetched:', logs); // Logs should print here
+        res.render('audit_logs', { logs });
     } catch (err) {
-        console.error('Error fetching audit logs:', err.message);
-        res.status(500).render('500', { message: 'Internal Server Error' });
+        console.error('Error fetching audit logs:', err);
+        res.status(500).send('Server Error');
     }
 });
 

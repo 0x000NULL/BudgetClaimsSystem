@@ -1,3 +1,4 @@
+<!-- views/audit_logs.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +9,6 @@
 </head>
 <body>
     <header>
-        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>Budget Claims System</h1>
         <nav>
@@ -18,8 +18,8 @@
                 <li><a href="/claims/add">Add Claim</a></li>
                 <li><a href="/reports">Reports</a></li>
                 <li><a href="/user-management">User Management</a></li>
-                <li><a href="/audit-logs">Audit Logs</a></li>
                 <li><a href="/email-templates">Email Templates</a></li>
+                <li><a href="/audit-logs">Audit Logs</a></li>
                 <li><a href="/help">Help</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
@@ -30,21 +30,27 @@
         <table>
             <thead>
                 <tr>
-                    <th>Action</th>
                     <th>User</th>
-                    <th>Timestamp</th>
+                    <th>Action</th>
                     <th>Details</th>
+                    <th>Timestamp</th>
                 </tr>
             </thead>
             <tbody>
-                <% auditLogs.forEach(log => { %>
+                <% if (logs && logs.length) { %>
+                    <% logs.forEach(log => { %>
+                        <tr>
+                            <td><%= log.user.username %></td>
+                            <td><%= log.action %></td>
+                            <td><%= log.details %></td>
+                            <td><%= new Date(log.timestamp).toLocaleString() %></td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
                     <tr>
-                        <td><%= log.action %></td>
-                        <td><%= log.user.name %></td>
-                        <td><%= new Date(log.timestamp).toLocaleString() %></td>
-                        <td><%= log.details %></td>
+                        <td colspan="4">No audit logs found.</td>
                     </tr>
-                <% }) %>
+                <% } %>
             </tbody>
         </table>
     </main>
