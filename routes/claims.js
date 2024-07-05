@@ -114,63 +114,66 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
 });
 
 // Route to add a new claim, accessible by admin and manager
-router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), (req, res) => {
-    const { mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation, ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer } = req.body; // Extract claim details from the request body
+router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), async (req, res) => {
+    const {
+        mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
+        ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
+        customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
+        carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
+        damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
+        insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
+        thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber
+    } = req.body;
 
     console.log('Adding new claim with data:', req.body);
 
-    // Initialize an array to hold uploaded file names
-    let filesArray = [];
+    let files = initializeFileCategories({});
 
-    // Check if files were uploaded
-    if (req.files && req.files.files) {
-        const files = req.files.files;
-        if (!Array.isArray(files)) filesArray.push(files); // Ensure files is always an array
-        else filesArray = files;
-
-        // Save each file to the uploads directory
-        filesArray.forEach(file => {
-            const filePath = path.join(__dirname, '../public/uploads', file.name);
-            file.mv(filePath, err => {
-                if (err) {
-                    console.error('Error uploading file:', err);
-                    return res.status(500).json({ error: err.message }); // Handle file upload error
+    if (req.files) {
+        try {
+            await Promise.all(Object.keys(req.files).map(async (category) => {
+                if (Array.isArray(req.files[category])) {
+                    await Promise.all(req.files[category].map(async (file) => {
+                        const filePath = path.join(__dirname, '../public/uploads', file.name);
+                        await file.mv(filePath);
+                        console.log('File uploaded successfully:', file.name);
+                        files[category].push(file.name);
+                    }));
+                } else {
+                    const file = req.files[category];
+                    const filePath = path.join(__dirname, '../public/uploads', file.name);
+                    await file.mv(filePath);
+                    console.log('File uploaded successfully:', file.name);
+                    files[category].push(file.name);
                 }
-                console.log('File uploaded successfully:', file.name);
-            });
-        });
+            }));
+        } catch (err) {
+            console.error('Error uploading files:', err);
+            return res.status(500).json({ error: err.message });
+        }
     }
 
-    // Create a new claim object
     const newClaim = new Claim({
-        mva,
-        customerName,
-        description,
-        status,
-        damageType, // Added damageType
-        dateOfLoss,
-        raNumber,
-        rentingLocation,
-        ldwAccepted,
-        policeDepartment,
-        policeReportNumber,
-        claimCloseDate,
-        vehicleOdometer,
-        files: filesArray.map(file => file.name) // Store file names in the claim
+        mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
+        ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
+        customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
+        carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
+        damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
+        insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
+        thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
+        files
     });
 
-    // Save the claim to the database
-    newClaim.save()
-        .then(claim => {
-            console.log('New claim added:', claim);
-            notifyNewClaim(req.user.email, claim); // Send notification about the new claim
-            cache.del('/claims'); // Invalidate the cache for claims list
-            res.redirect('/dashboard'); // Redirect to the dashboard page
-        })
-        .catch(err => {
-            console.error('Error adding new claim:', err);
-            res.status(500).json({ error: err.message });
-        }); // Handle errors
+    try {
+        const claim = await newClaim.save();
+        console.log('New claim added:', claim);
+        notifyNewClaim(req.user.email, claim);
+        cache.del('/claims');
+        res.redirect('/dashboard');
+    } catch (err) {
+        console.error('Error adding new claim:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Route to get a specific claim by ID for editing, accessible by admin and manager
@@ -208,18 +211,19 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             return res.status(404).json({ error: 'Claim not found' });
         }
 
-        // Initialize versions array if it doesn't exist
         if (!claim.versions) {
             claim.versions = [];
         }
 
-        // Save the current version of the claim before updating
         claim.versions.push({
             description: claim.description,
             status: claim.status,
             files: claim.files,
             updatedAt: claim.updatedAt
         });
+
+        // Update the claim with new data from req.body
+        Object.assign(claim, req.body);
 
         // Update the claim with new data
         claim.mva = req.body.mva || claim.mva;
@@ -235,134 +239,173 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         claim.policeReportNumber = req.body.policeReportNumber || claim.policeReportNumber;
         claim.claimCloseDate = req.body.claimCloseDate || claim.claimCloseDate;
         claim.vehicleOdometer = req.body.vehicleOdometer || claim.vehicleOdometer;
+        claim.customerNumber = req.body.customerNumber || claim.customerNumber;
+        claim.customerEmail = req.body.customerEmail || claim.customerEmail;
+        claim.customerAddress = req.body.customerAddress || claim.customerAddress;
+        claim.customerDriversLicense = req.body.customerDriversLicense || claim.customerDriversLicense;
+        claim.carMake = req.body.carMake || claim.carMake;
+        claim.carModel = req.body.carModel || claim.carModel;
+        claim.carYear = req.body.carYear || claim.carYear;
+        claim.carColor = req.body.carColor || claim.carColor;
+        claim.carVIN = req.body.carVIN || claim.carVIN;
+        claim.accidentDate = req.body.accidentDate || claim.accidentDate;
+        claim.billable = req.body.billable || claim.billable;
+        claim.isRenterAtFault = req.body.isRenterAtFault || claim.isRenterAtFault;
+        claim.damagesTotal = req.body.damagesTotal || claim.damagesTotal;
+        claim.bodyShopName = req.body.bodyShopName || claim.bodyShopName;
+        claim.insuranceCarrier = req.body.insuranceCarrier || claim.insuranceCarrier;
+        claim.insuranceAgent = req.body.insuranceAgent || claim.insuranceAgent;
+        claim.insurancePhoneNumber = req.body.insurancePhoneNumber || claim.insurancePhoneNumber;
+        claim.insuranceFaxNumber = req.body.insuranceFaxNumber || claim.insuranceFaxNumber;
+        claim.insuranceAddress = req.body.insuranceAddress || claim.insuranceAddress;
+        claim.insuranceClaimNumber = req.body.insuranceClaimNumber || claim.insuranceClaimNumber;
+        claim.thirdPartyName = req.body.thirdPartyName || claim.thirdPartyName;
+        claim.thirdPartyPhoneNumber = req.body.thirdPartyPhoneNumber || claim.thirdPartyPhoneNumber;
+        claim.thirdPartyInsuranceName = req.body.thirdPartyInsuranceName || claim.thirdPartyInsuranceName;
+        claim.thirdPartyPolicyNumber = req.body.thirdPartyPolicyNumber || claim.thirdPartyPolicyNumber;
 
-        // Handle file updates
-        let existingFiles = claim.files || [];
-        if (req.files && req.files.files) {
-            let newFilesArray = [];
-            const files = req.files.files;
-            if (!Array.isArray(files)) newFilesArray.push(files);
-            else newFilesArray = files;
+        let existingFiles = claim.files || {};
 
-            newFilesArray.forEach(file => {
-                const filePath = path.join(__dirname, '../public/uploads', file.name);
-                file.mv(filePath, err => {
-                    if (err) {
-                        console.error('Error uploading file:', err);
-                        return res.status(500).json({ error: err.message });
+        if (req.files) {
+            try {
+                await Promise.all(Object.keys(req.files).map(async (category) => {
+                    if (Array.isArray(req.files[category])) {
+                        await Promise.all(req.files[category].map(async (file) => {
+                            const filePath = path.join(__dirname, '../public/uploads', file.name);
+                            await file.mv(filePath);
+                            console.log('File uploaded successfully:', file.name);
+                            if (!existingFiles[category]) {
+                                existingFiles[category] = [];
+                            }
+                            existingFiles[category].push(file.name);
+                        }));
+                    } else {
+                        const file = req.files[category];
+                        const filePath = path.join(__dirname, '../public/uploads', file.name);
+                        await file.mv(filePath);
+                        console.log('File uploaded successfully:', file.name);
+                        if (!existingFiles[category]) {
+                            existingFiles[category] = [];
+                        }
+                        existingFiles[category].push(file.name);
                     }
-                    console.log('File uploaded successfully:', file.name);
-                    existingFiles.push(file.name); // Add new file to existing files array
-                });
-            });
+                }));
+            } catch (err) {
+                console.error('Error uploading files:', err);
+                return res.status(500).json({ error: err.message });
+            }
         }
 
         claim.files = existingFiles;
 
-        // Save the updated claim to the database
         const updatedClaim = await claim.save();
         console.log('Claim updated:', updatedClaim);
-        notifyClaimStatusUpdate(req.user.email, updatedClaim); // Send notification about the claim status update
-        cache.del(`claim_${claimId}`); // Invalidate the cache for the updated claim
-        cache.del('/claims'); // Invalidate the cache for claims list
-        res.redirect('/dashboard'); // Redirect to the dashboard page
+        notifyClaimStatusUpdate(req.user.email, updatedClaim);
+        cache.del(`claim_${claimId}`);
+        cache.del('/claims');
+        res.redirect('/dashboard');
     } catch (err) {
         console.error(`Error updating claim: ${err}`);
-        res.status(500).json({ error: err.message }); // Handle errors
+        res.status(500).json({ error: err.message });
     }
 });
 
+module.exports = router;
+
+
 // Route to delete a claim by ID, accessible only by admin
-router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), (req, res) => {
+router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), async (req, res) => {
     const claimId = req.params.id;
 
     console.log('Deleting claim with ID:', claimId);
 
-    Claim.findByIdAndDelete(claimId)
-        .then(() => {
-            console.log('Claim deleted:', claimId);
-            res.json({ msg: 'Claim deleted' }); // Respond with deletion confirmation
-            cache.del(`claim_${claimId}`); // Invalidate the cache for the deleted claim
-            cache.del('/claims'); // Invalidate the cache for claims list
-        })
-        .catch(err => {
-            console.error('Error deleting claim:', err);
-            res.status(500).json({ error: err.message });
-        }); // Handle errors
+    try {
+        const claim = await Claim.findByIdAndDelete(claimId);
+        if (!claim) {
+            console.error(`Claim with ID ${claimId} not found`);
+            return res.status(404).json({ error: 'Claim not found' });
+        }
+        console.log('Claim deleted:', claimId);
+        res.json({ msg: 'Claim deleted' }); // Respond with deletion confirmation
+        cache.del(`claim_${claimId}`); // Invalidate the cache for the deleted claim
+        cache.del('/claims'); // Invalidate the cache for claims list
+    } catch (err) {
+        console.error('Error deleting claim:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Route for bulk updating claims, accessible by admin and manager
-router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk updated claims'), (req, res) => {
+router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk updated claims'), async (req, res) => {
     const { claimIds, updateData } = req.body; // Extract claim IDs and update data from the request body
 
     console.log('Bulk updating claims with IDs:', claimIds, 'with data:', updateData);
 
-    // Update multiple claims based on provided IDs and data
-    Claim.updateMany({ _id: { $in: claimIds } }, updateData)
-        .then(result => {
-            console.log('Claims updated:', result);
-            res.json({ msg: 'Claims updated', result }); // Respond with update result
-            claimIds.forEach(id => cache.del(`claim_${id}`)); // Invalidate the cache for the updated claims
-            cache.del('/claims'); // Invalidate the cache for claims list
-        })
-        .catch(err => {
-            console.error('Error bulk updating claims:', err);
-            res.status(500).json({ error: err.message });
-        }); // Handle errors
+    try {
+        // Update multiple claims based on provided IDs and data
+        const result = await Claim.updateMany({ _id: { $in: claimIds } }, updateData);
+        console.log('Claims updated:', result);
+        res.json({ msg: 'Claims updated', result }); // Respond with update result
+        claimIds.forEach(id => cache.del(`claim_${id}`)); // Invalidate the cache for the updated claims
+        cache.del('/claims'); // Invalidate the cache for claims list
+    } catch (err) {
+        console.error('Error bulk updating claims:', err);
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
 });
 
 // Route for bulk exporting claims, accessible by admin and manager
-router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk exported claims'), (req, res) => {
+router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk exported claims'), async (req, res) => {
     const { claimIds, format } = req.body; // Extract claim IDs and export format from the request body
 
     console.log('Bulk exporting claims with IDs:', claimIds, 'in format:', format);
 
-    // Find claims based on provided IDs
-    Claim.find({ _id: { $in: claimIds } })
-        .then(claims => {
-            if (format === 'csv') {
-                console.log('Exporting claims to CSV');
-                res.csv(claims, true); // Export claims to CSV
-            } else if (format === 'excel') {
-                console.log('Exporting claims to Excel');
-                const workbook = new ExcelJS.Workbook();
-                const worksheet = workbook.addWorksheet('Claims');
-                worksheet.columns = [
-                    { header: 'MVA', key: 'mva', width: 10 },
-                    { header: 'Customer Name', key: 'customerName', width: 30 },
-                    { header: 'Description', key: 'description', width: 50 },
-                    { header: 'Status', key: 'status', width: 10 },
-                    { header: 'Date', key: 'date', width: 15 }
-                ];
-                claims.forEach(claim => {
-                    worksheet.addRow(claim);
-                });
-                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-                res.setHeader('Content-Disposition', 'attachment; filename=claims.xlsx');
-                workbook.xlsx.write(res).then(() => res.end());
-            } else if (format === 'pdf') {
-                console.log('Exporting claims to PDF');
-                const doc = new pdfkit();
-                doc.pipe(res);
-                doc.text('Claims Report', { align: 'center' });
-                claims.forEach(claim => {
-                    doc.text(`MVA: ${claim.mva}`);
-                    doc.text(`Customer Name: ${claim.customerName}`);
-                    doc.text(`Description: ${claim.description}`);
-                    doc.text(`Status: ${claim.status}`);
-                    doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
-                    doc.moveDown();
-                });
-                doc.end();
-            } else {
-                console.error('Invalid export format:', format);
-                res.status(400).json({ msg: 'Invalid format' });
-            }
-        })
-        .catch(err => {
-            console.error('Error exporting claims:', err);
-            res.status(500).json({ error: err.message });
-        }); // Handle errors
+    try {
+        // Find claims based on provided IDs
+        const claims = await Claim.find({ _id: { $in: claimIds } });
+
+        if (format === 'csv') {
+            console.log('Exporting claims to CSV');
+            res.csv(claims, true); // Export claims to CSV
+        } else if (format === 'excel') {
+            console.log('Exporting claims to Excel');
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Claims');
+            worksheet.columns = [
+                { header: 'MVA', key: 'mva', width: 10 },
+                { header: 'Customer Name', key: 'customerName', width: 30 },
+                { header: 'Description', key: 'description', width: 50 },
+                { header: 'Status', key: 'status', width: 10 },
+                { header: 'Date', key: 'date', width: 15 }
+            ];
+            claims.forEach(claim => {
+                worksheet.addRow(claim);
+            });
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', 'attachment; filename=claims.xlsx');
+            workbook.xlsx.write(res).then(() => res.end());
+        } else if (format === 'pdf') {
+            console.log('Exporting claims to PDF');
+            const doc = new pdfkit();
+            doc.pipe(res);
+            doc.text('Claims Report', { align: 'center' });
+            claims.forEach(claim => {
+                doc.text(`MVA: ${claim.mva}`);
+                doc.text(`Customer Name: ${claim.customerName}`);
+                doc.text(`Description: ${claim.description}`);
+                doc.text(`Status: ${claim.status}`);
+                doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
+                doc.moveDown();
+            });
+            doc.end();
+        } else {
+            console.error('Invalid export format:', format);
+            res.status(400).json({ msg: 'Invalid format' });
+        }
+    } catch (err) {
+        console.error('Error exporting claims:', err);
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
 });
 
 // Route to export a claim as PDF
@@ -429,7 +472,6 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
         res.status(500).render('500', { message: 'Internal Server Error' });
     }
 });
-
 
 // Route to view a specific claim by ID, with options to edit or delete, accessible by admin, manager, and employee
 router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claim details'), async (req, res) => {
