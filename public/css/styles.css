@@ -90,3 +90,28 @@ canvas {
             margin: 5px 0; /* Margin around list items */
         }
 }
+
+.responsive-textarea {
+    width: 100%;
+    min-height: 100px; /* Minimum height to ensure it's not too small */
+    resize: vertical; /* Allows users to resize the height */
+    padding: 10px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+/* Adjustments for smaller screens */
+@media (max-width: 768px) {
+    .responsive-textarea {
+        min-height: 80px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Adjustments for larger screens */
+@media (min-width: 1200px) {
+    .responsive-textarea {
+        min-height: 150px;
+        font-size: 1.1rem;
+    }
+}

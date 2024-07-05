@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Claim - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
         .btn {
             display: inline-block;
@@ -59,7 +59,6 @@
 </head>
 <body>
     <header>
-        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>Budget Claims System</h1>
         <nav>
@@ -132,8 +131,11 @@
                 <label>Insurance Carrier:</label>
                 <p><%= claim.insuranceCarrier %></p>
 
-                <label>Insurance Agent:</label>
-                <p><%= claim.insuranceAgent %></p>
+                <label>Insurance Adjuster:</label>
+                <p><%= claim.insuranceAdjuster %></p>
+
+                <label>Insurance Email:</label>
+                <p><%= claim.insuranceEmail %></p>
 
                 <label>Insurance Phone Number:</label>
                 <p><%= claim.insurancePhoneNumber %></p>
@@ -144,11 +146,17 @@
                 <label>Insurance Address:</label>
                 <p><%= claim.insuranceAddress %></p>
 
+                <label>Insurance Policy Number:</label>
+                <p><%= claim.insurancePolicyNumber %></p>
+
                 <label>Insurance Claim Number:</label>
                 <p><%= claim.insuranceClaimNumber %></p>
 
                 <label>Third Party Name:</label>
                 <p><%= claim.thirdPartyName %></p>
+
+                <label>Third Party Address:</label>
+                <p><%= claim.thirdPartyAddress %></p>
 
                 <label>Third Party Phone Number:</label>
                 <p><%= claim.thirdPartyPhoneNumber %></p>
@@ -156,11 +164,42 @@
                 <label>Third Party Insurance Name:</label>
                 <p><%= claim.thirdPartyInsuranceName %></p>
 
+                <label>Third Party Adjuster Name:</label>
+                <p><%= claim.thirdPartyAdjusterName %></p>
+
                 <label>Third Party Policy Number:</label>
                 <p><%= claim.thirdPartyPolicyNumber %></p>
 
+                <label>Third Party Claim Number:</label>
+                <p><%= claim.thirdPartyClaimNumber %></p>
+
+                <label>Renting Location:</label>
+                <p><%= claim.rentingLocation %></p>
+
+                <label>LDW Accepted:</label>
+                <p><%= claim.ldwAccepted ? 'Yes' : 'No' %></p>
+
+                <label>Police Department:</label>
+                <p><%= claim.policeDepartment %></p>
+
+                <label>Police Report Number:</label>
+                <p><%= claim.policeReportNumber %></p>
+
+                <label>Claim Close Date:</label>
+                <p><%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toLocaleDateString() : '' %></p>
+
+                <label>Vehicle Odometer:</label>
+                <p><%= claim.vehicleOdometer %></p>
+
                 <label>Description:</label>
                 <p><%= claim.description %></p>
+
+                <label>Damage Type:</label>
+                <ul>
+                    <% claim.damageType.forEach(type => { %>
+                        <li><%= type %></li>
+                    <% }) %>
+                </ul>
 
                 <label>Status:</label>
                 <p><%= claim.status %></p>

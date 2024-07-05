@@ -73,7 +73,11 @@ const ClaimSchema = new mongoose.Schema({
         type: String,
         required: false
     },
-    insuranceAgent: {
+    insuranceAdjuster: {
+        type: String,
+        required: false
+    },
+    insuranceEmail: {
         type: String,
         required: false
     },
@@ -89,11 +93,19 @@ const ClaimSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    insurancePolicyNumber: {
+        type: String,
+        required: false
+    },
     insuranceClaimNumber: {
         type: String,
         required: false
     },
     thirdPartyName: {
+        type: String,
+        required: false
+    },
+    thirdPartyAddress: {
         type: String,
         required: false
     },
@@ -105,7 +117,15 @@ const ClaimSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    thirdPartyAdjusterName: {
+        type: String,
+        required: false
+    },
     thirdPartyPolicyNumber: {
+        type: String,
+        required: false
+    },
+    thirdPartyClaimNumber: {
         type: String,
         required: false
     },
@@ -138,9 +158,14 @@ const ClaimSchema = new mongoose.Schema({
         type: String,
         required: false
     },
-    damageType: { type: String, enum: ['Heavy hit', 'Light hit', 'Mystery'], required: false },
+    damageType: {
+        type: [String],
+        enum: ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windshield', 'Undercarriage', 'Mechanical', 'Interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left Quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee'],
+        required: false
+    },
     status: {
         type: String,
+        enum: ['Closed', 'Vince Pre-Sub', 'Vince Sub', 'Deonte Pre-Sub', 'Deonte Sub', 'Stef Claim', 'Bodyshop', 'LDW Discharge', 'Stef Pre-Litigation', 'Stef Litigation', 'Tina Pre-Litigation', 'Tina Litigation', 'Collections', 'Collections Review'],
         required: false
     },
     files: {
