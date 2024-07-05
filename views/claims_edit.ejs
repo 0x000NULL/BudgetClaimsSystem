@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Claim - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
         .btn {
             display: inline-block;
@@ -19,14 +19,6 @@
 
         .btn:hover {
             background-color: #0056b3;
-        }
-
-        .btn-delete {
-            background-color: red;
-        }
-
-        .btn-delete:hover {
-            background-color: darkred;
         }
 
         .container {
@@ -46,8 +38,24 @@
             font-weight: bold;
         }
 
-        .claim-info p {
+        .claim-info input, .claim-info textarea, .claim-info select {
+            width: 100%;
+            padding: 8px;
             margin: 5px 0 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .file-section {
+            margin-bottom: 20px;
+        }
+
+        .file-section h3 {
+            margin-bottom: 10px;
+        }
+
+        .file-section input {
+            margin-bottom: 10px;
         }
 
         .button-group {
@@ -55,11 +63,21 @@
             justify-content: space-between;
             flex-wrap: wrap;
         }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 5px 0 15px 0;
+        }
+
+        .checkbox-group label {
+            width: 50%;
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
     <header>
-        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>Budget Claims System</h1>
         <nav>
@@ -77,151 +95,113 @@
     <main>
         <div class="container">
             <h2>Edit Claim</h2>
-            <form action="/claims/<%= claim._id %>?_method=PUT" method="post" enctype="multipart/form-data">
-                <div class="form-group">
+            <form action="/claims/<%= claim._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
+                <div class="claim-info">
                     <label for="mva">MVA:</label>
                     <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required>
-                </div>
 
-                <div class="form-group">
                     <label for="customerName">Customer Name:</label>
-                    <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>">
-                </div>
+                    <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
 
-                <div class="form-group">
                     <label for="customerNumber">Customer Number:</label>
                     <input type="text" id="customerNumber" name="customerNumber" value="<%= claim.customerNumber %>">
-                </div>
 
-                <div class="form-group">
                     <label for="customerEmail">Customer Email:</label>
                     <input type="email" id="customerEmail" name="customerEmail" value="<%= claim.customerEmail %>">
-                </div>
 
-                <div class="form-group">
                     <label for="customerAddress">Customer Address:</label>
                     <input type="text" id="customerAddress" name="customerAddress" value="<%= claim.customerAddress %>">
-                </div>
 
-                <div class="form-group">
                     <label for="customerDriversLicense">Customer Drivers License:</label>
                     <input type="text" id="customerDriversLicense" name="customerDriversLicense" value="<%= claim.customerDriversLicense %>">
-                </div>
 
-                <div class="form-group">
                     <label for="carMake">Car Make:</label>
                     <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>">
-                </div>
 
-                <div class="form-group">
                     <label for="carModel">Car Model:</label>
                     <input type="text" id="carModel" name="carModel" value="<%= claim.carModel %>">
-                </div>
 
-                <div class="form-group">
                     <label for="carYear">Car Year:</label>
                     <input type="text" id="carYear" name="carYear" value="<%= claim.carYear %>">
-                </div>
 
-                <div class="form-group">
                     <label for="carColor">Car Color:</label>
                     <input type="text" id="carColor" name="carColor" value="<%= claim.carColor %>">
-                </div>
 
-                <div class="form-group">
                     <label for="carVIN">Car VIN:</label>
                     <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>">
-                </div>
 
-                <div class="form-group">
                     <label for="accidentDate">Accident Date:</label>
-                    <input type="date" id="accidentDate" name="accidentDate" value="<%= claim.accidentDate ? new Date(claim.accidentDate).toISOString().substr(0, 10) : '' %>">
-                </div>
+                    <input type="date" id="accidentDate" name="accidentDate" value="<%= claim.accidentDate ? new Date(claim.accidentDate).toISOString().split('T')[0] : '' %>">
 
-                <div class="form-group">
                     <label for="billable">Billable:</label>
                     <select id="billable" name="billable">
                         <option value="true" <%= claim.billable ? 'selected' : '' %>>Yes</option>
                         <option value="false" <%= !claim.billable ? 'selected' : '' %>>No</option>
                     </select>
-                </div>
 
-                <div class="form-group">
                     <label for="isRenterAtFault">Is Renter At Fault:</label>
                     <select id="isRenterAtFault" name="isRenterAtFault">
                         <option value="true" <%= claim.isRenterAtFault ? 'selected' : '' %>>Yes</option>
                         <option value="false" <%= !claim.isRenterAtFault ? 'selected' : '' %>>No</option>
                     </select>
-                </div>
 
-                <div class="form-group">
                     <label for="damagesTotal">Damages Total:</label>
-                    <input type="number" id="damagesTotal" name="damagesTotal" value="<%= claim.damagesTotal %>">
-                </div>
+                    <input type="text" id="damagesTotal" name="damagesTotal" value="<%= claim.damagesTotal %>">
 
-                <div class="form-group">
                     <label for="bodyShopName">Body Shop Name:</label>
                     <input type="text" id="bodyShopName" name="bodyShopName" value="<%= claim.bodyShopName %>">
-                </div>
 
-                <div class="form-group">
                     <label for="raNumber">RA Number:</label>
                     <input type="text" id="raNumber" name="raNumber" value="<%= claim.raNumber %>">
-                </div>
 
-                <div class="form-group">
                     <label for="insuranceCarrier">Insurance Carrier:</label>
                     <input type="text" id="insuranceCarrier" name="insuranceCarrier" value="<%= claim.insuranceCarrier %>">
-                </div>
 
-                <div class="form-group">
-                    <label for="insuranceAgent">Insurance Agent:</label>
-                    <input type="text" id="insuranceAgent" name="insuranceAgent" value="<%= claim.insuranceAgent %>">
-                </div>
+                    <label for="insuranceAdjuster">Insurance Adjuster:</label>
+                    <input type="text" id="insuranceAdjuster" name="insuranceAdjuster" value="<%= claim.insuranceAdjuster %>">
 
-                <div class="form-group">
+                    <label for="insuranceEmail">Insurance Email:</label>
+                    <input type="text" id="insuranceEmail" name="insuranceEmail" value="<%= claim.insuranceEmail %>">
+
                     <label for="insurancePhoneNumber">Insurance Phone Number:</label>
                     <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber" value="<%= claim.insurancePhoneNumber %>">
-                </div>
 
-                <div class="form-group">
                     <label for="insuranceFaxNumber">Insurance Fax Number:</label>
                     <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber" value="<%= claim.insuranceFaxNumber %>">
-                </div>
 
-                <div class="form-group">
                     <label for="insuranceAddress">Insurance Address:</label>
                     <input type="text" id="insuranceAddress" name="insuranceAddress" value="<%= claim.insuranceAddress %>">
-                </div>
 
-                <div class="form-group">
+                    <label for="insurancePolicyNumber">Insurance Policy Number:</label>
+                    <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber" value="<%= claim.insurancePolicyNumber %>">
+
                     <label for="insuranceClaimNumber">Insurance Claim Number:</label>
                     <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber" value="<%= claim.insuranceClaimNumber %>">
-                </div>
 
-                <div class="form-group">
                     <label for="thirdPartyName">Third Party Name:</label>
                     <input type="text" id="thirdPartyName" name="thirdPartyName" value="<%= claim.thirdPartyName %>">
-                </div>
 
-                <div class="form-group">
+                    <label for="thirdPartyAddress">Third Party Address:</label>
+                    <input type="text" id="thirdPartyAddress" name="thirdPartyAddress" value="<%= claim.thirdPartyAddress %>">
+
                     <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
                     <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber" value="<%= claim.thirdPartyPhoneNumber %>">
-                </div>
 
-                <div class="form-group">
                     <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
                     <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName" value="<%= claim.thirdPartyInsuranceName %>">
-                </div>
 
-                <div class="form-group">
+                    <label for="thirdPartyAdjusterName">Third Party Adjuster Name:</label>
+                    <input type="text" id="thirdPartyAdjusterName" name="thirdPartyAdjusterName" value="<%= claim.thirdPartyAdjusterName %>">
+
                     <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
                     <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber" value="<%= claim.thirdPartyPolicyNumber %>">
-                </div>
 
-                <div class="form-group">
+                    <label for="thirdPartyClaimNumber">Third Party Claim Number:</label>
+                    <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber" value="<%= claim.thirdPartyClaimNumber %>">
+
                     <label for="rentingLocation">Renting Location:</label>
-                    <select id="rentingLocation" name="rentingLocation">
+                    <select id="rentingLocation" name="rentingLocation" required>
+                        <option value="">Select Location</option>
                         <option value="LAS Airport" <%= claim.rentingLocation === 'LAS Airport' ? 'selected' : '' %>>LAS Airport</option>
                         <option value="Henderson Executive Airport" <%= claim.rentingLocation === 'Henderson Executive Airport' ? 'selected' : '' %>>Henderson Executive Airport</option>
                         <option value="Toyota Las Vegas" <%= claim.rentingLocation === 'Toyota Las Vegas' ? 'selected' : '' %>>Toyota Las Vegas</option>
@@ -232,115 +212,88 @@
                         <option value="Gibson" <%= claim.rentingLocation === 'Gibson' ? 'selected' : '' %>>Gibson</option>
                         <option value="Golden Nugget" <%= claim.rentingLocation === 'Golden Nugget' ? 'selected' : '' %>>Golden Nugget</option>
                     </select>
-                </div>
 
-                <div class="form-group">
                     <label for="ldwAccepted">LDW Accepted:</label>
                     <select id="ldwAccepted" name="ldwAccepted">
                         <option value="true" <%= claim.ldwAccepted ? 'selected' : '' %>>Yes</option>
                         <option value="false" <%= !claim.ldwAccepted ? 'selected' : '' %>>No</option>
                     </select>
-                </div>
 
-                <div class="form-group">
                     <label for="policeDepartment">Police Department:</label>
                     <input type="text" id="policeDepartment" name="policeDepartment" value="<%= claim.policeDepartment %>">
-                </div>
 
-                <div class="form-group">
                     <label for="policeReportNumber">Police Report Number:</label>
                     <input type="text" id="policeReportNumber" name="policeReportNumber" value="<%= claim.policeReportNumber %>">
-                </div>
 
-                <div class="form-group">
                     <label for="claimCloseDate">Claim Close Date:</label>
-                    <input type="date" id="claimCloseDate" name="claimCloseDate" value="<%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toISOString().substr(0, 10) : '' %>">
-                </div>
+                    <input type="date" id="claimCloseDate" name="claimCloseDate" value="<%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toISOString().split('T')[0] : '' %>">
 
-                <div class="form-group">
                     <label for="vehicleOdometer">Vehicle Odometer:</label>
                     <input type="number" id="vehicleOdometer" name="vehicleOdometer" value="<%= claim.vehicleOdometer %>">
-                </div>
 
-                <div class="form-group">
                     <label for="description">Description:</label>
-                    <textarea id="description" name="description"><%= claim.description %></textarea>
-                </div>
+                    <textarea id="description" name="description" class="responsive-textarea"><%= claim.description %></textarea>
 
-                <div>
                     <label for="damageType">Damage Type:</label>
-                    <select id="damageType" name="damageType" required>
-                        <option value="">Select Damage Type</option>
-                        <option value="Heavy hit" <%= claim.damageType === 'Heavy hit' ? 'selected' : '' %>>Heavy hit</option>
-                        <option value="Light hit" <%= claim.damageType === 'Light hit' ? 'selected' : '' %>>Light hit</option>
-                        <option value="Mystery" <%= claim.damageType === 'Mystery' ? 'selected' : '' %>>Mystery</option>
-                    </select>
-                </div>
+                    <div class="checkbox-group">
+                        <% const damageTypes = ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windsheild', 'Undercarraige', 'Mechanical', 'interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee']; %>
+                        <% damageTypes.forEach(type => { %>
+                            <label>
+                                <input type="checkbox" name="damageType" value="<%= type %>" <%= claim.damageType.includes(type) ? 'checked' : '' %>>
+                                <%= type %>
+                            </label>
+                        <% }) %>
+                    </div>
 
-                <div class="form-group">
                     <label for="status">Status:</label>
-                    <input type="text" id="status" name="status" value="<%= claim.status %>">
+                    <select id="status" name="status" required>
+                        <option value="">Select Status</option>
+                        <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
+                        <option value="Vince Pre-Sub" <%= claim.status === 'Vince Pre-Sub' ? 'selected' : '' %>>Vince Pre-Sub</option>
+                        <option value="Vince Sub" <%= claim.status === 'Vince Sub' ? 'selected' : '' %>>Vince Sub</option>
+                        <option value="Deonte Pre-Sub" <%= claim.status === 'Deonte Pre-Sub' ? 'selected' : '' %>>Deonte Pre-Sub</option>
+                        <option value="Deonte Sub" <%= claim.status === 'Deonte Sub' ? 'selected' : '' %>>Deonte Sub</option>
+                        <option value="Stef Claim" <%= claim.status === 'Stef Claim' ? 'selected' : '' %>>Stef Claim</option>
+                        <option value="Bodyshop" <%= claim.status === 'Bodyshop' ? 'selected' : '' %>>Bodyshop</option>
+                        <option value="LDW Discharge" <%= claim.status === 'LDW Discharge' ? 'selected' : '' %>>LDW Discharge</option>
+                        <option value="Stef Pre-Litigation" <%= claim.status === 'Stef Pre-Litigation' ? 'selected' : '' %>>Stef Pre-Litigation</option>
+                        <option value="Stef Litigation" <%= claim.status === 'Stef Litigation' ? 'selected' : '' %>>Stef Litigation</option>
+                        <option value="Tina Pre-Litigation" <%= claim.status === 'Tina Pre-Litigation' ? 'selected' : '' %>>Tina Pre-Litigation</option>
+                        <option value="Tina Litigation" <%= claim.status === 'Tina Litigation' ? 'selected' : '' %>>Tina Litigation</option>
+                        <option value="Collections" <%= claim.status === 'Collections' ? 'selected' : '' %>>Collections</option>
+                        <option value="Collections Review" <%= claim.status === 'Collections Review' ? 'selected' : '' %>>Collections Review</option>
+                    </select>
                 </div>
 
                 <!-- File upload sections -->
                 <div class="file-section">
                     <h3>Incident Reports</h3>
                     <input type="file" id="incidentReports" name="incidentReports" multiple>
-                    <ul>
-                        <% (claim.files.incidentReports || []).forEach(file => { %>
-                            <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
-                        <% }) %>
-                    </ul>
                 </div>
 
                 <div class="file-section">
                     <h3>Correspondence</h3>
                     <input type="file" id="correspondence" name="correspondence" multiple>
-                    <ul>
-                        <% (claim.files.correspondence || []).forEach(file => { %>
-                            <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
-                        <% }) %>
-                    </ul>
                 </div>
 
                 <div class="file-section">
                     <h3>Rental Agreement</h3>
                     <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
-                    <ul>
-                        <% (claim.files.rentalAgreement || []).forEach(file => { %>
-                            <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
-                        <% }) %>
-                    </ul>
                 </div>
 
                 <div class="file-section">
                     <h3>Police Report</h3>
                     <input type="file" id="policeReport" name="policeReport" multiple>
-                    <ul>
-                        <% (claim.files.policeReport || []).forEach(file => { %>
-                            <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
-                        <% }) %>
-                    </ul>
                 </div>
 
                 <div class="file-section">
                     <h3>Invoices</h3>
                     <input type="file" id="invoices" name="invoices" multiple>
-                    <ul>
-                        <% (claim.files.invoices || []).forEach(file => { %>
-                            <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
-                        <% }) %>
-                    </ul>
                 </div>
 
                 <div class="file-section">
                     <h3>Photos</h3>
                     <input type="file" id="photos" name="photos" multiple>
-                    <ul>
-                        <% (claim.files.photos || []).forEach(file => { %>
-                            <li><a href="/uploads/<%= file %>" target="_blank"><%= file %></a></li>
-                        <% }) %>
-                    </ul>
                 </div>
 
                 <div class="button-group">

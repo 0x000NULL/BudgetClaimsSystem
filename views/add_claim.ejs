@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Claim - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
         .btn {
             display: inline-block;
@@ -67,7 +67,6 @@
 </head>
 <body>
     <header>
-        <!-- Budget logo and navigation -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>Budget Claims System</h1>
         <nav>
@@ -88,105 +87,167 @@
             <form action="/claims" method="POST" enctype="multipart/form-data">
                 <div class="claim-info">
                     <label for="mva">MVA:</label>
-                    <input type="text" id="mva" name="mva" required>
+                    <input type="text" id="mva" name="mva">
 
                     <label for="customerName">Customer Name:</label>
-                    <input type="text" id="customerName" name="customerName" required>
+                    <input type="text" id="customerName" name="customerName">
 
                     <label for="customerNumber">Customer Number:</label>
-                    <input type="text" id="customerNumber" name="customerNumber" >
+                    <input type="text" id="customerNumber" name="customerNumber">
 
                     <label for="customerEmail">Customer Email:</label>
-                    <input type="email" id="customerEmail" name="customerEmail" >
+                    <input type="email" id="customerEmail" name="customerEmail">
 
                     <label for="customerAddress">Customer Address:</label>
-                    <input type="text" id="customerAddress" name="customerAddress" >
+                    <input type="text" id="customerAddress" name="customerAddress">
 
                     <label for="customerDriversLicense">Customer Drivers License:</label>
-                    <input type="text" id="customerDriversLicense" name="customerDriversLicense" >
+                    <input type="text" id="customerDriversLicense" name="customerDriversLicense">
 
                     <label for="carMake">Car Make:</label>
-                    <input type="text" id="carMake" name="carMake" >
+                    <input type="text" id="carMake" name="carMake">
 
                     <label for="carModel">Car Model:</label>
-                    <input type="text" id="carModel" name="carModel" >
+                    <input type="text" id="carModel" name="carModel">
 
                     <label for="carYear">Car Year:</label>
-                    <input type="text" id="carYear" name="carYear" >
+                    <input type="text" id="carYear" name="carYear">
 
                     <label for="carColor">Car Color:</label>
-                    <input type="text" id="carColor" name="carColor" >
+                    <input type="text" id="carColor" name="carColor">
 
                     <label for="carVIN">Car VIN:</label>
-                    <input type="text" id="carVIN" name="carVIN" >
+                    <input type="text" id="carVIN" name="carVIN">
 
                     <label for="accidentDate">Accident Date:</label>
-                    <input type="date" id="accidentDate" name="accidentDate" >
+                    <input type="date" id="accidentDate" name="accidentDate">
 
                     <label for="billable">Billable:</label>
-                    <select id="billable" name="billable" >
+                    <select id="billable" name="billable">
                         <option value="true">Yes</option>
                         <option value="false">No</option>
                     </select>
 
                     <label for="isRenterAtFault">Is Renter At Fault:</label>
-                    <select id="isRenterAtFault" name="isRenterAtFault" >
+                    <select id="isRenterAtFault" name="isRenterAtFault">
                         <option value="true">Yes</option>
                         <option value="false">No</option>
                     </select>
 
                     <label for="damagesTotal">Damages Total:</label>
-                    <input type="text" id="damagesTotal" name="damagesTotal" >
+                    <input type="text" id="damagesTotal" name="damagesTotal">
 
                     <label for="bodyShopName">Body Shop Name:</label>
-                    <input type="text" id="bodyShopName" name="bodyShopName" >
+                    <input type="text" id="bodyShopName" name="bodyShopName">
 
                     <label for="raNumber">RA Number:</label>
-                    <input type="text" id="raNumber" name="raNumber" >
+                    <input type="text" id="raNumber" name="raNumber">
 
                     <label for="insuranceCarrier">Insurance Carrier:</label>
-                    <input type="text" id="insuranceCarrier" name="insuranceCarrier" >
+                    <input type="text" id="insuranceCarrier" name="insuranceCarrier">
 
-                    <label for="insuranceAgent">Insurance Agent:</label>
-                    <input type="text" id="insuranceAgent" name="insuranceAgent" >
+                    <label for="insuranceAdjuster">Insurance Adjuster:</label>
+                    <input type="text" id="insuranceAdjuster" name="insuranceAdjuster">
+
+                    <label for="insuranceEmail">Insurance Email:</label>
+                    <input type="email" id="insuranceEmail" name="insuranceEmail">
 
                     <label for="insurancePhoneNumber">Insurance Phone Number:</label>
-                    <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber" >
+                    <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber">
 
                     <label for="insuranceFaxNumber">Insurance Fax Number:</label>
-                    <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber" >
+                    <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber">
 
                     <label for="insuranceAddress">Insurance Address:</label>
-                    <input type="text" id="insuranceAddress" name="insuranceAddress" >
+                    <input type="text" id="insuranceAddress" name="insuranceAddress">
+
+                    <label for="insurancePolicyNumber">Insurance Policy Number:</label>
+                    <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber">
 
                     <label for="insuranceClaimNumber">Insurance Claim Number:</label>
-                    <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber" >
+                    <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber">
 
                     <label for="thirdPartyName">Third Party Name:</label>
-                    <input type="text" id="thirdPartyName" name="thirdPartyName" >
+                    <input type="text" id="thirdPartyName" name="thirdPartyName">
+
+                    <label for="thirdPartyAddress">Third Party Address:</label>
+                    <input type="text" id="thirdPartyAddress" name="thirdPartyAddress">
 
                     <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
-                    <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber" >
+                    <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber">
 
                     <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
-                    <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName" >
+                    <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName">
+
+                    <label for="thirdPartyAdjusterName">Third Party Adjuster Name:</label>
+                    <input type="text" id="thirdPartyAdjusterName" name="thirdPartyAdjusterName">
 
                     <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
-                    <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber" >
+                    <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber">
 
-                    <label for="description">Description:</label>
-                    <textarea id="description" name="description" ></textarea>
+                    <label for="thirdPartyClaimNumber">Third Party Claim Number:</label>
+                    <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber">
 
-                     <label for="damageType">Damage Type:</label>
-                     <select id="damageType" name="damageType" required>
-                        <option value="">Select Damage Type</option>
-                        <option value="Heavy hit">Heavy hit</option>
-                        <option value="Light hit">Light hit</option>
-                        <option value="Mystery">Mystery</option>
+                    <label for="rentingLocation">Renting Location:</label>
+                    <select id="rentingLocation" name="rentingLocation">
+                        <option value="LAS Airport">LAS Airport</option>
+                        <option value="Henderson Executive Airport">Henderson Executive Airport</option>
+                        <option value="Toyota Las Vegas">Toyota Las Vegas</option>
+                        <option value="Center Strip">Center Strip</option>
+                        <option value="Losee">Losee</option>
+                        <option value="Tropicana">Tropicana</option>
+                        <option value="West Sahara">West Sahara</option>
+                        <option value="Gibson">Gibson</option>
+                        <option value="Golden Nugget">Golden Nugget</option>
                     </select>
 
+                    <label for="ldwAccepted">LDW Accepted:</label>
+                    <select id="ldwAccepted" name="ldwAccepted">
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+
+                    <label for="policeDepartment">Police Department:</label>
+                    <input type="text" id="policeDepartment" name="policeDepartment">
+
+                    <label for="policeReportNumber">Police Report Number:</label>
+                    <input type="text" id="policeReportNumber" name="policeReportNumber">
+
+                    <label for="claimCloseDate">Claim Close Date:</label>
+                    <input type="date" id="claimCloseDate" name="claimCloseDate">
+
+                    <label for="vehicleOdometer">Vehicle Odometer:</label>
+                    <input type="number" id="vehicleOdometer" name="vehicleOdometer">
+
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description"></textarea>
+
+                    <label for="damageType">Damage Type:</label>
+                    <div>
+                        <% const damageTypes = ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windshield', 'Undercarriage', 'Mechanical', 'Interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left Quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee']; %>
+                        <% damageTypes.forEach(type => { %>
+                            <input type="checkbox" id="damageType_<%= type %>" name="damageType" value="<%= type %>">
+                            <label for="damageType_<%= type %>"><%= type %></label><br>
+                        <% }) %>
+                    </div>
+
                     <label for="status">Status:</label>
-                    <input type="text" id="status" name="status" required>
+                    <select id="status" name="status">
+                        <option value="Closed">Closed</option>
+                        <option value="Vince Pre-Sub">Vince Pre-Sub</option>
+                        <option value="Vince Sub">Vince Sub</option>
+                        <option value="Deonte Pre-Sub">Deonte Pre-Sub</option>
+                        <option value="Deonte Sub">Deonte Sub</option>
+                        <option value="Stef Claim">Stef Claim</option>
+                        <option value="Bodyshop">Bodyshop</option>
+                        <option value="LDW Discharge">LDW Discharge</option>
+                        <option value="Stef Pre-Litigation">Stef Pre-Litigation</option>
+                        <option value="Stef Litigation">Stef Litigation</option>
+                        <option value="Tina Pre-Litigation">Tina Pre-Litigation</option>
+                        <option value="Tina Litigation">Tina Litigation</option>
+                        <option value="Collections">Collections</option>
+                        <option value="Collections Review">Collections Review</option>
+                    </select>
                 </div>
 
                 <!-- File upload sections -->

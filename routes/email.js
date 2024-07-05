@@ -61,6 +61,17 @@ router.get('/templates/:templateId', ensureAuthenticated, async (req, res) => {
     res.json(populatedTemplate);
 });
 
+router.get('/send/:claimId', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const claim = await Claim.findById(req.params.claimId).exec();
+        const templates = await EmailTemplate.find().exec();
+        res.render('email_form', { claim, templates, body: '' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // Route to send an email
 router.post('/send', ensureAuthenticated, async (req, res) => {
     const { email, subject, body } = req.body;

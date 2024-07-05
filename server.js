@@ -101,7 +101,7 @@ app.use('/claims', require('./routes/claims'));
 app.use('/dashboard', require('./routes/dashboard'));
 app.use('/api', require('./routes/api'));
 app.use('/feedback', require('./routes/feedback'));
-app.use('/customer', require('./routes/customers'));
+app.use('/customers', require('./routes/customers'));
 app.use('/employee', require('./routes/employees'));
 app.use('/email', require('./routes/email'));
 app.use('/reports', require('./routes/reports'));
