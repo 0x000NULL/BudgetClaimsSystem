@@ -6,7 +6,8 @@ const logActivity = require('../middleware/activityLogger'); // Import activity 
 const { notifyNewClaim, notifyClaimStatusUpdate } = require('../notifications/notify'); // Import notification functions
 const csv = require('csv-express'); // Import csv-express for CSV export
 const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
-const pdfkit = require('pdfkit'); // Import PDFKit for PDF export
+const PDFDocument = require('pdfkit'); // Import PDFKit for PDF export
+const fs = require('fs'); // Import File System to handle file operations
 const cacheManager = require('cache-manager'); // Import cache manager for caching
 const redisStore = require('cache-manager-redis-store'); // Import Redis store for cache manager
 
@@ -31,6 +32,108 @@ const initializeFileCategories = (files) => {
         photos: files.photos || []
     };
 };
+
+// Route to export a claim as PDF
+router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+    const claimId = req.params.id;
+    console.log('Exporting claim to PDF with ID:', claimId);
+
+    try {
+        const claim = await Claim.findById(claimId).exec();
+        if (!claim) {
+            console.error(`Claim with ID ${claimId} not found`);
+            return res.status(404).render('404', { message: 'Claim not found' });
+        }
+
+        const doc = new PDFDocument();
+        const filename = `claim_${claimId}.pdf`;
+
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        res.setHeader('Content-Type', 'application/pdf');
+
+        doc.pipe(res);
+
+        doc.text('Claim Report', { align: 'center' });
+        doc.text(`MVA: ${claim.mva}`);
+        doc.text(`Customer Name: ${claim.customerName}`);
+        doc.text(`Customer Number: ${claim.customerNumber}`);
+        doc.text(`Customer Email: ${claim.customerEmail}`);
+        doc.text(`Customer Address: ${claim.customerAddress}`);
+        doc.text(`Customer Drivers License: ${claim.customerDriversLicense}`);
+        doc.text(`Car Make: ${claim.carMake}`);
+        doc.text(`Car Model: ${claim.carModel}`);
+        doc.text(`Car Year: ${claim.carYear}`);
+        doc.text(`Car Color: ${claim.carColor}`);
+        doc.text(`Car VIN: ${claim.carVIN}`);
+        doc.text(`Accident Date: ${claim.accidentDate ? new Date(claim.accidentDate).toLocaleDateString() : ''}`);
+        doc.text(`Billable: ${claim.billable}`);
+        doc.text(`Is Renter At Fault: ${claim.isRenterAtFault}`);
+        doc.text(`Damages Total: ${claim.damagesTotal}`);
+        doc.text(`Body Shop Name: ${claim.bodyShopName}`);
+        doc.text(`RA Number: ${claim.raNumber}`);
+        doc.text(`Insurance Carrier: ${claim.insuranceCarrier}`);
+        doc.text(`Insurance Agent: ${claim.insuranceAgent}`);
+        doc.text(`Insurance Phone Number: ${claim.insurancePhoneNumber}`);
+        doc.text(`Insurance Fax Number: ${claim.insuranceFaxNumber}`);
+        doc.text(`Insurance Address: ${claim.insuranceAddress}`);
+        doc.text(`Insurance Claim Number: ${claim.insuranceClaimNumber}`);
+        doc.text(`Third Party Name: ${claim.thirdPartyName}`);
+        doc.text(`Third Party Phone Number: ${claim.thirdPartyPhoneNumber}`);
+        doc.text(`Third Party Insurance Name: ${claim.thirdPartyInsuranceName}`);
+        doc.text(`Third Party Policy Number: ${claim.thirdPartyPolicyNumber}`);
+        doc.text(`Renting Location: ${claim.rentingLocation}`);
+        doc.text(`LDW Accepted: ${claim.ldwAccepted}`);
+        doc.text(`Police Department: ${claim.policeDepartment}`);
+        doc.text(`Police Report Number: ${claim.policeReportNumber}`);
+        doc.text(`Claim Close Date: ${claim.claimCloseDate ? new Date(claim.claimCloseDate).toLocaleDateString() : ''}`);
+        doc.text(`Vehicle Odometer: ${claim.vehicleOdometer}`);
+        doc.text(`Description: ${claim.description}`);
+        doc.text(`Damage Type: ${claim.damageType}`);
+        doc.text(`Status: ${claim.status}`);
+        doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
+        doc.moveDown();
+
+        // Ensure claim.files is defined
+        const files = claim.files || {};
+        const fileCategories = [
+            { title: 'Incident Reports', files: files.incidentReports || [] },
+            { title: 'Correspondence', files: files.correspondence || [] },
+            { title: 'Rental Agreement', files: files.rentalAgreement || [] },
+            { title: 'Police Report', files: files.policeReport || [] },
+            { title: 'Invoices', files: files.invoices || [] },
+            { title: 'Photos', files: files.photos || [] }
+        ];
+
+        for (const category of fileCategories) {
+            doc.text(`${category.title}:`);
+            for (const file of category.files) {
+                doc.text(file);
+                const filePath = path.join(__dirname, '../public/uploads', file);
+                try {
+                    if (file.match(/\.(png|jpg|jpeg)$/i)) {
+                        doc.image(filePath, { fit: [250, 300], align: 'center' });
+                    } else if (file.match(/\.pdf$/i)) {
+                        doc.addPage().text(`Embedded PDF: ${file}`, { align: 'center' });
+                        doc.file(filePath);
+                        doc.fileAttachmentAnnotation(250, 300, 100, 50, filePath, { description: `Embedded PDF: ${file}` });
+                    } else {
+                        doc.text('Unsupported file format for embedding. Click link to access: ');
+                        doc.text(`${filePath}`, { link: filePath });
+                    }
+                } catch (error) {
+                    console.error('Error adding file to PDF:', error);
+                    doc.text('Error loading file.');
+                }
+                doc.moveDown();
+            }
+        }
+
+        doc.end();
+    } catch (err) {
+        console.error('Error exporting claim to PDF:', err);
+        res.status(500).render('500', { message: 'Internal Server Error' });
+    }
+});
 
 // Route to display the add claim form
 router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
@@ -310,9 +413,6 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
     }
 });
 
-module.exports = router;
-
-
 // Route to delete a claim by ID, accessible only by admin
 router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), async (req, res) => {
     const claimId = req.params.id;
@@ -386,7 +486,7 @@ router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager'
             workbook.xlsx.write(res).then(() => res.end());
         } else if (format === 'pdf') {
             console.log('Exporting claims to PDF');
-            const doc = new pdfkit();
+            const doc = new PDFDocument();
             doc.pipe(res);
             doc.text('Claims Report', { align: 'center' });
             claims.forEach(claim => {
@@ -405,71 +505,6 @@ router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager'
     } catch (err) {
         console.error('Error exporting claims:', err);
         res.status(500).json({ error: err.message }); // Handle errors
-    }
-});
-
-// Route to export a claim as PDF
-router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
-    const claimId = req.params.id;
-    console.log('Exporting claim to PDF with ID:', claimId);
-
-    try {
-        const claim = await Claim.findById(claimId).exec();
-        if (!claim) {
-            console.error(`Claim with ID ${claimId} not found`);
-            return res.status(404).render('404', { message: 'Claim not found' });
-        }
-
-        const doc = new pdfkit();
-        const filename = `claim_${claimId}.pdf`;
-
-        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-        res.setHeader('Content-Type', 'application/pdf');
-
-        doc.pipe(res);
-
-        doc.text('Claim Report', { align: 'center' });
-        doc.text(`MVA: ${claim.mva}`);
-        doc.text(`Customer Name: ${claim.customerName}`);
-        doc.text(`Description: ${claim.description}`);
-        doc.text(`Status: ${claim.status}`);
-        doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
-        doc.moveDown();
-
-        // Ensure claim.files is defined
-        const files = claim.files || {};
-        const fileCategories = [
-            { title: 'Incident Reports', files: files.incidentReports || [] },
-            { title: 'Correspondence', files: files.correspondence || [] },
-            { title: 'Rental Agreement', files: files.rentalAgreement || [] },
-            { title: 'Police Report', files: files.policeReport || [] },
-            { title: 'Invoices', files: files.invoices || [] },
-            { title: 'Photos', files: files.photos || [] }
-        ];
-
-        fileCategories.forEach(category => {
-            doc.text(`${category.title}:`);
-            category.files.forEach(file => {
-                doc.text(file);
-                const filePath = path.join(__dirname, '../public/uploads', file);
-                try {
-                    if (file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.PNG') || file.endsWith('.JPG') || file.endsWith('.JPEG')) {
-                        doc.image(filePath, { fit: [250, 300], align: 'center' });
-                    } else {
-                        doc.text('Unsupported file format for image preview.');
-                    }
-                } catch (error) {
-                    console.error('Error adding image to PDF:', error);
-                    doc.text('Error loading image.');
-                }
-                doc.moveDown();
-            });
-        });
-
-        doc.end();
-    } catch (err) {
-        console.error('Error exporting claim to PDF:', err);
-        res.status(500).render('500', { message: 'Internal Server Error' });
     }
 });
 
