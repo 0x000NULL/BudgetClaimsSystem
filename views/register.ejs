@@ -1,34 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Register</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <title>Register</title> <!-- Title of the registration page -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
 </head>
 <body>
     <header>
-        <img src="/images/Budget_logo.svg" alt="Budget Claims System">
+        <img src="/images/Budget_logo.svg" alt="Budget Claims System"> <!-- Company logo -->
     </header>
     <main>
-        <h1>Register</h1>
+        <h1>Register</h1> <!-- Main heading -->
+
+        <!-- Registration form -->
         <form action="/users/register" method="POST">
             <div>
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" value="<%= typeof name !== 'undefined' ? name : '' %>">
+                <label for="name">Name:</label> <!-- Label for name input -->
+                <input type="text" id="name" name="name" value="<%= typeof name !== 'undefined' ? name : '' %>"> <!-- Input for user's name with prefilled value if available -->
             </div>
             <div>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" value="<%= typeof email !== 'undefined' ? email : '' %>">
+                <label for="email">Email:</label> <!-- Label for email input -->
+                <input type="email" id="email" name="email" value="<%= typeof email !== 'undefined' ? email : '' %>"> <!-- Input for user's email with prefilled value if available -->
             </div>
             <div>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password">
+                <label for="password">Password:</label> <!-- Label for password input -->
+                <input type="password" id="password" name="password"> <!-- Input for user's password -->
             </div>
             <div>
-                <label for="password2">Confirm Password:</label>
-                <input type="password" id="password" name="password2">
+                <label for="password2">Confirm Password:</label> <!-- Label for confirm password input -->
+                <input type="password" id="password2" name="password2"> <!-- Input to confirm user's password -->
             </div>
 
-            <button type="submit">Register</button>
+            <button type="submit">Register</button> <!-- Button to submit the form -->
         </form>
     </main>
 </body>

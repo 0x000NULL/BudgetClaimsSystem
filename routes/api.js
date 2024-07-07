@@ -1,7 +1,9 @@
+// Import necessary modules
 const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
-const Customer = require('../models/Customer'); // Import the Customer model
+const Customer = require('../models/Customer'); // Import the Customer model to interact with the customers collection in MongoDB
 const { ensureAuthenticated, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
+
 const router = express.Router(); // Create a new router
 
 // API route to get all claims

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title><%= title %></title> <!-- Title of the document, dynamically set -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS file for styling -->
     <style>
         .btn {
             display: inline-block;
@@ -21,57 +21,62 @@
             background-color: #0056b3;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js library -->
 </head>
 <body>
     <header>
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
         <nav>
             <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims/add">Add Claim</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/email-templates">Email Templates</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li><a href="/claims/search">Search Claims</a></li> <!-- Link to Search Claims -->
+                <li><a href="/claims/add">Add Claim</a></li> <!-- Link to Add Claim -->
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li><a href="/user-management">User Management</a></li> <!-- Link to User Management -->
+                <li><a href="/email-templates">Email Templates</a></li> <!-- Link to Email Templates -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
             </ul>
         </nav>
     </header>
     <main>
-        <h2>Dashboard Analytics</h2>
+        <h2>Dashboard Analytics</h2> <!-- Section heading -->
+
         <div class="stats">
-            <p>Total Claims: <%= totalClaims %></p>
-            <p>Open Claims: <%= openClaims %></p>
-            <p>In Progress Claims: <%= inProgressClaims %></p>
-            <p>Closed Claims: <%= closedClaims %></p>
+            <p>Total Claims: <%= totalClaims %></p> <!-- Display total claims -->
+            <p>Open Claims: <%= openClaims %></p> <!-- Display open claims -->
+            <p>In Progress Claims: <%= inProgressClaims %></p> <!-- Display in-progress claims -->
+            <p>Closed Claims: <%= closedClaims %></p> <!-- Display closed claims -->
         </div>
+
         <div class="chart-container">
-            <canvas id="claimsStatusChart"></canvas>
+            <canvas id="claimsStatusChart"></canvas> <!-- Canvas for the claims status chart -->
         </div>
+
         <div class="quick-actions">
-            <button class="btn" onclick="location.href='/claims/add'">Add New Claim</button>
-            <button class="btn" onclick="location.href='/reports'">Generate Reports</button>
+            <button class="btn" onclick="location.href='/claims/add'">Add New Claim</button> <!-- Button to add new claim -->
+            <button class="btn" onclick="location.href='/reports'">Generate Reports</button> <!-- Button to generate reports -->
         </div>
     </main>
+
     <script>
         // Chart for Claims Status
         const ctxStatus = document.getElementById('claimsStatusChart').getContext('2d');
         const claimsStatusChart = new Chart(ctxStatus, {
             type: 'bar',
             data: {
-                labels: ['Open', 'In Progress', 'Closed'],
+                labels: ['Open', 'In Progress', 'Closed'], // Labels for the chart
                 datasets: [{
                     label: 'Claims Status',
-                    data: [<%= openClaims %>, <%= inProgressClaims %>, <%= closedClaims %>],
-                    backgroundColor: ['#007bff', '#ffc107', '#28a745']
+                    data: [<%= openClaims %>, <%= inProgressClaims %>, <%= closedClaims %>], // Data for the chart
+                    backgroundColor: ['#007bff', '#ffc107', '#28a745'] // Colors for the bars
                 }]
             },
             options: {
                 responsive: true,
                 scales: {
-                    y: { beginAtZero: true }
+                    y: { beginAtZero: true } // Y-axis starts at zero
                 }
             }
         });

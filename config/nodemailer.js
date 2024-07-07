@@ -11,15 +11,14 @@ const transporter = nodemailer.createTransport({
     },
     tls: {
         ciphers: 'SSLv3' // Use SSLv3 for TLS
-    }
-});
+    });
 
 // Verify connection configuration
 transporter.verify((error, success) => {
     if (error) {
-        console.log('Error with email configuration:', error);
+        console.log('Error with email configuration:', error); // Log error if verification fails
     } else {
-        console.log('Email configuration is correct.');
+        console.log('Email configuration is correct.'); // Log success if verification is successful
     }
 });
 

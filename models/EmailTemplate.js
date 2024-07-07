@@ -1,24 +1,29 @@
-// models/EmailTemplate.js
+// Import necessary modules
+const mongoose = require('mongoose'); // Import Mongoose to interact with MongoDB
+const Schema = mongoose.Schema; // Use Schema class from Mongoose
 
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
-
+// Define the EmailTemplate schema
 const EmailTemplateSchema = new Schema({
+    // Field for the name of the email template
     name: {
-        type: String,
-        required: true
+        type: String, // Data type is String
+        required: true // This field is required
     },
+    // Field for the subject of the email template
     subject: {
-        type: String,
-        required: true
+        type: String, // Data type is String
+        required: true // This field is required
     },
+    // Field for the body of the email template
     body: {
-        type: String,
-        required: true
+        type: String, // Data type is String
+        required: true // This field is required
     },
+    // Field for the variables used in the email template
     variables: [{
-        type: String
+        type: String // Data type is String
     }]
 });
 
-module.exports = mongoose.model('EmailTemplate', EmailTemplateSchema);
+// Export the EmailTemplate model
+module.exports = mongoose.model('EmailTemplate', EmailTemplateSchema); // Create and export the EmailTemplate model

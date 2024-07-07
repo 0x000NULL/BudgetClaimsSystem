@@ -6,9 +6,10 @@ const User = require('../models/User');
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
 const router = express.Router();
 
-// Passport Local Strategy
+// Passport Local Strategy Configuration
 passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, done) => {
     console.log('Authenticating user:', email);
+    // Find the user by email
     User.findOne({ email: email.toLowerCase() }, (err, user) => {
         if (err) {
             console.error('Error fetching user:', err);
@@ -19,9 +20,9 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, don
             return done(null, false, { message: 'That email is not registered' });
         }
 
+        // Compare the provided password with the stored hashed password
         console.log('Stored password hash:', user.password);
         console.log('Entered password:', password);
-
         bcrypt.compare(password, user.password, (err, isMatch) => {
             if (err) {
                 console.error('Error comparing passwords:', err);
@@ -29,7 +30,7 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, don
             }
             console.log('Password match status:', isMatch);
             if (isMatch) {
-                return done(null, user);
+                return done(null, user); // Password matches, proceed with user authentication
             } else {
                 return done(null, false, { message: 'Password incorrect' });
             }
@@ -37,10 +38,12 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, don
     });
 }));
 
+// Serialize user information into the session
 passport.serializeUser((user, done) => {
     done(null, user.id);
 });
 
+// Deserialize user information from the session
 passport.deserializeUser((id, done) => {
     User.findById(id, (err, user) => done(err, user));
 });
@@ -58,9 +61,10 @@ router.post('/register', (req, res) => {
 
     // Basic validation
     let errors = [];
-    //if (!name || !email || !password || !role) {
-    //    errors.push({ msg: 'Please enter all fields' });
-    //}
+    // Uncomment this if block to enable validation for required fields
+    // if (!name || !email || !password || !role) {
+    //     errors.push({ msg: 'Please enter all fields' });
+    // }
 
     if (errors.length > 0) {
         console.log('Validation errors:', errors);
@@ -72,15 +76,17 @@ router.post('/register', (req, res) => {
                 errors.push({ msg: 'Email already exists' });
                 res.render('register', { errors, name, email, password, role });
             } else {
+                // Create a new user object
                 const newUser = new User({ name, email, password, role });
 
+                // Save the new user to the database
                 newUser.save()
-                .then(user => {
-                    console.log('New user registered:', user);
-                    req.flash('success_msg', 'You are now registered and can log in');
-                    res.redirect('/login'); // Redirect to the login page
-                })
-                .catch(err => console.error(err));
+                    .then(user => {
+                        console.log('New user registered:', user);
+                        req.flash('success_msg', 'You are now registered and can log in');
+                        res.redirect('/login'); // Redirect to the login page
+                    })
+                    .catch(err => console.error(err));
             }
         });
     }
@@ -112,10 +118,11 @@ router.get('/logout', (req, res) => {
     });
 });
 
-// Route to display user management page
+// Route to display user management page (accessible only by admin)
 router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     console.log('User Management route accessed');
     try {
+        // Fetch all users from the database
         const users = await User.find();
         console.log('Users fetched:', users);
         res.render('user_management', { title: 'User Management', users });
@@ -125,12 +132,13 @@ router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), asyn
     }
 });
 
-// Route to edit user details
+// Route to edit user details (accessible only by admin)
 router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     console.log(`Fetching user details for editing with ID: ${userId}`);
 
     try {
+        // Find the user by ID
         const user = await User.findById(userId).exec();
         if (!user) {
             console.error(`User with ID ${userId} not found`);
@@ -144,24 +152,26 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req,
     }
 });
 
-// Route to handle user update
+// Route to handle user update (accessible only by admin)
 router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     console.log(`Updating user with ID: ${userId}`);
 
     try {
+        // Find the user by ID
         let user = await User.findById(userId).exec();
         if (!user) {
             console.error(`User with ID ${userId} not found`);
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const { name, email, role, password } = req.body;
-
+        // Update user details with the new data from the request
+        const { name, email, role } = req.body;
         user.name = name || user.name;
         user.email = email || user.email;
         user.role = role || user.role;
 
+        // Save the updated user details
         user = await user.save();
         console.log('User updated:', user);
         res.redirect('/user-management');
@@ -171,12 +181,13 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res)
     }
 });
 
-// Route to handle user deletion
+// Route to handle user deletion (accessible only by admin)
 router.delete('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     console.log(`Deleting user with ID: ${userId}`);
 
     try {
+        // Delete the user by ID
         await User.findByIdAndDelete(userId);
         console.log('User deleted:', userId);
         res.redirect('/user-management');
