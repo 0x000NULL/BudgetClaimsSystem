@@ -144,41 +144,6 @@ router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req,
 // Route to search for claims, accessible by admin, manager, and employee
 router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), (req, res) => {
     console.log('Claims search route accessed');
-    const { mva, customerName, damageType, raNumber, dateOfLossStart, dateOfLossEnd, status, startDate, endDate } = req.query; // Extract query parameters
-
-    // Build a filter object based on provided query parameters
-    let filter = {};
-    if (mva) filter.mva = mva;
-    if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
-    if (damageType) filter.damageType = damageType;
-    if (raNumber) filter.raNumber = raNumber;
-    if (dateOfLossStart || dateOfLossEnd) {
-        filter.dateOfLoss = {};
-        if (dateOfLossStart) filter.dateOfLoss.$gte = new Date(dateOfLossStart); // Filter by start date of loss
-        if (dateOfLossEnd) filter.dateOfLoss.$lte = new Date(dateOfLossEnd); // Filter by end date of loss
-    }
-    if (status) filter.status = status;
-    if (startDate || endDate) {
-        filter.date = {};
-        if (startDate) filter.date.$gte = new Date(startDate); // Filter by start date
-        if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
-    }
-
-    // Find claims based on the filter object
-    Claim.find(filter)
-        .then(claims => {
-            console.log('Claims found:', claims);
-            res.render('claims_search', { claims });
-        }) // Respond with filtered claims
-        .catch(err => {
-            console.error('Error fetching claims:', err);
-            res.status(500).json({ error: err.message });
-        }); // Handle errors
-});
-
-// Route to search for claims, accessible by admin, manager, and employee
-router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), (req, res) => {
-    console.log('Claims search route accessed');
     const { mva, customerName, vin, claimNumber, damageType, status, raNumber, dateOfLossStart, dateOfLossEnd, startDate, endDate } = req.query;
 
     // Build a filter object based on provided query parameters
@@ -211,6 +176,46 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
             console.error('Error fetching claims:', err);
             res.status(500).json({ error: err.message });
         }); // Handle errors
+});
+
+// Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
+router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), async (req, res) => {
+    console.log('Fetching claims with query:', req.query);
+    const { mva, customerName, status, startDate, endDate } = req.query; // Extract query parameters
+
+    // Build a filter object based on provided query parameters
+    let filter = {};
+    if (mva) filter.mva = mva;
+    if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
+    if (status) filter.status = status;
+    if (startDate || endDate) {
+        filter.date = {};
+        if (startDate) filter.date.$gte = new Date(startDate); // Filter by start date
+        if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
+    }
+
+    const cacheKey = JSON.stringify(filter); // Create a cache key based on the filter
+
+    try {
+        // Attempt to get the cached data
+        const cachedClaims = await cache.get(cacheKey);
+        if (cachedClaims) {
+            console.log('Returning cached claims data:', cachedClaims);
+            // If cached data exists, respond with it
+            return res.json(cachedClaims);
+        }
+
+        // If no cached data, fetch claims from the database
+        const claims = await Claim.find(filter).exec();
+        console.log('Claims fetched from database:', claims);
+        // Cache the fetched data
+        await cache.set(cacheKey, claims);
+        // Respond with the fetched data
+        res.json(claims);
+    } catch (err) {
+        console.error('Error fetching claims:', err);
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
 });
 
 // Route to add a new claim, accessible by admin and manager
