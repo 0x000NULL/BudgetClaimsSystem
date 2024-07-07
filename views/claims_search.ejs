@@ -84,37 +84,37 @@
             <h2>Search Claims</h2>
             <form action="/claims/search" method="get" class="search-form">
                 <label for="mva">MVA:</label>
-                <input type="text" id="mva" name="mva" value="<%= filter.mva || '' %>">
+                <input type="text" id="mva" name="mva" value="<%= filter ? (filter.mva || '') : '' %>">
 
                 <label for="customerName">Customer Name:</label>
-                <input type="text" id="customerName" name="customerName" value="<%= filter.customerName ? filter.customerName.source.replace(/\\/g, '') : '' %>">
+                <input type="text" id="customerName" name="customerName" value="<%= filter && filter.customerName ? filter.customerName.source.replace(/\\/g, '') : '' %>">
 
                 <label for="vin">VIN:</label>
-                <input type="text" id="vin" name="vin" value="<%= filter.carVIN ? filter.carVIN.source.replace(/\\/g, '') : '' %>">
+                <input type="text" id="vin" name="vin" value="<%= filter && filter.carVIN ? filter.carVIN.source.replace(/\\/g, '') : '' %>">
 
                 <label for="claimNumber">Claim Number:</label>
-                <input type="text" id="claimNumber" name="claimNumber" value="<%= filter.insuranceClaimNumber ? filter.insuranceClaimNumber.source.replace(/\\/g, '') : '' %>">
+                <input type="text" id="claimNumber" name="claimNumber" value="<%= filter && filter.insuranceClaimNumber ? filter.insuranceClaimNumber.source.replace(/\\/g, '') : '' %>">
 
                 <label for="raNumber">RA Number:</label>
-                <input type="text" id="raNumber" name="raNumber" value="<%= filter.raNumber || '' %>">
+                <input type="text" id="raNumber" name="raNumber" value="<%= filter ? (filter.raNumber || '') : '' %>">
 
                 <label for="dateOfLossStart">Date of Loss (Start):</label>
-                <input type="date" id="dateOfLossStart" name="dateOfLossStart" value="<%= filter.dateOfLoss && filter.dateOfLoss.$gte ? filter.dateOfLoss.$gte.toISOString().split('T')[0] : '' %>">
+                <input type="date" id="dateOfLossStart" name="dateOfLossStart" value="<%= filter && filter.dateOfLoss && filter.dateOfLoss.$gte ? filter.dateOfLoss.$gte.toISOString().split('T')[0] : '' %>">
 
                 <label for="dateOfLossEnd">Date of Loss (End):</label>
-                <input type="date" id="dateOfLossEnd" name="dateOfLossEnd" value="<%= filter.dateOfLoss && filter.dateOfLoss.$lte ? filter.dateOfLoss.$lte.toISOString().split('T')[0] : '' %>">
+                <input type="date" id="dateOfLossEnd" name="dateOfLossEnd" value="<%= filter && filter.dateOfLoss && filter.dateOfLoss.$lte ? filter.dateOfLoss.$lte.toISOString().split('T')[0] : '' %>">
 
                 <label for="startDate">Start Date:</label>
-                <input type="date" id="startDate" name="startDate" value="<%= filter.date && filter.date.$gte ? filter.date.$gte.toISOString().split('T')[0] : '' %>">
+                <input type="date" id="startDate" name="startDate" value="<%= filter && filter.date && filter.date.$gte ? filter.date.$gte.toISOString().split('T')[0] : '' %>">
 
                 <label for="endDate">End Date:</label>
-                <input type="date" id="endDate" name="endDate" value="<%= filter.date && filter.date.$lte ? filter.date.$lte.toISOString().split('T')[0] : '' %>">
+                <input type="date" id="endDate" name="endDate" value="<%= filter && filter.date && filter.date.$lte ? filter.date.$lte.toISOString().split('T')[0] : '' %>">
 
                 <label for="damageType">Damage Type:</label>
                 <select id="damageType" name="damageType" multiple>
                     <% const damageTypes = ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windsheild', 'Undercarraige', 'Mechanical', 'interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee']; %>
                     <% damageTypes.forEach(type => { %>
-                        <option value="<%= type %>" <%= filter.damageType && filter.damageType.$in.includes(type) ? 'selected' : '' %>><%= type %></option>
+                        <option value="<%= type %>" <%= filter && filter.damageType && filter.damageType.$in.includes(type) ? 'selected' : '' %>><%= type %></option>
                     <% }) %>
                 </select>
 
@@ -122,7 +122,7 @@
                 <select id="status" name="status" multiple>
                     <% const statuses = ['Closed', 'Vince Pre-Sub', 'Vince Sub', 'Deonte Pre-Sub', 'Deonte Sub', 'Stef Claim', 'Bodyshop', 'LDW Discharge', 'Stef Pre-Litigation', 'Stef Litigation', 'Tina Pre-Litigation', 'Tina Litigation', 'Collections', 'Collections Review']; %>
                     <% statuses.forEach(status => { %>
-                        <option value="<%= status %>" <%= filter.status && filter.status.$in.includes(status) ? 'selected' : '' %>><%= status %></option>
+                        <option value="<%= status %>" <%= filter && filter.status && filter.status.$in.includes(status) ? 'selected' : '' %>><%= status %></option>
                     <% }) %>
                 </select>
 
