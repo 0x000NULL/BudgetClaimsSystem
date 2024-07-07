@@ -1,81 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View/Edit Claim - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title>View/Edit Claim - Budget Claims System</title> <!-- Title of the document -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
 </head>
 <body>
     <header>
         <!-- Budget logo and navigation -->
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
         <nav>
             <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims/add">Add Claim</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/email-templates">Email Templates</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li><a href="/claims/search">Search Claims</a></li> <!-- Link to Search Claims -->
+                <li><a href="/claims/add">Add Claim</a></li> <!-- Link to Add Claim -->
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li><a href="/user-management">User Management</a></li> <!-- Link to User Management -->
+                <li><a href="/email-templates">Email Templates</a></li> <!-- Link to Email Templates -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
             </ul>
         </nav>
     </header>
     <main>
-        <h2>View/Edit Claim</h2>
+        <h2>View/Edit Claim</h2> <!-- Section heading -->
+
         <!-- Form to view/edit a claim -->
         <form action="/claims/<%= claim._id %>" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="_method" value="PUT"><!-- Hidden input to specify PUT method for update -->
+            <input type="hidden" name="_method" value="PUT"> <!-- Hidden input to specify PUT method for update -->
 
             <div>
-                <label for="mva">MVA Number:</label>
-                <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required>
+                <label for="mva">MVA Number:</label> <!-- Label for MVA number input -->
+                <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required> <!-- Input for MVA number, pre-filled with current value -->
             </div>
             <div>
-                <label for="customerName">Customer Name:</label>
-                <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
+                <label for="customerName">Customer Name:</label> <!-- Label for customer name input -->
+                <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required> <!-- Input for customer name, pre-filled with current value -->
             </div>
             <div>
-                <label for="description">Description:</label>
-                <textarea id="description" name="description" required><%= claim.description %></textarea>
+                <label for="description">Description:</label> <!-- Label for description textarea -->
+                <textarea id="description" name="description" required><%= claim.description %></textarea> <!-- Textarea for description, pre-filled with current value -->
             </div>
             <div>
-                <label for="status">Status:</label>
-                <select id="status" name="status" required>
-                    <option value="Open" <%= claim.status === 'Open' ? 'selected' : '' %>>Open</option>
-                    <option value="In Progress" <%= claim.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
-                    <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
+                <label for="status">Status:</label> <!-- Label for status dropdown -->
+                <select id="status" name="status" required> <!-- Dropdown to select status -->
+                    <option value="Open" <%= claim.status === 'Open' ? 'selected' : '' %>>Open</option> <!-- Option for Open status -->
+                    <option value="In Progress" <%= claim.status === 'In Progress' ? 'selected' : '' %>>In Progress</option> <!-- Option for In Progress status -->
+                    <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option> <!-- Option for Closed status -->
                 </select>
             </div>
             <div>
-                <label for="files">Upload Files:</label>
-                <input type="file" id="files" name="files" multiple>
+                <label for="files">Upload Files:</label> <!-- Label for file input -->
+                <input type="file" id="files" name="files" multiple> <!-- Input for uploading multiple files -->
             </div>
             <div>
-                <button type="submit">Update Claim</button>
+                <button type="submit">Update Claim</button> <!-- Button to submit the form and update the claim -->
             </div>
         </form>
 
         <!-- Display existing files associated with the claim -->
         <h3>Existing Files</h3>
-        <% if (claim.files && claim.files.length > 0) { %>
+        <% if (claim.files && claim.files.length > 0) { %> <!-- Check if there are existing files -->
             <ul>
-                <% claim.files.forEach(file => { %>
+                <% claim.files.forEach(file => { %> <!-- Iterate over each file -->
                     <li>
-                        <a href="/public/uploads/<%= file %>" target="_blank"><%= file %></a>
+                        <a href="/public/uploads/<%= file %>" target="_blank"><%= file %></a> <!-- Link to view the file -->
                     </li>
                 <% }) %>
             </ul>
         <% } else { %>
-            <p>No files uploaded for this claim.</p>
+            <p>No files uploaded for this claim.</p> <!-- Message if no files are uploaded -->
         <% } %>
 
         <!-- Option to delete the claim -->
         <form action="/claims/<%= claim._id %>" method="post" onsubmit="return confirm('Are you sure you want to delete this claim?');">
-            <input type="hidden" name="_method" value="DELETE">
-            <button type="submit">Delete Claim</button>
+            <input type="hidden" name="_method" value="DELETE"> <!-- Hidden input to specify DELETE method -->
+            <button type="submit">Delete Claim</button> <!-- Button to submit the form and delete the claim -->
         </form>
     </main>
 </body>

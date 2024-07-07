@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Management - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title>User Management - Budget Claims System</title> <!-- Title of the document -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
     <style>
         /* Inline styles for better button appearance */
         .button {
@@ -34,71 +34,72 @@
 <body>
     <header>
         <!-- Budget logo and navigation -->
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
         <nav>
             <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims/add">Add Claim</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/email-templates">Email Templates</a></li>
-                <li><a href="/help">Help</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li><a href="/claims/search">Search Claims</a></li> <!-- Link to Search Claims -->
+                <li><a href="/claims/add">Add Claim</a></li> <!-- Link to Add Claim -->
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li><a href="/user-management">User Management</a></li> <!-- Link to User Management -->
+                <li><a href="/email-templates">Email Templates</a></li> <!-- Link to Email Templates -->
+                <li><a href="/help">Help</a></li> <!-- Link to Help -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
             </ul>
         </nav>
     </header>
     <main>
-        <h2>User Management</h2>
+        <h2>User Management</h2> <!-- Section heading -->
 
         <!-- Audit Logs Button -->
         <div>
-            <a href="/audit-logs" class="button">Audit</a>
+            <a href="/audit-logs" class="button">Audit</a> <!-- Button to view audit logs -->
         </div>
 
         <!-- Section for adding a new user -->
         <section>
-            <h3>Add New User</h3>
-            <form action="/users/register" method="post">
+            <h3>Add New User</h3> <!-- Subheading for add user section -->
+            <form action="/users/register" method="post"> <!-- Form to register a new user -->
                 <div>
-                    <label for="name">Name:</label>
-                    <input type="text" id="name" name="name" required>
+                    <label for="name">Name:</label> <!-- Label for name input -->
+                    <input type="text" id="name" name="name" required> <!-- Input for user's name -->
                 </div>
                 <div>
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" required>
+                    <label for="email">Email:</label> <!-- Label for email input -->
+                    <input type="email" id="email" name="email" required> <!-- Input for user's email -->
                 </div>
                 <div>
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
+                    <label for="password">Password:</label> <!-- Label for password input -->
+                    <input type="password" id="password" name="password" required> <!-- Input for user's password -->
                 </div>
                 <div>
-                    <label for="password2">Confirm Password:</label>
-                    <input type="password" id="password" name="password2" required>
+                    <label for="password2">Confirm Password:</label> <!-- Label for confirm password input -->
+                    <input type="password" id="password2" name="password2" required> <!-- Input to confirm user's password -->
                 </div>
                 <div>
-                    <label for="role">Role:</label>
-                    <select id="role" name="role" required>
+                    <label for="role">Role:</label> <!-- Label for role selection -->
+                    <select id="role" name="role" required> <!-- Dropdown to select user's role -->
                         <option value="admin">Admin</option>
                         <option value="manager">Manager</option>
                         <option value="employee">Employee</option>
                     </select>
                 </div>
-                <button type="submit" class="button">Add User</button>
+                <button type="submit" class="button">Add User</button> <!-- Button to submit the form -->
             </form>
         </section>
 
         <!-- Section for listing existing users -->
         <section>
-            <h3>Existing Users</h3>
+            <h3>Existing Users</h3> <!-- Subheading for existing users section -->
             <ul>
-                <% users.forEach(user => { %>
+                <% users.forEach(user => { %> <!-- Iterate over the list of users -->
                     <li>
-                        <p><strong>Name:</strong> <%= user.name %></p>
-                        <p><strong>Email:</strong> <%= user.email %></p>
-                        <p><strong>Role:</strong> <%= user.role %></p>
-                        <a href="/users/<%= user._id %>/edit" class="button">Edit</a>
+                        <p><strong>Name:</strong> <%= user.name %></p> <!-- Display user's name -->
+                        <p><strong>Email:</strong> <%= user.email %></p> <!-- Display user's email -->
+                        <p><strong>Role:</strong> <%= user.role %></p> <!-- Display user's role -->
+                        <a href="/users/<%= user._id %>/edit" class="button">Edit</a> <!-- Link to edit user -->
+                        <a href="/users/<%= user._id %>/delete" class="button red">Delete</a> <!-- Link to delete user -->
                     </li>
                 <% }) %>
             </ul>

@@ -1,68 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Claims - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title>Search Claims - Budget Claims System</title> <!-- Title of the document -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
 </head>
 <body>
     <header>
         <!-- Budget logo and navigation -->
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
         <nav>
             <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims/add">Add Claim</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/email-templates">Email Templates</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li><a href="/claims/search">Search Claims</a></li> <!-- Link to Search Claims -->
+                <li><a href="/claims/add">Add Claim</a></li> <!-- Link to Add Claim -->
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li><a href="/user-management">User Management</a></li> <!-- Link to User Management -->
+                <li><a href="/email-templates">Email Templates</a></li> <!-- Link to Email Templates -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
             </ul>
         </nav>
     </header>
     <main>
-        <h2>Search Claims</h2>
+        <h2>Search Claims</h2> <!-- Section heading -->
+
         <!-- Form to search for claims based on different criteria -->
         <form action="/claims/search" method="GET">
             <!-- Field for MVA Number -->
             <div>
-                <label for="mva">MVA Number:</label>
-                <input type="text" id="mva" name="mva" value="<%= mva %>">
+                <label for="mva">MVA Number:</label> <!-- Label for MVA number input -->
+                <input type="text" id="mva" name="mva" value="<%= mva %>"> <!-- Input for MVA number -->
             </div>
             <!-- Field for Customer Name -->
             <div>
-                <label for="customerName">Customer Name:</label>
-                <input type="text" id="customerName" name="customerName" value="<%= customerName %>">
+                <label for="customerName">Customer Name:</label> <!-- Label for customer name input -->
+                <input type="text" id="customerName" name="customerName" value="<%= customerName %>"> <!-- Input for customer name -->
             </div>
             <!-- Field for Status -->
             <div>
-                <label for="status">Status:</label>
-                <select id="status" name="status">
-                    <option value="">Select Status</option>
-                    <option value="Open" <%= status === 'Open' ? 'selected' : '' %>>Open</option>
-                    <option value="In Progress" <%= status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
-                    <option value="Closed" <%= status === 'Closed' ? 'selected' : '' %>>Closed</option>
+                <label for="status">Status:</label> <!-- Label for status selection -->
+                <select id="status" name="status"> <!-- Dropdown for status -->
+                    <option value="">Select Status</option> <!-- Default option -->
+                    <option value="Open" <%= status === 'Open' ? 'selected' : '' %>>Open</option> <!-- Option for Open status -->
+                    <option value="In Progress" <%= status === 'In Progress' ? 'selected' : '' %>>In Progress</option> <!-- Option for In Progress status -->
+                    <option value="Closed" <%= status === 'Closed' ? 'selected' : '' %>>Closed</option> <!-- Option for Closed status -->
                 </select>
             </div>
             <!-- Field for Start Date -->
             <div>
-                <label for="startDate">Start Date:</label>
-                <input type="date" id="startDate" name="startDate" value="<%= startDate %>">
+                <label for="startDate">Start Date:</label> <!-- Label for start date input -->
+                <input type="date" id="startDate" name="startDate" value="<%= startDate %>"> <!-- Input for start date -->
             </div>
             <!-- Field for End Date -->
             <div>
-                <label for="endDate">End Date:</label>
-                <input type="date" id="endDate" name="endDate" value="<%= endDate %>">
+                <label for="endDate">End Date:</label> <!-- Label for end date input -->
+                <input type="date" id="endDate" name="endDate" value="<%= endDate %>"> <!-- Input for end date -->
             </div>
-            <button type="submit">Search</button><!-- Submit button for the form -->
+            <button type="submit">Search</button> <!-- Submit button for the form -->
         </form>
 
         <!-- Display search results if any claims are found -->
         <% if (claims.length > 0) { %>
-            <h3>Search Results</h3>
+            <h3>Search Results</h3> <!-- Subheading for search results -->
             <table>
                 <thead>
                     <tr>
@@ -75,23 +76,23 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <% claims.forEach(claim => { %>
+                    <% claims.forEach(claim => { %> <!-- Iterate over claims -->
                         <tr>
-                            <td><%= claim.mva %></td>
-                            <td><%= claim.customerName %></td>
-                            <td><%= claim.description %></td>
-                            <td><%= claim.status %></td>
-                            <td><%= new Date(claim.date).toLocaleDateString() %></td>
+                            <td><%= claim.mva %></td> <!-- Display MVA number -->
+                            <td><%= claim.customerName %></td> <!-- Display customer name -->
+                            <td><%= claim.description %></td> <!-- Display claim description -->
+                            <td><%= claim.status %></td> <!-- Display claim status -->
+                            <td><%= new Date(claim.date).toLocaleDateString() %></td> <!-- Display claim date -->
                             <td>
-                                <a href="/claims/<%= claim._id %>/edit">Edit</a> | 
-                                <a href="/claims/<%= claim._id %>" onclick="return confirm('Are you sure you want to delete this claim?');">Delete</a>
+                                <a href="/claims/<%= claim._id %>/edit">Edit</a> | <!-- Link to edit claim -->
+                                <a href="/claims/<%= claim._id %>" onclick="return confirm('Are you sure you want to delete this claim?');">Delete</a> <!-- Link to delete claim -->
                             </td>
                         </tr>
                     <% }) %>
                 </tbody>
             </table>
         <% } else { %>
-            <p>No claims found.</p><!-- Message if no claims are found -->
+            <p>No claims found.</p> <!-- Message if no claims are found -->
         <% } %>
     </main>
 </body>
