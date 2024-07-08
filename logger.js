@@ -1,13 +1,26 @@
 const pino = require('pino');
-const pinoPretty = require('pino-pretty');
+const path = require('path');
+const fs = require('fs');
 
-const stream = pinoPretty({
-    colorize: true, // Colorizes the log output
-    levelFirst: true, // Puts the log level before the message
-    translateTime: 'yyyy-mm-dd HH:MM:ss', // Formats the timestamp
-    ignore: 'pid,hostname' // Hides specific keys from log output
-});
+// Ensure the logs directory exists
+const logDirectory = path.join(__dirname, '../logs');
+if (!fs.existsSync(logDirectory)) {
+    fs.mkdirSync(logDirectory);
+}
 
-const logger = pino({}, stream);
+// Create a write stream to the log file
+const logFilePath = path.join(logDirectory, 'app.log');
+const logStream = pino.destination(logFilePath);
+
+// Configure Pino to use the log file
+const logger = pino({
+    level: 'info', // Set the log level to 'info'
+    transport: {
+        target: 'pino-pretty',
+        options: {
+            colorize: false // Disable colorization since we are logging to a file
+        }
+    }
+}, logStream);
 
 module.exports = logger;

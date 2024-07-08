@@ -4,6 +4,46 @@ const nodemailer = require('nodemailer'); // Import Nodemailer for sending email
 const EmailTemplate = require('../models/EmailTemplate'); // Import the EmailTemplate model
 const Claim = require('../models/Claim'); // Import the Claim model
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
+const pinoLogger = require('../logger'); // Import Pino logger
+
+// Define sensitive fields that should not be logged
+const sensitiveFields = ['password', 'token', 'ssn'];
+
+// Function to filter out sensitive fields from the request body
+const filterSensitiveData = (data) => {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+
+    return Object.keys(data).reduce((filteredData, key) => {
+        if (sensitiveFields.includes(key)) {
+            filteredData[key] = '***REDACTED***'; // Mask the sensitive field
+        } else if (typeof data[key] === 'object') {
+            filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
+        } else {
+            filteredData[key] = data[key];
+        }
+        return filteredData;
+    }, {});
+};
+
+// Helper function to log requests with user and session info
+const logRequest = (req, message, extra = {}) => {
+    const { method, originalUrl, headers, body } = req;
+    const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
+
+    pinoLogger.info({
+        message, // Log message
+        user: req.user ? req.user.email : 'Unauthenticated', // Log user
+        ip: req.ip, // Log IP address
+        sessionId: req.sessionID, // Log session ID
+        timestamp: new Date().toISOString(), // Add a timestamp
+        method, // Log HTTP method
+        url: originalUrl, // Log originating URL
+        requestBody: filteredBody, // Log the filtered request body
+        headers // Log request headers
+    });
+};
 
 // Function to replace template variables with actual claim data
 const replaceVariables = (template, claim) => {
@@ -48,27 +88,41 @@ const replaceVariables = (template, claim) => {
 
 // Route to display the email form
 router.get('/form/:id', ensureAuthenticated, async (req, res) => {
-    const claim = await Claim.findById(req.params.id); // Fetch the claim by ID
-    const templates = await EmailTemplate.find(); // Fetch all email templates
-    res.render('email_form', { claim, templates, template: { subject: '', body: '' } }); // Render the email form view
+    logRequest(req, 'Displaying email form');
+    try {
+        const claim = await Claim.findById(req.params.id); // Fetch the claim by ID
+        const templates = await EmailTemplate.find(); // Fetch all email templates
+        res.render('email_form', { claim, templates, template: { subject: '', body: '' } }); // Render the email form view
+    } catch (err) {
+        logRequest(req, 'Error displaying email form', { error: err });
+        res.status(500).send('Server Error'); // Send server error response
+    }
 });
 
 // Route to get a specific email template and replace variables
 router.get('/templates/:templateId', ensureAuthenticated, async (req, res) => {
-    const template = await EmailTemplate.findById(req.params.templateId); // Fetch the email template by ID
-    const claim = await Claim.findById(req.query.claimId); // Fetch the claim by ID from query parameters
-    const populatedTemplate = replaceVariables(template, claim); // Replace template variables with claim data
-    res.json(populatedTemplate); // Send the populated template as JSON response
+    logRequest(req, `Fetching email template with ID: ${req.params.templateId}`);
+    try {
+        const template = await EmailTemplate.findById(req.params.templateId); // Fetch the email template by ID
+        const claim = await Claim.findById(req.query.claimId); // Fetch the claim by ID from query parameters
+        const populatedTemplate = replaceVariables(template, claim); // Replace template variables with claim data
+        logRequest(req, 'Email template fetched and variables replaced', { template: populatedTemplate });
+        res.json(populatedTemplate); // Send the populated template as JSON response
+    } catch (err) {
+        logRequest(req, 'Error fetching email template', { error: err });
+        res.status(500).send('Server Error'); // Send server error response
+    }
 });
 
 // Route to display the email sending form
 router.get('/send/:claimId', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    logRequest(req, `Displaying email sending form for claim ID: ${req.params.claimId}`);
     try {
         const claim = await Claim.findById(req.params.claimId).exec(); // Fetch the claim by ID
         const templates = await EmailTemplate.find().exec(); // Fetch all email templates
         res.render('email_form', { claim, templates, body: '' }); // Render the email form view
     } catch (err) {
-        console.error(err); // Log error if fetching fails
+        logRequest(req, 'Error displaying email sending form', { error: err });
         res.status(500).send('Server Error'); // Send server error response
     }
 });
@@ -76,6 +130,7 @@ router.get('/send/:claimId', ensureAuthenticated, ensureRoles(['admin', 'manager
 // Route to send an email
 router.post('/send', ensureAuthenticated, async (req, res) => {
     const { email, subject, body } = req.body; // Extract email details from the request body
+    logRequest(req, 'Sending email', { email, subject });
 
     // Create a transporter object using the Office365 SMTP transport
     const transporter = nodemailer.createTransport({
@@ -101,10 +156,10 @@ router.post('/send', ensureAuthenticated, async (req, res) => {
         text: body, // Plain text body
     }, (error, info) => {
         if (error) {
-            console.error('Error sending email:', error); // Log error if sending fails
+            logRequest(req, 'Error sending email', { error });
             return res.status(500).json({ error: 'Failed to send email' }); // Send failure response
         }
-        console.log('Message sent:', info.messageId); // Log message ID on success
+        logRequest(req, 'Email sent successfully', { messageId: info.messageId });
         res.json({ success: 'Email sent successfully' }); // Send success response
     });
 });
