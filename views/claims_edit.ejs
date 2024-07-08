@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Claim - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title>Edit Claim - Budget Claims System</title> <!-- Title of the document -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
     <style>
         .btn {
             display: inline-block;
@@ -78,227 +78,229 @@
 </head>
 <body>
     <header>
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
         <nav>
             <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims/add">Add Claim</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/help">Help</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li><a href="/claims/search">Search Claims</a></li> <!-- Link to Search Claims -->
+                <li><a href="/claims/add">Add Claim</a></li> <!-- Link to Add Claim -->
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li><a href="/user-management">User Management</a></li> <!-- Link to User Management -->
+                <li><a href="/help">Help</a></li> <!-- Link to Help -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
             </ul>
         </nav>
     </header>
     <main>
         <div class="container">
-            <h2>Edit Claim</h2>
+            <h2>Edit Claim</h2> <!-- Section heading -->
+
+            <!-- Form to edit claim details -->
             <form action="/claims/<%= claim._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
                 <div class="claim-info">
-                    <label for="mva">MVA:</label>
-                    <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required>
+                    <label for="mva">MVA:</label> <!-- Label for MVA input -->
+                    <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required> <!-- Input for MVA number -->
 
-                    <label for="customerName">Customer Name:</label>
-                    <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
+                    <label for="customerName">Customer Name:</label> <!-- Label for customer name input -->
+                    <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required> <!-- Input for customer name -->
 
-                    <label for="customerNumber">Customer Number:</label>
-                    <input type="text" id="customerNumber" name="customerNumber" value="<%= claim.customerNumber %>">
+                    <label for="customerNumber">Customer Number:</label> <!-- Label for customer number input -->
+                    <input type="text" id="customerNumber" name="customerNumber" value="<%= claim.customerNumber %>"> <!-- Input for customer number -->
 
-                    <label for="customerEmail">Customer Email:</label>
-                    <input type="email" id="customerEmail" name="customerEmail" value="<%= claim.customerEmail %>">
+                    <label for="customerEmail">Customer Email:</label> <!-- Label for customer email input -->
+                    <input type="email" id="customerEmail" name="customerEmail" value="<%= claim.customerEmail %>"> <!-- Input for customer email -->
 
-                    <label for="customerAddress">Customer Address:</label>
-                    <input type="text" id="customerAddress" name="customerAddress" value="<%= claim.customerAddress %>">
+                    <label for="customerAddress">Customer Address:</label> <!-- Label for customer address input -->
+                    <input type="text" id="customerAddress" name="customerAddress" value="<%= claim.customerAddress %>"> <!-- Input for customer address -->
 
-                    <label for="customerDriversLicense">Customer Drivers License:</label>
-                    <input type="text" id="customerDriversLicense" name="customerDriversLicense" value="<%= claim.customerDriversLicense %>">
+                    <label for="customerDriversLicense">Customer Drivers License:</label> <!-- Label for customer drivers license input -->
+                    <input type="text" id="customerDriversLicense" name="customerDriversLicense" value="<%= claim.customerDriversLicense %>"> <!-- Input for customer drivers license -->
 
-                    <label for="carMake">Car Make:</label>
-                    <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>">
+                    <label for="carMake">Car Make:</label> <!-- Label for car make input -->
+                    <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>"> <!-- Input for car make -->
 
-                    <label for="carModel">Car Model:</label>
-                    <input type="text" id="carModel" name="carModel" value="<%= claim.carModel %>">
+                    <label for="carModel">Car Model:</label> <!-- Label for car model input -->
+                    <input type="text" id="carModel" name="carModel" value="<%= claim.carModel %>"> <!-- Input for car model -->
 
-                    <label for="carYear">Car Year:</label>
-                    <input type="text" id="carYear" name="carYear" value="<%= claim.carYear %>">
+                    <label for="carYear">Car Year:</label> <!-- Label for car year input -->
+                    <input type="text" id="carYear" name="carYear" value="<%= claim.carYear %>"> <!-- Input for car year -->
 
-                    <label for="carColor">Car Color:</label>
-                    <input type="text" id="carColor" name="carColor" value="<%= claim.carColor %>">
+                    <label for="carColor">Car Color:</label> <!-- Label for car color input -->
+                    <input type="text" id="carColor" name="carColor" value="<%= claim.carColor %>"> <!-- Input for car color -->
 
-                    <label for="carVIN">Car VIN:</label>
-                    <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>">
+                    <label for="carVIN">Car VIN:</label> <!-- Label for car VIN input -->
+                    <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>"> <!-- Input for car VIN -->
 
-                    <label for="accidentDate">Accident Date:</label>
-                    <input type="date" id="accidentDate" name="accidentDate" value="<%= claim.accidentDate ? new Date(claim.accidentDate).toISOString().split('T')[0] : '' %>">
+                    <label for="accidentDate">Accident Date:</label> <!-- Label for accident date input -->
+                    <input type="date" id="accidentDate" name="accidentDate" value="<%= claim.accidentDate ? new Date(claim.accidentDate).toISOString().split('T')[0] : '' %>"> <!-- Input for accident date -->
 
-                    <label for="billable">Billable:</label>
-                    <select id="billable" name="billable">
-                        <option value="true" <%= claim.billable ? 'selected' : '' %>>Yes</option>
-                        <option value="false" <%= !claim.billable ? 'selected' : '' %>>No</option>
+                    <label for="billable">Billable:</label> <!-- Label for billable selection -->
+                    <select id="billable" name="billable"> <!-- Dropdown for billable selection -->
+                        <option value="true" <%= claim.billable ? 'selected' : '' %>>Yes</option> <!-- Option for Yes -->
+                        <option value="false" <%= !claim.billable ? 'selected' : '' %>>No</option> <!-- Option for No -->
                     </select>
 
-                    <label for="isRenterAtFault">Is Renter At Fault:</label>
-                    <select id="isRenterAtFault" name="isRenterAtFault">
-                        <option value="true" <%= claim.isRenterAtFault ? 'selected' : '' %>>Yes</option>
-                        <option value="false" <%= !claim.isRenterAtFault ? 'selected' : '' %>>No</option>
+                    <label for="isRenterAtFault">Is Renter At Fault:</label> <!-- Label for is renter at fault selection -->
+                    <select id="isRenterAtFault" name="isRenterAtFault"> <!-- Dropdown for is renter at fault selection -->
+                        <option value="true" <%= claim.isRenterAtFault ? 'selected' : '' %>>Yes</option> <!-- Option for Yes -->
+                        <option value="false" <%= !claim.isRenterAtFault ? 'selected' : '' %>>No</option> <!-- Option for No -->
                     </select>
 
-                    <label for="damagesTotal">Damages Total:</label>
-                    <input type="text" id="damagesTotal" name="damagesTotal" value="<%= claim.damagesTotal %>">
+                    <label for="damagesTotal">Damages Total:</label> <!-- Label for damages total input -->
+                    <input type="text" id="damagesTotal" name="damagesTotal" value="<%= claim.damagesTotal %>"> <!-- Input for damages total -->
 
-                    <label for="bodyShopName">Body Shop Name:</label>
-                    <input type="text" id="bodyShopName" name="bodyShopName" value="<%= claim.bodyShopName %>">
+                    <label for="bodyShopName">Body Shop Name:</label> <!-- Label for body shop name input -->
+                    <input type="text" id="bodyShopName" name="bodyShopName" value="<%= claim.bodyShopName %>"> <!-- Input for body shop name -->
 
-                    <label for="raNumber">RA Number:</label>
-                    <input type="text" id="raNumber" name="raNumber" value="<%= claim.raNumber %>">
+                    <label for="raNumber">RA Number:</label> <!-- Label for RA number input -->
+                    <input type="text" id="raNumber" name="raNumber" value="<%= claim.raNumber %>"> <!-- Input for RA number -->
 
-                    <label for="insuranceCarrier">Insurance Carrier:</label>
-                    <input type="text" id="insuranceCarrier" name="insuranceCarrier" value="<%= claim.insuranceCarrier %>">
+                    <label for="insuranceCarrier">Insurance Carrier:</label> <!-- Label for insurance carrier input -->
+                    <input type="text" id="insuranceCarrier" name="insuranceCarrier" value="<%= claim.insuranceCarrier %>"> <!-- Input for insurance carrier -->
 
-                    <label for="insuranceAdjuster">Insurance Adjuster:</label>
-                    <input type="text" id="insuranceAdjuster" name="insuranceAdjuster" value="<%= claim.insuranceAdjuster %>">
+                    <label for="insuranceAdjuster">Insurance Adjuster:</label> <!-- Label for insurance adjuster input -->
+                    <input type="text" id="insuranceAdjuster" name="insuranceAdjuster" value="<%= claim.insuranceAdjuster %>"> <!-- Input for insurance adjuster -->
 
-                    <label for="insuranceEmail">Insurance Email:</label>
-                    <input type="text" id="insuranceEmail" name="insuranceEmail" value="<%= claim.insuranceEmail %>">
+                    <label for="insuranceEmail">Insurance Email:</label> <!-- Label for insurance email input -->
+                    <input type="email" id="insuranceEmail" name="insuranceEmail" value="<%= claim.insuranceEmail %>"> <!-- Input for insurance email -->
 
-                    <label for="insurancePhoneNumber">Insurance Phone Number:</label>
-                    <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber" value="<%= claim.insurancePhoneNumber %>">
+                    <label for="insurancePhoneNumber">Insurance Phone Number:</label> <!-- Label for insurance phone number input -->
+                    <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber" value="<%= claim.insurancePhoneNumber %>"> <!-- Input for insurance phone number -->
 
-                    <label for="insuranceFaxNumber">Insurance Fax Number:</label>
-                    <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber" value="<%= claim.insuranceFaxNumber %>">
+                    <label for="insuranceFaxNumber">Insurance Fax Number:</label> <!-- Label for insurance fax number input -->
+                    <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber" value="<%= claim.insuranceFaxNumber %>"> <!-- Input for insurance fax number -->
 
-                    <label for="insuranceAddress">Insurance Address:</label>
-                    <input type="text" id="insuranceAddress" name="insuranceAddress" value="<%= claim.insuranceAddress %>">
+                    <label for="insuranceAddress">Insurance Address:</label> <!-- Label for insurance address input -->
+                    <input type="text" id="insuranceAddress" name="insuranceAddress" value="<%= claim.insuranceAddress %>"> <!-- Input for insurance address -->
 
-                    <label for="insurancePolicyNumber">Insurance Policy Number:</label>
-                    <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber" value="<%= claim.insurancePolicyNumber %>">
+                    <label for="insurancePolicyNumber">Insurance Policy Number:</label> <!-- Label for insurance policy number input -->
+                    <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber" value="<%= claim.insurancePolicyNumber %>"> <!-- Input for insurance policy number -->
 
-                    <label for="insuranceClaimNumber">Insurance Claim Number:</label>
-                    <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber" value="<%= claim.insuranceClaimNumber %>">
+                    <label for="insuranceClaimNumber">Insurance Claim Number:</label> <!-- Label for insurance claim number input -->
+                    <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber" value="<%= claim.insuranceClaimNumber %>"> <!-- Input for insurance claim number -->
 
-                    <label for="thirdPartyName">Third Party Name:</label>
-                    <input type="text" id="thirdPartyName" name="thirdPartyName" value="<%= claim.thirdPartyName %>">
+                    <label for="thirdPartyName">Third Party Name:</label> <!-- Label for third party name input -->
+                    <input type="text" id="thirdPartyName" name="thirdPartyName" value="<%= claim.thirdPartyName %>"> <!-- Input for third party name -->
 
-                    <label for="thirdPartyAddress">Third Party Address:</label>
-                    <input type="text" id="thirdPartyAddress" name="thirdPartyAddress" value="<%= claim.thirdPartyAddress %>">
+                    <label for="thirdPartyAddress">Third Party Address:</label> <!-- Label for third party address input -->
+                    <input type="text" id="thirdPartyAddress" name="thirdPartyAddress" value="<%= claim.thirdPartyAddress %>"> <!-- Input for third party address -->
 
-                    <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
-                    <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber" value="<%= claim.thirdPartyPhoneNumber %>">
+                    <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label> <!-- Label for third party phone number input -->
+                    <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber" value="<%= claim.thirdPartyPhoneNumber %>"> <!-- Input for third party phone number -->
 
-                    <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
-                    <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName" value="<%= claim.thirdPartyInsuranceName %>">
+                    <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label> <!-- Label for third party insurance name input -->
+                    <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName" value="<%= claim.thirdPartyInsuranceName %>"> <!-- Input for third party insurance name -->
 
-                    <label for="thirdPartyAdjusterName">Third Party Adjuster Name:</label>
-                    <input type="text" id="thirdPartyAdjusterName" name="thirdPartyAdjusterName" value="<%= claim.thirdPartyAdjusterName %>">
+                    <label for="thirdPartyAdjusterName">Third Party Adjuster Name:</label> <!-- Label for third party adjuster name input -->
+                    <input type="text" id="thirdPartyAdjusterName" name="thirdPartyAdjusterName" value="<%= claim.thirdPartyAdjusterName %>"> <!-- Input for third party adjuster name -->
 
-                    <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
-                    <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber" value="<%= claim.thirdPartyPolicyNumber %>">
+                    <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label> <!-- Label for third party policy number input -->
+                    <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber" value="<%= claim.thirdPartyPolicyNumber %>"> <!-- Input for third party policy number -->
 
-                    <label for="thirdPartyClaimNumber">Third Party Claim Number:</label>
-                    <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber" value="<%= claim.thirdPartyClaimNumber %>">
+                    <label for="thirdPartyClaimNumber">Third Party Claim Number:</label> <!-- Label for third party claim number input -->
+                    <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber" value="<%= claim.thirdPartyClaimNumber %>"> <!-- Input for third party claim number -->
 
-                    <label for="rentingLocation">Renting Location:</label>
-                    <select id="rentingLocation" name="rentingLocation" required>
-                        <option value="">Select Location</option>
-                        <option value="LAS Airport" <%= claim.rentingLocation === 'LAS Airport' ? 'selected' : '' %>>LAS Airport</option>
-                        <option value="Henderson Executive Airport" <%= claim.rentingLocation === 'Henderson Executive Airport' ? 'selected' : '' %>>Henderson Executive Airport</option>
-                        <option value="Toyota Las Vegas" <%= claim.rentingLocation === 'Toyota Las Vegas' ? 'selected' : '' %>>Toyota Las Vegas</option>
-                        <option value="Center Strip" <%= claim.rentingLocation === 'Center Strip' ? 'selected' : '' %>>Center Strip</option>
-                        <option value="Losee" <%= claim.rentingLocation === 'Losee' ? 'selected' : '' %>>Losee</option>
-                        <option value="Tropicana" <%= claim.rentingLocation === 'Tropicana' ? 'selected' : '' %>>Tropicana</option>
-                        <option value="West Sahara" <%= claim.rentingLocation === 'West Sahara' ? 'selected' : '' %>>West Sahara</option>
-                        <option value="Gibson" <%= claim.rentingLocation === 'Gibson' ? 'selected' : '' %>>Gibson</option>
-                        <option value="Golden Nugget" <%= claim.rentingLocation === 'Golden Nugget' ? 'selected' : '' %>>Golden Nugget</option>
+                    <label for="rentingLocation">Renting Location:</label> <!-- Label for renting location selection -->
+                    <select id="rentingLocation" name="rentingLocation" required> <!-- Dropdown for renting location selection -->
+                        <option value="">Select Location</option> <!-- Default option -->
+                        <option value="LAS Airport" <%= claim.rentingLocation === 'LAS Airport' ? 'selected' : '' %>>LAS Airport</option> <!-- Option for LAS Airport -->
+                        <option value="Henderson Executive Airport" <%= claim.rentingLocation === 'Henderson Executive Airport' ? 'selected' : '' %>>Henderson Executive Airport</option> <!-- Option for Henderson Executive Airport -->
+                        <option value="Toyota Las Vegas" <%= claim.rentingLocation === 'Toyota Las Vegas' ? 'selected' : '' %>>Toyota Las Vegas</option> <!-- Option for Toyota Las Vegas -->
+                        <option value="Center Strip" <%= claim.rentingLocation === 'Center Strip' ? 'selected' : '' %>>Center Strip</option> <!-- Option for Center Strip -->
+                        <option value="Losee" <%= claim.rentingLocation === 'Losee' ? 'selected' : '' %>>Losee</option> <!-- Option for Losee -->
+                        <option value="Tropicana" <%= claim.rentingLocation === 'Tropicana' ? 'selected' : '' %>>Tropicana</option> <!-- Option for Tropicana -->
+                        <option value="West Sahara" <%= claim.rentingLocation === 'West Sahara' ? 'selected' : '' %>>West Sahara</option> <!-- Option for West Sahara -->
+                        <option value="Gibson" <%= claim.rentingLocation === 'Gibson' ? 'selected' : '' %>>Gibson</option> <!-- Option for Gibson -->
+                        <option value="Golden Nugget" <%= claim.rentingLocation === 'Golden Nugget' ? 'selected' : '' %>>Golden Nugget</option> <!-- Option for Golden Nugget -->
                     </select>
 
-                    <label for="ldwAccepted">LDW Accepted:</label>
-                    <select id="ldwAccepted" name="ldwAccepted">
-                        <option value="true" <%= claim.ldwAccepted ? 'selected' : '' %>>Yes</option>
-                        <option value="false" <%= !claim.ldwAccepted ? 'selected' : '' %>>No</option>
+                    <label for="ldwAccepted">LDW Accepted:</label> <!-- Label for LDW accepted selection -->
+                    <select id="ldwAccepted" name="ldwAccepted"> <!-- Dropdown for LDW accepted selection -->
+                        <option value="true" <%= claim.ldwAccepted ? 'selected' : '' %>>Yes</option> <!-- Option for Yes -->
+                        <option value="false" <%= !claim.ldwAccepted ? 'selected' : '' %>>No</option> <!-- Option for No -->
                     </select>
 
-                    <label for="policeDepartment">Police Department:</label>
-                    <input type="text" id="policeDepartment" name="policeDepartment" value="<%= claim.policeDepartment %>">
+                    <label for="policeDepartment">Police Department:</label> <!-- Label for police department input -->
+                    <input type="text" id="policeDepartment" name="policeDepartment" value="<%= claim.policeDepartment %>"> <!-- Input for police department -->
 
-                    <label for="policeReportNumber">Police Report Number:</label>
-                    <input type="text" id="policeReportNumber" name="policeReportNumber" value="<%= claim.policeReportNumber %>">
+                    <label for="policeReportNumber">Police Report Number:</label> <!-- Label for police report number input -->
+                    <input type="text" id="policeReportNumber" name="policeReportNumber" value="<%= claim.policeReportNumber %>"> <!-- Input for police report number -->
 
-                    <label for="claimCloseDate">Claim Close Date:</label>
-                    <input type="date" id="claimCloseDate" name="claimCloseDate" value="<%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toISOString().split('T')[0] : '' %>">
+                    <label for="claimCloseDate">Claim Close Date:</label> <!-- Label for claim close date input -->
+                    <input type="date" id="claimCloseDate" name="claimCloseDate" value="<%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toISOString().split('T')[0] : '' %>"> <!-- Input for claim close date -->
 
-                    <label for="vehicleOdometer">Vehicle Odometer:</label>
-                    <input type="number" id="vehicleOdometer" name="vehicleOdometer" value="<%= claim.vehicleOdometer %>">
+                    <label for="vehicleOdometer">Vehicle Odometer:</label> <!-- Label for vehicle odometer input -->
+                    <input type="number" id="vehicleOdometer" name="vehicleOdometer" value="<%= claim.vehicleOdometer %>"> <!-- Input for vehicle odometer -->
 
-                    <label for="description">Description:</label>
-                    <textarea id="description" name="description" class="responsive-textarea"><%= claim.description %></textarea>
+                    <label for="description">Description:</label> <!-- Label for description textarea -->
+                    <textarea id="description" name="description" class="responsive-textarea"><%= claim.description %></textarea> <!-- Textarea for description -->
 
-                    <label for="damageType">Damage Type:</label>
+                    <label for="damageType">Damage Type:</label> <!-- Label for damage type checkboxes -->
                     <div class="checkbox-group">
                         <% const damageTypes = ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windsheild', 'Undercarraige', 'Mechanical', 'interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee']; %>
-                        <% damageTypes.forEach(type => { %>
+                        <% damageTypes.forEach(type => { %> <!-- Iterate over damage types -->
                             <label>
-                                <input type="checkbox" name="damageType" value="<%= type %>" <%= claim.damageType.includes(type) ? 'checked' : '' %>>
+                                <input type="checkbox" name="damageType" value="<%= type %>" <%= claim.damageType.includes(type) ? 'checked' : '' %>> <!-- Checkbox for damage type -->
                                 <%= type %>
                             </label>
                         <% }) %>
                     </div>
 
-                    <label for="status">Status:</label>
-                    <select id="status" name="status" required>
-                        <option value="">Select Status</option>
-                        <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option>
-                        <option value="Vince Pre-Sub" <%= claim.status === 'Vince Pre-Sub' ? 'selected' : '' %>>Vince Pre-Sub</option>
-                        <option value="Vince Sub" <%= claim.status === 'Vince Sub' ? 'selected' : '' %>>Vince Sub</option>
-                        <option value="Deonte Pre-Sub" <%= claim.status === 'Deonte Pre-Sub' ? 'selected' : '' %>>Deonte Pre-Sub</option>
-                        <option value="Deonte Sub" <%= claim.status === 'Deonte Sub' ? 'selected' : '' %>>Deonte Sub</option>
-                        <option value="Stef Claim" <%= claim.status === 'Stef Claim' ? 'selected' : '' %>>Stef Claim</option>
-                        <option value="Bodyshop" <%= claim.status === 'Bodyshop' ? 'selected' : '' %>>Bodyshop</option>
-                        <option value="LDW Discharge" <%= claim.status === 'LDW Discharge' ? 'selected' : '' %>>LDW Discharge</option>
-                        <option value="Stef Pre-Litigation" <%= claim.status === 'Stef Pre-Litigation' ? 'selected' : '' %>>Stef Pre-Litigation</option>
-                        <option value="Stef Litigation" <%= claim.status === 'Stef Litigation' ? 'selected' : '' %>>Stef Litigation</option>
-                        <option value="Tina Pre-Litigation" <%= claim.status === 'Tina Pre-Litigation' ? 'selected' : '' %>>Tina Pre-Litigation</option>
-                        <option value="Tina Litigation" <%= claim.status === 'Tina Litigation' ? 'selected' : '' %>>Tina Litigation</option>
-                        <option value="Collections" <%= claim.status === 'Collections' ? 'selected' : '' %>>Collections</option>
-                        <option value="Collections Review" <%= claim.status === 'Collections Review' ? 'selected' : '' %>>Collections Review</option>
+                    <label for="status">Status:</label> <!-- Label for status selection -->
+                    <select id="status" name="status" required> <!-- Dropdown for status selection -->
+                        <option value="">Select Status</option> <!-- Default option -->
+                        <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option> <!-- Option for Closed status -->
+                        <option value="Vince Pre-Sub" <%= claim.status === 'Vince Pre-Sub' ? 'selected' : '' %>>Vince Pre-Sub</option> <!-- Option for Vince Pre-Sub status -->
+                        <option value="Vince Sub" <%= claim.status === 'Vince Sub' ? 'selected' : '' %>>Vince Sub</option> <!-- Option for Vince Sub status -->
+                        <option value="Deonte Pre-Sub" <%= claim.status === 'Deonte Pre-Sub' ? 'selected' : '' %>>Deonte Pre-Sub</option> <!-- Option for Deonte Pre-Sub status -->
+                        <option value="Deonte Sub" <%= claim.status === 'Deonte Sub' ? 'selected' : '' %>>Deonte Sub</option> <!-- Option for Deonte Sub status -->
+                        <option value="Stef Claim" <%= claim.status === 'Stef Claim' ? 'selected' : '' %>>Stef Claim</option> <!-- Option for Stef Claim status -->
+                        <option value="Bodyshop" <%= claim.status === 'Bodyshop' ? 'selected' : '' %>>Bodyshop</option> <!-- Option for Bodyshop status -->
+                        <option value="LDW Discharge" <%= claim.status === 'LDW Discharge' ? 'selected' : '' %>>LDW Discharge</option> <!-- Option for LDW Discharge status -->
+                        <option value="Stef Pre-Litigation" <%= claim.status === 'Stef Pre-Litigation' ? 'selected' : '' %>>Stef Pre-Litigation</option> <!-- Option for Stef Pre-Litigation status -->
+                        <option value="Stef Litigation" <%= claim.status === 'Stef Litigation' ? 'selected' : '' %>>Stef Litigation</option> <!-- Option for Stef Litigation status -->
+                        <option value="Tina Pre-Litigation" <%= claim.status === 'Tina Pre-Litigation' ? 'selected' : '' %>>Tina Pre-Litigation</option> <!-- Option for Tina Pre-Litigation status -->
+                        <option value="Tina Litigation" <%= claim.status === 'Tina Litigation' ? 'selected' : '' %>>Tina Litigation</option> <!-- Option for Tina Litigation status -->
+                        <option value="Collections" <%= claim.status === 'Collections' ? 'selected' : '' %>>Collections</option> <!-- Option for Collections status -->
+                        <option value="Collections Review" <%= claim.status === 'Collections Review' ? 'selected' : '' %>>Collections Review</option> <!-- Option for Collections Review status -->
                     </select>
                 </div>
 
                 <!-- File upload sections -->
                 <div class="file-section">
-                    <h3>Incident Reports</h3>
-                    <input type="file" id="incidentReports" name="incidentReports" multiple>
+                    <h3>Incident Reports</h3> <!-- Section heading for incident reports -->
+                    <input type="file" id="incidentReports" name="incidentReports" multiple> <!-- Input for incident reports -->
                 </div>
 
                 <div class="file-section">
-                    <h3>Correspondence</h3>
-                    <input type="file" id="correspondence" name="correspondence" multiple>
+                    <h3>Correspondence</h3> <!-- Section heading for correspondence -->
+                    <input type="file" id="correspondence" name="correspondence" multiple> <!-- Input for correspondence -->
                 </div>
 
                 <div class="file-section">
-                    <h3>Rental Agreement</h3>
-                    <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
+                    <h3>Rental Agreement</h3> <!-- Section heading for rental agreement -->
+                    <input type="file" id="rentalAgreement" name="rentalAgreement" multiple> <!-- Input for rental agreement -->
                 </div>
 
                 <div class="file-section">
-                    <h3>Police Report</h3>
-                    <input type="file" id="policeReport" name="policeReport" multiple>
+                    <h3>Police Report</h3> <!-- Section heading for police report -->
+                    <input type="file" id="policeReport" name="policeReport" multiple> <!-- Input for police report -->
                 </div>
 
                 <div class="file-section">
-                    <h3>Invoices</h3>
-                    <input type="file" id="invoices" name="invoices" multiple>
+                    <h3>Invoices</h3> <!-- Section heading for invoices -->
+                    <input type="file" id="invoices" name="invoices" multiple> <!-- Input for invoices -->
                 </div>
 
                 <div class="file-section">
-                    <h3>Photos</h3>
-                    <input type="file" id="photos" name="photos" multiple>
+                    <h3>Photos</h3> <!-- Section heading for photos -->
+                    <input type="file" id="photos" name="photos" multiple> <!-- Input for photos -->
                 </div>
 
                 <div class="button-group">
-                    <button type="submit" class="btn">Update Claim</button>
-                    <a href="/claims/<%= claim._id %>" class="btn">Cancel</a>
+                    <button type="submit" class="btn">Update Claim</button> <!-- Button to submit the form -->
+                    <a href="/claims/<%= claim._id %>" class="btn">Cancel</a> <!-- Button to cancel and go back -->
                 </div>
             </form>
         </div>

@@ -1,13 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const nodemailer = require('nodemailer');
-const EmailTemplate = require('../models/EmailTemplate');
-const Claim = require('../models/Claim');
-const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
+const express = require('express'); // Import Express to create a router
+const router = express.Router(); // Create a new router
+const nodemailer = require('nodemailer'); // Import Nodemailer for sending emails
+const EmailTemplate = require('../models/EmailTemplate'); // Import the EmailTemplate model
+const Claim = require('../models/Claim'); // Import the Claim model
+const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
 
 // Function to replace template variables with actual claim data
 const replaceVariables = (template, claim) => {
-    let body = template.body;
+    let body = template.body; // Get the email template body
     const variables = {
         MVA: claim.mva,
         CustomerName: claim.customerName,
@@ -48,33 +48,34 @@ const replaceVariables = (template, claim) => {
 
 // Route to display the email form
 router.get('/form/:id', ensureAuthenticated, async (req, res) => {
-    const claim = await Claim.findById(req.params.id);
-    const templates = await EmailTemplate.find();
-    res.render('email_form', { claim, templates, template: { subject: '', body: '' } });
+    const claim = await Claim.findById(req.params.id); // Fetch the claim by ID
+    const templates = await EmailTemplate.find(); // Fetch all email templates
+    res.render('email_form', { claim, templates, template: { subject: '', body: '' } }); // Render the email form view
 });
 
 // Route to get a specific email template and replace variables
 router.get('/templates/:templateId', ensureAuthenticated, async (req, res) => {
-    const template = await EmailTemplate.findById(req.params.templateId);
-    const claim = await Claim.findById(req.query.claimId);
-    const populatedTemplate = replaceVariables(template, claim);
-    res.json(populatedTemplate);
+    const template = await EmailTemplate.findById(req.params.templateId); // Fetch the email template by ID
+    const claim = await Claim.findById(req.query.claimId); // Fetch the claim by ID from query parameters
+    const populatedTemplate = replaceVariables(template, claim); // Replace template variables with claim data
+    res.json(populatedTemplate); // Send the populated template as JSON response
 });
 
+// Route to display the email sending form
 router.get('/send/:claimId', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     try {
-        const claim = await Claim.findById(req.params.claimId).exec();
-        const templates = await EmailTemplate.find().exec();
-        res.render('email_form', { claim, templates, body: '' });
+        const claim = await Claim.findById(req.params.claimId).exec(); // Fetch the claim by ID
+        const templates = await EmailTemplate.find().exec(); // Fetch all email templates
+        res.render('email_form', { claim, templates, body: '' }); // Render the email form view
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
+        console.error(err); // Log error if fetching fails
+        res.status(500).send('Server Error'); // Send server error response
     }
 });
 
 // Route to send an email
 router.post('/send', ensureAuthenticated, async (req, res) => {
-    const { email, subject, body } = req.body;
+    const { email, subject, body } = req.body; // Extract email details from the request body
 
     // Create a transporter object using the Office365 SMTP transport
     const transporter = nodemailer.createTransport({
@@ -100,12 +101,12 @@ router.post('/send', ensureAuthenticated, async (req, res) => {
         text: body, // Plain text body
     }, (error, info) => {
         if (error) {
-            console.error('Error sending email:', error);
-            return res.status(500).json({ error: 'Failed to send email' });
+            console.error('Error sending email:', error); // Log error if sending fails
+            return res.status(500).json({ error: 'Failed to send email' }); // Send failure response
         }
-        console.log('Message sent:', info.messageId);
-        res.json({ success: 'Email sent successfully' });
+        console.log('Message sent:', info.messageId); // Log message ID on success
+        res.json({ success: 'Email sent successfully' }); // Send success response
     });
 });
 
-module.exports = router;
+module.exports = router; // Export the router
