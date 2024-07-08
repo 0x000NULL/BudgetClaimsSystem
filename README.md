@@ -61,4 +61,4 @@ We welcome contributions to improve the Budget Claims System. Please follow thes
 
 License
 
-This project is licensed under the UNLICENSE.
+All rights reserved; Ethan Aldrich.
