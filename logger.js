@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure the logs directory exists
-const logDirectory = path.join(__dirname, '../logs');
+const logDirectory = path.join(__dirname, 'logs');
 if (!fs.existsSync(logDirectory)) {
     fs.mkdirSync(logDirectory);
 }
@@ -12,15 +12,10 @@ if (!fs.existsSync(logDirectory)) {
 const logFilePath = path.join(logDirectory, 'app.log');
 const logStream = pino.destination(logFilePath);
 
-// Configure Pino to use the log file
+// Configure Pino to use the log file without the transport option
 const logger = pino({
-    level: 'info', // Set the log level to 'info'
-    transport: {
-        target: 'pino-pretty',
-        options: {
-            colorize: false // Disable colorization since we are logging to a file
-        }
-    }
+    level: process.env.PINO_LOG_LEVEL || 'info', // Set the log level
+    prettyPrint: false // Ensure pretty print is disabled
 }, logStream);
 
 module.exports = logger;
