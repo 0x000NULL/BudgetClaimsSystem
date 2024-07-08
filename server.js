@@ -57,13 +57,13 @@ app.use(helmet({ // Security middleware configuration
     }
 }));
 
-//test and populate the logfile.
-pinoLogger.fatal('This is a fatal log');
-pinoLogger.error('This is an error log');
-pinoLogger.warn('This is a warning log');
-pinoLogger.info('This is an info log');
-pinoLogger.debug('This is a debug log');
-pinoLogger.trace('This is a trace log');
+// Test and populate the logfile with all log levels
+pinoLogger.fatal('This is a fatal log'); // Severe error causing system shutdown
+pinoLogger.error('This is an error log'); // Error event but the system continues running
+pinoLogger.warn('This is a warning log'); // Potential issue to be aware of
+pinoLogger.info('This is an info log'); // General information about system operations
+pinoLogger.debug('This is a debug log'); // Detailed information useful for debugging
+pinoLogger.trace('This is a trace log'); // Very fine-grained debugging information
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
