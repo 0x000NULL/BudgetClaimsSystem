@@ -1,4 +1,10 @@
 const nodemailer = require('nodemailer'); // Import Nodemailer for email sending
+const pinoLogger = require('../logger'); // Import Pino logger
+
+// Validate environment variables
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('EMAIL_USER and EMAIL_PASS environment variables are required.');
+}
 
 // Create a transporter object using the Office365 SMTP transport
 const transporter = nodemailer.createTransport({
@@ -10,15 +16,18 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS  // Email password from environment variables
     },
     tls: {
-        ciphers: 'SSLv3' // Use SSLv3 for TLS
-    });
+        rejectUnauthorized: true // Enforce strict TLS
+    },
+    logger: pinoLogger, // Use Pino logger for Nodemailer
+    debug: true // Enable debug output
+});
 
 // Verify connection configuration
 transporter.verify((error, success) => {
     if (error) {
-        console.log('Error with email configuration:', error); // Log error if verification fails
+        pinoLogger.error('Error with email configuration:', error); // Log error if verification fails
     } else {
-        console.log('Email configuration is correct.'); // Log success if verification is successful
+        pinoLogger.info('Email configuration is correct.'); // Log success if verification is successful
     }
 });
 
