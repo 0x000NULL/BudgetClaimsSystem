@@ -1,21 +1,20 @@
-<!-- views/500.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>500 - Internal Server Error</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title>500 - Internal Server Error</title> <!-- Title of the document -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to the external stylesheet -->
 </head>
 <body>
     <header>
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Internal Server Error</h1>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Internal Server Error</h1> <!-- Main heading -->
     </header>
     <main>
-        <h2>Something went wrong on our end.</h2>
-        <p><%= message %></p>
-        <a href="/dashboard">Go back to Dashboard</a>
+        <h2>Something went wrong on our end.</h2> <!-- Subheading -->
+        <p><%= message %></p> <!-- Display the error message passed from the server -->
+        <a href="/dashboard">Go back to Dashboard</a> <!-- Link to return to the dashboard -->
     </main>
 </body>
 </html>

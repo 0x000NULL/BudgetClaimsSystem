@@ -1,64 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Templates - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title>Email Templates - Budget Claims System</title> <!-- Title of the document -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS file for styling -->
 </head>
 <body>
     <header>
         <!-- Budget logo and navigation -->
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
         <nav>
             <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims/add">Add Claim</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/email-templates">Email Templates</a></li>
-                <li><a href="/help">Help</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li><a href="/claims/search">Search Claims</a></li> <!-- Link to Search Claims -->
+                <li><a href="/claims/add">Add Claim</a></li> <!-- Link to Add Claim -->
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li><a href="/user-management">User Management</a></li> <!-- Link to User Management -->
+                <li><a href="/email-templates">Email Templates</a></li> <!-- Link to Email Templates -->
+                <li><a href="/help">Help</a></li> <!-- Link to Help -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
             </ul>
         </nav>
     </header>
     <main>
-        <h2>Email Templates</h2>
+        <h2>Email Templates</h2> <!-- Section heading -->
 
         <!-- Section for adding a new email template -->
         <section>
-            <h3>Add New Template</h3>
-            <form action="/email-templates/add" method="post">
+            <h3>Add New Template</h3> <!-- Subheading for adding a new template -->
+            <form action="/email-templates/add" method="post"> <!-- Form to add a new template -->
                 <div>
-                    <label for="name">Template Name:</label>
-                    <input type="text" id="name" name="name" required>
+                    <label for="name">Template Name:</label> <!-- Label for template name input -->
+                    <input type="text" id="name" name="name" required> <!-- Input for template name -->
                 </div>
                 <div>
-                    <label for="subject">Subject:</label>
-                    <input type="text" id="subject" name="subject" required>
+                    <label for="subject">Subject:</label> <!-- Label for subject input -->
+                    <input type="text" id="subject" name="subject" required> <!-- Input for subject -->
                 </div>
                 <div>
-                    <label for="body">Body:</label>
-                    <textarea id="body" name="body" required></textarea>
+                    <label for="body">Body:</label> <!-- Label for body textarea -->
+                    <textarea id="body" name="body" required></textarea> <!-- Textarea for body content -->
                 </div>
-                <button type="submit">Add Template</button>
+                <button type="submit">Add Template</button> <!-- Button to submit the form -->
             </form>
         </section>
 
         <!-- Section for listing existing email templates -->
         <section>
-            <h3>Existing Templates</h3>
+            <h3>Existing Templates</h3> <!-- Subheading for existing templates section -->
             <ul>
-                <% emailTemplates.forEach(template => { %>
+                <% emailTemplates.forEach(template => { %> <!-- Iterate over email templates -->
                     <li>
-                        <p><strong>Name:</strong> <%= template.name %></p>
-                        <p><strong>Subject:</strong> <%= template.subject %></p>
-                        <p><strong>Body:</strong> <%= template.body %></p>
-                        <a href="/email-templates/<%= template._id %>/edit" class="edit-btn">Edit</a>
-                        <form action="/email-templates/<%= template._id %>/delete" method="post">
-                            <button type="submit">Delete</button>
+                        <p><strong>Name:</strong> <%= template.name %></p> <!-- Display template name -->
+                        <p><strong>Subject:</strong> <%= template.subject %></p> <!-- Display template subject -->
+                        <p><strong>Body:</strong> <%= template.body %></p> <!-- Display template body -->
+                        <a href="/email-templates/<%= template._id %>/edit" class="edit-btn">Edit</a> <!-- Link to edit the template -->
+                        <form action="/email-templates/<%= template._id %>/delete" method="post"> <!-- Form to delete the template -->
+                            <button type="submit">Delete</button> <!-- Button to delete the template -->
                         </form>
                     </li>
                 <% }) %>

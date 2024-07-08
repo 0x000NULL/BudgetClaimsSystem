@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit User - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to external CSS for styling -->
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title>Edit User - Budget Claims System</title> <!-- Title of the document -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS file for styling -->
     <style>
         /* Inline styles for the buttons */
         .btn {
@@ -20,7 +20,7 @@
         }
 
         .btn-update {
-            background-color: #007bff; /* Green for update */
+            background-color: #007bff; /* Blue for update */
         }
 
         .btn-delete {
@@ -35,50 +35,52 @@
 <body>
     <header>
         <!-- Budget logo and navigation -->
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
         <nav>
             <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims/add">Add Claim</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/email-templates">Email Templates</a></li>
-                <li><a href="/help">Help</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li><a href="/claims/search">Search Claims</a></li> <!-- Link to Search Claims -->
+                <li><a href="/claims/add">Add Claim</a></li> <!-- Link to Add Claim -->
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li><a href="/user-management">User Management</a></li> <!-- Link to User Management -->
+                <li><a href="/email-templates">Email Templates</a></li> <!-- Link to Email Templates -->
+                <li><a href="/help">Help</a></li> <!-- Link to Help -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
             </ul>
         </nav>
     </header>
     <main>
-        <h2>Edit User</h2>
+        <h2>Edit User</h2> <!-- Section heading -->
 
+        <!-- Form to update user details -->
         <form action="/users/<%= user._id %>?_method=PUT" method="post">
             <div>
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" value="<%= user.name %>" required>
+                <label for="name">Name:</label> <!-- Label for name input -->
+                <input type="text" id="name" name="name" value="<%= user.name %>" required> <!-- Input for user's name, pre-filled with current value -->
             </div>
             <div>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" value="<%= user.email %>" required>
+                <label for="email">Email:</label> <!-- Label for email input -->
+                <input type="email" id="email" name="email" value="<%= user.email %>" required> <!-- Input for user's email, pre-filled with current value -->
             </div>
             <div>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password">
+                <label for="password">Password:</label> <!-- Label for password input -->
+                <input type="password" id="password" name="password"> <!-- Input for user's password (leave blank if not changing) -->
             </div>
             <div>
-                <label for="role">Role:</label>
-                <select id="role" name="role" required>
-                    <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
-                    <option value="manager" <%= user.role === 'manager' ? 'selected' : '' %>>Manager</option>
-                    <option value="employee" <%= user.role === 'employee' ? 'selected' : '' %>>Employee</option>
+                <label for="role">Role:</label> <!-- Label for role selection -->
+                <select id="role" name="role" required> <!-- Dropdown to select user's role -->
+                    <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option> <!-- Admin option, selected if user's role is admin -->
+                    <option value="manager" <%= user.role === 'manager' ? 'selected' : '' %>>Manager</option> <!-- Manager option, selected if user's role is manager -->
+                    <option value="employee" <%= user.role === 'employee' ? 'selected' : '' %>>Employee</option> <!-- Employee option, selected if user's role is employee -->
                 </select>
             </div>
-            <button type="submit" class="btn btn-update">Update User</button>
+            <button type="submit" class="btn btn-update">Update User</button> <!-- Button to submit the form and update user details -->
         </form>
 
+        <!-- Form to delete user -->
         <form action="/users/<%= user._id %>?_method=DELETE" method="post">
-            <button type="submit" class="btn btn-delete">Delete User</button>
+            <button type="submit" class="btn btn-delete">Delete User</button> <!-- Button to submit the form and delete user -->
         </form>
     </main>
 </body>

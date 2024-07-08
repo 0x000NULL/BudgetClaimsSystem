@@ -1,192 +1,243 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose'); // Import Mongoose to interact with MongoDB
+const Schema = mongoose.Schema; // Use Schema to define the structure of documents in the collection
 
-const ClaimSchema = new mongoose.Schema({
+// Define the schema for a Claim
+const ClaimSchema = new Schema({
+    // Field for the MVA number
     mva: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the customer's name
     customerName: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the customer's number
     customerNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the customer's email
     customerEmail: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the customer's address
     customerAddress: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the customer's driver's license number
     customerDriversLicense: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the car make
     carMake: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the car model
     carModel: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the car year
     carYear: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the car color
     carColor: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the car VIN number
     carVIN: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the accident date
     accidentDate: {
-        type: Date,
-        required: false
+        type: Date, // Data type is Date
+        required: false // This field is not required
     },
+    // Field for whether the claim is billable
     billable: {
-        type: Boolean,
-        required: false
+        type: Boolean, // Data type is Boolean
+        required: false // This field is not required
     },
+    // Field for whether the renter is at fault
     isRenterAtFault: {
-        type: Boolean,
-        required: false
+        type: Boolean, // Data type is Boolean
+        required: false // This field is not required
     },
+    // Field for the total damages
     damagesTotal: {
-        type: Number,
-        required: false
+        type: Number, // Data type is Number
+        required: false // This field is not required
     },
+    // Field for the body shop name
     bodyShopName: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the RA number
     raNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the insurance carrier
     insuranceCarrier: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the insurance adjuster
     insuranceAdjuster: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the insurance email
     insuranceEmail: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the insurance phone number
     insurancePhoneNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the insurance fax number
     insuranceFaxNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the insurance address
     insuranceAddress: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the insurance policy number
     insurancePolicyNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the insurance claim number
     insuranceClaimNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the third party's name
     thirdPartyName: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the third party's address
     thirdPartyAddress: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the third party's phone number
     thirdPartyPhoneNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the third party's insurance name
     thirdPartyInsuranceName: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the third party's adjuster name
     thirdPartyAdjusterName: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the third party's policy number
     thirdPartyPolicyNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the third party's claim number
     thirdPartyClaimNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the renting location
     rentingLocation: {
-        type: String,
-        enum: ['LAS Airport', 'Henderson Executive Airport', 'Toyota Las Vegas', 'Center Strip', 'Losee', 'Tropicana', 'West Sahara', 'Gibson', 'Golden Nugget'],
-        required: false
+        type: String, // Data type is String
+        enum: ['LAS Airport', 'Henderson Executive Airport', 'Toyota Las Vegas', 'Center Strip', 'Losee', 'Tropicana', 'West Sahara', 'Gibson', 'Golden Nugget'], // Possible values for renting location
+        required: false // This field is not required
     },
+    // Field for whether LDW was accepted
     ldwAccepted: {
-        type: Boolean,
-        required: false
+        type: Boolean, // Data type is Boolean
+        required: false // This field is not required
     },
+    // Field for the police department
     policeDepartment: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the police report number
     policeReportNumber: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the claim close date
     claimCloseDate: {
-        type: Date,
-        required: false
+        type: Date, // Data type is Date
+        required: false // This field is not required
     },
+    // Field for the vehicle odometer reading
     vehicleOdometer: {
-        type: Number,
-        required: false
+        type: Number, // Data type is Number
+        required: false // This field is not required
     },
+    // Field for the description of the claim
     description: {
-        type: String,
-        required: false
+        type: String, // Data type is String
+        required: false // This field is not required
     },
+    // Field for the damage type
     damageType: {
-        type: [String],
-        enum: ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windshield', 'Undercarriage', 'Mechanical', 'Interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left Quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee'],
-        required: false
+        type: [String], // Data type is an array of strings
+        enum: ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windshield', 'Undercarriage', 'Mechanical', 'Interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left Quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee'], // Possible values for damage type
+        required: false // This field is not required
     },
+    // Field for the claim status
     status: {
-        type: String,
-        enum: ['Closed', 'Vince Pre-Sub', 'Vince Sub', 'Deonte Pre-Sub', 'Deonte Sub', 'Stef Claim', 'Bodyshop', 'LDW Discharge', 'Stef Pre-Litigation', 'Stef Litigation', 'Tina Pre-Litigation', 'Tina Litigation', 'Collections', 'Collections Review'],
-        required: false
+        type: [String], // Data type is an array of strings
+        enum: ['Closed', 'Vince Pre-Sub', 'Vince Sub', 'Deonte Pre-Sub', 'Deonte Sub', 'Stef Claim', 'Bodyshop', 'LDW Discharge', 'Stef Pre-Litigation', 'Stef Litigation', 'Tina Pre-Litigation', 'Tina Litigation', 'Collections', 'Collections Review'], // Possible values for status
+        required: false // This field is not required
     },
+    // Field for the files associated with the claim
     files: {
-        incidentReports: [String],
-        correspondence: [String],
-        rentalAgreement: [String],
-        policeReport: [String],
-        invoices: [String],
-        photos: [String]
+        incidentReports: [String], // Array of strings for incident reports
+        correspondence: [String], // Array of strings for correspondence
+        rentalAgreement: [String], // Array of strings for rental agreements
+        policeReport: [String], // Array of strings for police reports
+        invoices: [String], // Array of strings for invoices
+        photos: [String] // Array of strings for photos
     },
+    // Field for storing different versions of the claim
     versions: {
-        type: [Object]
+        type: [Object] // Data type is an array of objects
     },
+    // Field for the date the claim was created
     date: {
-        type: Date,
-        default: Date.now
+        type: Date, // Data type is Date
+        default: Date.now // Default value is the current date
     },
+    // Field for the date the claim was last updated
     updatedAt: {
-        type: Date,
-        default: Date.now
+        type: Date, // Data type is Date
+        default: Date.now // Default value is the current date
     }
 });
 
-module.exports = mongoose.model('Claim', ClaimSchema);
+// Create a model from the schema
+const Claim = mongoose.model('Claim', ClaimSchema);
+
+// Export the model
+module.exports = Claim;

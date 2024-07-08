@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Claims - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title>Search Claims - Budget Claims System</title> <!-- Title of the document -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS file for styling -->
     <style>
         .btn {
             display: inline-block;
@@ -65,26 +65,29 @@
 </head>
 <body>
     <header>
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Budget Claims System</h1>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
         <nav>
             <ul>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/claims/search">Search Claims</a></li>
-                <li><a href="/claims/add">Add Claim</a></li>
-                <li><a href="/reports">Reports</a></li>
-                <li><a href="/user-management">User Management</a></li>
-                <li><a href="/help">Help</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li><a href="/claims/search">Search Claims</a></li> <!-- Link to Search Claims -->
+                <li><a href="/claims/add">Add Claim</a></li> <!-- Link to Add Claim -->
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li><a href="/user-management">User Management</a></li> <!-- Link to User Management -->
+                <li><a href="/help">Help</a></li> <!-- Link to Help -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
             </ul>
         </nav>
     </header>
     <main>
         <div class="container">
-            <h2>Search Claims</h2>
+            <h2>Search Claims</h2> <!-- Section heading -->
+
+            <!-- Form to search for claims -->
             <form action="/claims/search" method="get" class="search-form">
-                <label for="mva">MVA:</label>
-                <input type="text" id="mva" name="mva" value="<%= filter ? (filter.mva || '') : '' %>">
+                <label for="mva">MVA:</label>  <!-- Label for MVA input -->
+                <input type="text" id="mva" name="mva" value="<%= filter ? (filter.mva || '') : '' %>"> <!-- Input for MVA number -->
 
                 <label for="customerName">Customer Name:</label>
                 <input type="text" id="customerName" name="customerName" value="<%= filter && filter.customerName ? filter.customerName.source.replace(/\\/g, '') : '' %>">
@@ -110,27 +113,27 @@
                 <label for="endDate">End Date:</label>
                 <input type="date" id="endDate" name="endDate" value="<%= filter && filter.date && filter.date.$lte ? filter.date.$lte.toISOString().split('T')[0] : '' %>">
 
-                <label for="damageType">Damage Type:</label>
-                <select id="damageType" name="damageType" multiple>
+                <label for="damageType">Damage Type:</label> <!-- Label for damage type selection -->
+                <select id="damageType" name="damageType" multiple> <!-- Multiple select for damage types -->
                     <% const damageTypes = ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windsheild', 'Undercarraige', 'Mechanical', 'interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee']; %>
                     <% damageTypes.forEach(type => { %>
                         <option value="<%= type %>" <%= filter && filter.damageType && filter.damageType.$in.includes(type) ? 'selected' : '' %>><%= type %></option>
                     <% }) %>
                 </select>
 
-                <label for="status">Status:</label>
-                <select id="status" name="status" multiple>
+                <label for="status">Status:</label> <!-- Label for status selection -->
+                <select id="status" name="status" multiple> <!-- Multiple select for statuses -->
                     <% const statuses = ['Closed', 'Vince Pre-Sub', 'Vince Sub', 'Deonte Pre-Sub', 'Deonte Sub', 'Stef Claim', 'Bodyshop', 'LDW Discharge', 'Stef Pre-Litigation', 'Stef Litigation', 'Tina Pre-Litigation', 'Tina Litigation', 'Collections', 'Collections Review']; %>
                     <% statuses.forEach(status => { %>
                         <option value="<%= status %>" <%= filter && filter.status && filter.status.$in.includes(status) ? 'selected' : '' %>><%= status %></option>
                     <% }) %>
                 </select>
 
-                <button type="submit" class="btn">Search</button>
+                <button type="submit" class="btn">Search</button> <!-- Button to submit the search form -->
             </form>
 
             <div class="results">
-                <% if (claims.length > 0) { %>
+                <% if (claims.length > 0) { %> <!-- Check if there are search results -->
                     <h3>Search Results</h3>
                     <table>
                         <thead>
@@ -146,7 +149,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% claims.forEach(claim => { %>
+                            <% claims.forEach(claim => { %> <!-- Iterate over claims -->
                                 <tr>
                                     <td><%= claim.mva %></td>
                                     <td><%= claim.customerName %></td>
@@ -156,14 +159,14 @@
                                     <td><%= claim.status %></td>
                                     <td><%= new Date(claim.date).toLocaleDateString() %></td>
                                     <td>
-                                        <a href="/claims/<%= claim._id %>" class="btn">View</a>
+                                        <a href="/claims/<%= claim._id %>" class="btn">View</a> <!-- Button to view the claim -->
                                     </td>
                                 </tr>
                             <% }) %>
                         </tbody>
                     </table>
                 <% } else { %>
-                    <p>No claims found.</p>
+                    <p>No claims found.</p> <!-- Message if no claims are found -->
                 <% } %>
             </div>
         </div>
