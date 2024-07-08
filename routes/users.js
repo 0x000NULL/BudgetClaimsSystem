@@ -4,31 +4,73 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const User = require('../models/User');
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
+const pinoLogger = require('../logger'); // Import Pino logger
 const router = express.Router();
+
+// Define sensitive fields that should not be logged
+const sensitiveFields = ['password', 'token', 'ssn'];
+
+// Function to filter out sensitive fields from the request body
+const filterSensitiveData = (data) => {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+
+    return Object.keys(data).reduce((filteredData, key) => {
+        if (sensitiveFields.includes(key)) {
+            filteredData[key] = '***REDACTED***'; // Mask the sensitive field
+        } else if (typeof data[key] === 'object') {
+            filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
+        } else {
+            filteredData[key] = data[key];
+        }
+        return filteredData;
+    }, {});
+};
+
+// Helper function to log requests with user and session info
+const logRequest = (req, message, extra = {}) => {
+    const { method, originalUrl, headers, body } = req;
+    const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
+
+    pinoLogger.info({
+        message, // Log message
+        user: req.user ? req.user.email : 'Unauthenticated', // Log user
+        ip: req.ip, // Log IP address
+        sessionId: req.sessionID, // Log session ID
+        timestamp: new Date().toISOString(), // Add a timestamp
+        method, // Log HTTP method
+        url: originalUrl, // Log originating URL
+        requestBody: filteredBody, // Log the filtered request body
+        headers: headers // Log request headers
+    });
+};
 
 // Passport Local Strategy Configuration
 passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, done) => {
-    console.log('Authenticating user:', email);
+    logRequest(req, 'Authenticating user:', { email });
+
     // Find the user by email
     User.findOne({ email: email.toLowerCase() }, (err, user) => {
         if (err) {
-            console.error('Error fetching user:', err);
+            logRequest(req, 'Error fetching user:', { error: err });
             return done(err);
         }
         if (!user) {
-            console.log('No user found with email:', email);
+            logRequest(req, 'No user found with email:', { email });
             return done(null, false, { message: 'That email is not registered' });
         }
 
         // Compare the provided password with the stored hashed password
-        console.log('Stored password hash:', user.password);
-        console.log('Entered password:', password);
+        logRequest(req, 'Comparing passwords', { storedPasswordHash: user.password });
+
         bcrypt.compare(password, user.password, (err, isMatch) => {
             if (err) {
-                console.error('Error comparing passwords:', err);
+                logRequest(req, 'Error comparing passwords:', { error: err });
                 return done(err);
             }
-            console.log('Password match status:', isMatch);
+            logRequest(req, 'Password match status:', { isMatch });
+
             if (isMatch) {
                 return done(null, user); // Password matches, proceed with user authentication
             } else {
@@ -50,14 +92,14 @@ passport.deserializeUser((id, done) => {
 
 // Route to display the registration form
 router.get('/register', (req, res) => {
-    console.log('Register route accessed');
+    logRequest(req, 'Register route accessed');
     res.render('register', { title: 'Register' });
 });
 
 // Route to handle user registration
 router.post('/register', (req, res) => {
     const { name, email, password, role } = req.body;
-    console.log('Register POST request received');
+    logRequest(req, 'Register POST request received', { data: req.body });
 
     // Basic validation
     let errors = [];
@@ -67,13 +109,14 @@ router.post('/register', (req, res) => {
     // }
 
     if (errors.length > 0) {
-        console.log('Validation errors:', errors);
+        logRequest(req, 'Validation errors:', { errors });
         res.render('register', { errors, name, email, password, role });
     } else {
         // Check if the user already exists
         User.findOne({ email }).then(user => {
             if (user) {
                 errors.push({ msg: 'Email already exists' });
+                logRequest(req, 'Email already exists', { email });
                 res.render('register', { errors, name, email, password, role });
             } else {
                 // Create a new user object
@@ -82,11 +125,11 @@ router.post('/register', (req, res) => {
                 // Save the new user to the database
                 newUser.save()
                     .then(user => {
-                        console.log('New user registered:', user);
+                        logRequest(req, 'New user registered:', { user });
                         req.flash('success_msg', 'You are now registered and can log in');
                         res.redirect('/login'); // Redirect to the login page
                     })
-                    .catch(err => console.error(err));
+                    .catch(err => logRequest(req, 'Error saving new user:', { error: err }));
             }
         });
     }
@@ -94,13 +137,13 @@ router.post('/register', (req, res) => {
 
 // Route to display the login form
 router.get('/login', (req, res) => {
-    console.log('Login route accessed');
+    logRequest(req, 'Login route accessed');
     res.render('login', { title: 'Login' });
 });
 
 // Route to handle user login
 router.post('/login', (req, res, next) => {
-    console.log('Login POST request received');
+    logRequest(req, 'Login POST request received');
     passport.authenticate('local', {
         successRedirect: '/dashboard',
         failureRedirect: '/login',
@@ -110,7 +153,7 @@ router.post('/login', (req, res, next) => {
 
 // Route to handle user logout
 router.get('/logout', (req, res) => {
-    console.log('Logout route accessed');
+    logRequest(req, 'Logout route accessed');
     req.logout(err => {
         if (err) return next(err);
         req.flash('success_msg', 'You are logged out');
@@ -120,14 +163,14 @@ router.get('/logout', (req, res) => {
 
 // Route to display user management page (accessible only by admin)
 router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
-    console.log('User Management route accessed');
+    logRequest(req, 'User Management route accessed');
     try {
         // Fetch all users from the database
         const users = await User.find();
-        console.log('Users fetched:', users);
+        logRequest(req, 'Users fetched:', { users });
         res.render('user_management', { title: 'User Management', users });
     } catch (err) {
-        console.error('Error fetching users:', err.message);
+        logRequest(req, 'Error fetching users:', { error: err });
         res.status(500).json({ error: err.message });
     }
 });
@@ -135,19 +178,19 @@ router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), asyn
 // Route to edit user details (accessible only by admin)
 router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
-    console.log(`Fetching user details for editing with ID: ${userId}`);
+    logRequest(req, `Fetching user details for editing with ID: ${userId}`);
 
     try {
         // Find the user by ID
         const user = await User.findById(userId).exec();
         if (!user) {
-            console.error(`User with ID ${userId} not found`);
+            logRequest(req, `User with ID ${userId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'User not found' });
         }
-        console.log(`User details fetched for editing: ${user}`);
+        logRequest(req, `User details fetched for editing: ${user}`);
         res.render('edit_user', { title: 'Edit User', user });
     } catch (err) {
-        console.error(`Error fetching user details for editing: ${err}`);
+        logRequest(req, `Error fetching user details for editing: ${err}`, { error: err });
         res.status(500).render('500', { message: 'Internal Server Error' });
     }
 });
@@ -155,13 +198,13 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req,
 // Route to handle user update (accessible only by admin)
 router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
-    console.log(`Updating user with ID: ${userId}`);
+    logRequest(req, `Updating user with ID: ${userId}`, { data: req.body });
 
     try {
         // Find the user by ID
         let user = await User.findById(userId).exec();
         if (!user) {
-            console.error(`User with ID ${userId} not found`);
+            logRequest(req, `User with ID ${userId} not found`, { level: 'error' });
             return res.status(404).json({ error: 'User not found' });
         }
 
@@ -173,10 +216,10 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res)
 
         // Save the updated user details
         user = await user.save();
-        console.log('User updated:', user);
+        logRequest(req, 'User updated:', { user });
         res.redirect('/user-management');
     } catch (err) {
-        console.error(`Error updating user: ${err}`);
+        logRequest(req, `Error updating user: ${err}`, { error: err });
         res.status(500).json({ error: err.message });
     }
 });
@@ -184,15 +227,15 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res)
 // Route to handle user deletion (accessible only by admin)
 router.delete('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
-    console.log(`Deleting user with ID: ${userId}`);
+    logRequest(req, `Deleting user with ID: ${userId}`);
 
     try {
         // Delete the user by ID
         await User.findByIdAndDelete(userId);
-        console.log('User deleted:', userId);
+        logRequest(req, 'User deleted:', { userId });
         res.redirect('/user-management');
     } catch (err) {
-        console.error('Error deleting user:', err);
+        logRequest(req, 'Error deleting user:', { error: err });
         res.status(500).json({ error: err.message });
     }
 });

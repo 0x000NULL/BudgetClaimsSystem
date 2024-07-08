@@ -5,13 +5,53 @@ const logActivity = require('../middleware/activityLogger'); // Import activity 
 const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
 const pdfkit = require('pdfkit'); // Import PDFKit for PDF export
 const csv = require('csv-express'); // Import csv-express for CSV export
+const pinoLogger = require('../logger'); // Import Pino logger
 
 const router = express.Router(); // Create a new router
+
+// Define sensitive fields that should not be logged
+const sensitiveFields = ['password', 'token', 'ssn'];
+
+// Function to filter out sensitive fields from the request body
+const filterSensitiveData = (data) => {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+    
+    return Object.keys(data).reduce((filteredData, key) => {
+        if (sensitiveFields.includes(key)) {
+            filteredData[key] = '***REDACTED***'; // Mask the sensitive field
+        } else if (typeof data[key] === 'object') {
+            filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
+        } else {
+            filteredData[key] = data[key];
+        }
+        return filteredData;
+    }, {});
+};
+
+// Helper function to log requests with user and session info
+const logRequest = (req, message, extra = {}) => {
+    const { method, originalUrl, headers, body } = req;
+    const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
+
+    pinoLogger.info({
+        message, // Log message
+        user: req.user ? req.user.email : 'Unauthenticated', // Log user
+        ip: req.ip, // Log IP address
+        sessionId: req.sessionID, // Log session ID
+        timestamp: new Date().toISOString(), // Add a timestamp
+        method, // Log HTTP method
+        url: originalUrl, // Log originating URL
+        requestBody: filteredBody, // Log the filtered request body
+        headers // Log request headers
+    });
+};
 
 // Route to render the reports page
 // Only accessible to authenticated users with 'admin' or 'manager' roles
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
-    console.log('Reports route accessed');
+    logRequest(req, 'Reports route accessed');
     res.render('reports', { title: 'Reports - Budget Claims System' }); // Render the reports page
 });
 
@@ -19,7 +59,7 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, re
 // Only accessible to authenticated users with 'admin' or 'manager' roles
 router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     const { format, startDate, endDate } = req.body; // Extract report parameters from the request body
-    console.log('Generating report with parameters:', { format, startDate, endDate });
+    logRequest(req, 'Generating report with parameters:', { format, startDate, endDate });
 
     // Build a filter object based on the provided date range
     let filter = {};
@@ -32,13 +72,15 @@ router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']),
     try {
         // Fetch claims from the database based on the filter
         const claims = await Claim.find(filter).exec();
-        console.log('Claims fetched for report:', claims);
+        logRequest(req, 'Claims fetched for report:', { claims });
 
         if (format === 'csv') {
             // Export claims to CSV
+            logRequest(req, 'Exporting claims to CSV');
             res.csv(claims, true); // Send CSV response
         } else if (format === 'excel') {
             // Export claims to Excel
+            logRequest(req, 'Exporting claims to Excel');
             const workbook = new ExcelJS.Workbook(); // Create a new workbook
             const worksheet = workbook.addWorksheet('Claims'); // Add a worksheet to the workbook
             worksheet.columns = [
@@ -57,6 +99,7 @@ router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']),
             res.end(); // End the response
         } else if (format === 'pdf') {
             // Export claims to PDF
+            logRequest(req, 'Exporting claims to PDF');
             const doc = new pdfkit(); // Create a new PDF document
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', 'attachment; filename=claims.pdf');
@@ -72,10 +115,11 @@ router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']),
             });
             doc.end(); // Finalize the PDF document
         } else {
+            logRequest(req, 'Invalid report format:', { format });
             res.status(400).json({ msg: 'Invalid format' }); // Respond with an error for invalid formats
         }
     } catch (err) {
-        console.error('Error generating report:', err);
+        logRequest(req, 'Error generating report:', { error: err });
         res.status(500).json({ error: err.message }); // Respond with an error for any exceptions
     }
 });

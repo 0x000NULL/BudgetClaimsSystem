@@ -1,4 +1,5 @@
 const ActivityLog = require('../models/ActivityLog'); // Import the ActivityLog model
+const pinoLogger = require('../logger'); // Import Pino logger
 
 /**
  * Middleware to log user activities
@@ -7,6 +8,16 @@ const ActivityLog = require('../models/ActivityLog'); // Import the ActivityLog 
  */
 const logActivity = (action) => {
     return (req, res, next) => { // Return a middleware function
+        // Log that the middleware has been called
+        pinoLogger.info({
+            message: 'logActivity middleware called',
+            action,
+            user: req.user ? req.user.email : 'Unauthenticated', // Log user if available
+            ip: req.ip, // Log IP address
+            sessionId: req.sessionID, // Log session ID
+            timestamp: new Date().toISOString() // Add a timestamp
+        });
+
         // Check if the user is authenticated
         if (req.isAuthenticated()) {
             // Create a new activity log entry
@@ -19,8 +30,35 @@ const logActivity = (action) => {
             log.save((err) => {
                 if (err) {
                     // Log any errors that occur while saving the activity log entry
-                    console.error('Error logging activity:', err);
+                    pinoLogger.error({
+                        message: 'Error logging activity',
+                        error: err.message,
+                        action,
+                        user: req.user.email,
+                        ip: req.ip,
+                        sessionId: req.sessionID,
+                        timestamp: new Date().toISOString()
+                    });
+                } else {
+                    // Log success message if the activity log entry was saved successfully
+                    pinoLogger.info({
+                        message: 'Activity log saved successfully',
+                        action,
+                        user: req.user.email,
+                        ip: req.ip,
+                        sessionId: req.sessionID,
+                        timestamp: new Date().toISOString()
+                    });
                 }
+            });
+        } else {
+            // Log that the user is not authenticated
+            pinoLogger.warn({
+                message: 'User not authenticated, activity not logged',
+                action,
+                ip: req.ip,
+                sessionId: req.sessionID,
+                timestamp: new Date().toISOString()
             });
         }
 
