@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
     <title>View/Edit Claim - Budget Claims System</title> <!-- Title of the document -->
     <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
+    <style>
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px; /* Space between preview items */
+        }
+        .preview-item {
+            border: 1px solid #ccc; /* Border for preview item */
+            padding: 10px;
+            max-width: 300px; /* Max width for preview item */
+        }
+        .preview-item img {
+            max-width: 100%;
+            height: auto; /* Responsive images */
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -52,7 +68,10 @@
             </div>
             <div>
                 <label for="files">Upload Files:</label> <!-- Label for file input -->
-                <input type="file" id="files" name="files" multiple> <!-- Input for uploading multiple files -->
+                <input type="file" id="files" name="files" multiple onchange="previewFiles()"> <!-- Input for uploading multiple files with onchange event to trigger preview -->
+            </div>
+            <div class="preview-container" id="preview-container">
+                <!-- Previews will be inserted here -->
             </div>
             <div>
                 <button type="submit">Update Claim</button> <!-- Button to submit the form and update the claim -->
@@ -66,6 +85,11 @@
                 <% claim.files.forEach(file => { %> <!-- Iterate over each file -->
                     <li>
                         <a href="/public/uploads/<%= file %>" target="_blank"><%= file %></a> <!-- Link to view the file -->
+                        <% if (file.match(/\.(jpg|jpeg|png|gif)$/)) { %> <!-- Check if the file is an image -->
+                            <img src="/public/uploads/<%= file %>" alt="<%= file %>" class="preview-item"> <!-- Display image preview -->
+                        <% } else if (file.match(/\.(pdf)$/)) { %> <!-- Check if the file is a PDF -->
+                            <embed src="/public/uploads/<%= file %>" width="200" height="200" type="application/pdf" class="preview-item"> <!-- Display PDF preview -->
+                        <% } %>
                     </li>
                 <% }) %>
             </ul>
@@ -79,5 +103,40 @@
             <button type="submit">Delete Claim</button> <!-- Button to submit the form and delete the claim -->
         </form>
     </main>
+    <script>
+        function previewFiles() {
+            const previewContainer = document.getElementById('preview-container');
+            previewContainer.innerHTML = ''; // Clear existing previews
+
+            const files = document.getElementById('files').files;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader(); // Create FileReader to read file
+                reader.onload = function(e) {
+                    const previewItem = document.createElement('div'); // Create div for preview item
+                    previewItem.classList.add('preview-item'); // Add class for styling
+                    
+                    if (file.type.startsWith('image/')) { // Check if file is an image
+                        const img = document.createElement('img'); // Create img element
+                        img.src = e.target.result; // Set image source to file data
+                        previewItem.appendChild(img); // Add image to preview item
+                    } else if (file.type === 'application/pdf') { // Check if file is a PDF
+                        const embed = document.createElement('embed'); // Create embed element
+                        embed.src = e.target.result; // Set embed source to file data
+                        embed.width = '200';
+                        embed.height = '200';
+                        embed.type = 'application/pdf';
+                        previewItem.appendChild(embed); // Add embed to preview item
+                    } else {
+                        const p = document.createElement('p'); // Create paragraph element
+                        p.textContent = `Cannot preview this file type: ${file.name}`; // Set text content
+                        previewItem.appendChild(p); // Add paragraph to preview item
+                    }
+
+                    previewContainer.appendChild(previewItem); // Add preview item to container
+                }
+                reader.readAsDataURL(file); // Read file as data URL
+            });
+        }
+    </script>
 </body>
 </html>
