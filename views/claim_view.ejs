@@ -204,6 +204,13 @@
                 <label>Description:</label>
                 <p><%= claim.description %></p>
 
+                <!-- New fields for Renters Liability Insurance and Loss Damage Waiver -->
+                <label>Was Renters Liability Insurance purchased?</label>
+                <p><%= claim.rentersLiabilityInsurance %></p>
+
+                <label>Was Loss Damage Waiver purchased?</label>
+                <p><%= claim.lossDamageWaiver %></p>
+
                 <label>Damage Type:</label>
                 <ul>
                     <% claim.damageType.forEach(type => { %>
