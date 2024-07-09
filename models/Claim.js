@@ -233,6 +233,18 @@ const ClaimSchema = new Schema({
     updatedAt: {
         type: Date, // Data type is Date
         default: Date.now // Default value is the current date
+    },
+    // New field: Was Renters Liability Insurance purchased?
+    rentersLiabilityInsurance: {
+        type: String, // Data type is String
+        enum: ['yes', 'no'], // Possible values for Renters Liability Insurance
+        required: false // This field is not required
+    },
+    // New field: Was Loss Damage Waiver purchased?
+    lossDamageWaiver: {
+        type: String, // Data type is String
+        enum: ['yes', 'no'], // Possible values for Loss Damage Waiver
+        required: false // This field is not required
     }
 });
 

@@ -136,6 +136,9 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
         doc.text(`Damage Type: ${claim.damageType}`);
         doc.text(`Status: ${claim.status}`);
         doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
+        // New fields added to PDF export
+        doc.text(`Renters Liability Insurance: ${claim.rentersLiabilityInsurance}`);
+        doc.text(`Loss Damage Waiver: ${claim.lossDamageWaiver}`);
         doc.moveDown();
 
         // Ensure claim.files is defined
@@ -273,7 +276,9 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
         damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
         insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
-        thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber
+        thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
+        // New fields
+        rentersLiabilityInsurance, lossDamageWaiver
     } = req.body;
 
     let files = initializeFileCategories({});
@@ -310,6 +315,7 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
         insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
         thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
+        rentersLiabilityInsurance, lossDamageWaiver, // New fields
         files
     });
 
@@ -412,6 +418,8 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         claim.thirdPartyPhoneNumber = req.body.thirdPartyPhoneNumber || claim.thirdPartyPhoneNumber;
         claim.thirdPartyInsuranceName = req.body.thirdPartyInsuranceName || claim.thirdPartyInsuranceName;
         claim.thirdPartyPolicyNumber = req.body.thirdPartyPolicyNumber || claim.thirdPartyPolicyNumber;
+        claim.rentersLiabilityInsurance = req.body.rentersLiabilityInsurance || claim.rentersLiabilityInsurance; // Added rentersLiabilityInsurance
+        claim.lossDamageWaiver = req.body.lossDamageWaiver || claim.lossDamageWaiver; // Added lossDamageWaiver
 
         let existingFiles = claim.files || {};
 

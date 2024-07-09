@@ -236,6 +236,19 @@
                     <label for="description">Description:</label> <!-- Label for description textarea -->
                     <textarea id="description" name="description" class="responsive-textarea"><%= claim.description %></textarea> <!-- Textarea for description -->
 
+                    <!-- New fields for Renters Liability Insurance and Loss Damage Waiver -->
+                    <label for="rentersLiabilityInsurance">Was Renters Liability Insurance purchased?</label> <!-- Label for Renters Liability Insurance select -->
+                    <select id="rentersLiabilityInsurance" name="rentersLiabilityInsurance"> <!-- Select for Renters Liability Insurance -->
+                        <option value="yes" <%= claim.rentersLiabilityInsurance === 'yes' ? 'selected' : '' %>>Yes</option> <!-- Option for Yes -->
+                        <option value="no" <%= claim.rentersLiabilityInsurance === 'no' ? 'selected' : '' %>>No</option> <!-- Option for No -->
+                    </select>
+
+                    <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label> <!-- Label for Loss Damage Waiver select -->
+                    <select id="lossDamageWaiver" name="lossDamageWaiver"> <!-- Select for Loss Damage Waiver -->
+                        <option value="yes" <%= claim.lossDamageWaiver === 'yes' ? 'selected' : '' %>>Yes</option> <!-- Option for Yes -->
+                        <option value="no" <%= claim.lossDamageWaiver === 'no' ? 'selected' : '' %>>No</option> <!-- Option for No -->
+                    </select>
+
                     <label for="damageType">Damage Type:</label> <!-- Label for damage type checkboxes -->
                     <div class="checkbox-group">
                         <% const damageTypes = ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windsheild', 'Undercarraige', 'Mechanical', 'interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee']; %>
