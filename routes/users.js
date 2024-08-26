@@ -47,7 +47,10 @@ const logRequest = (req, message, extra = {}) => {
 };
 
 // Passport Local Strategy Configuration
-passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, done) => {
+passport.use(new LocalStrategy({
+    usernameField: 'email',
+    passReqToCallback: true // This enables passing `req` to the callback
+}, (req, email, password, done) => {
     logRequest(req, 'Authenticating user:', { email });
 
     // Find the user by email
