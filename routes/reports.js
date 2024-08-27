@@ -52,7 +52,7 @@ const logRequest = (req, message, extra = {}) => {
 // Only accessible to authenticated users with 'admin' or 'manager' roles
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
     logRequest(req, 'Reports route accessed');
-    res.render('reports', { title: 'Reports - Budget Claims System' }); // Render the reports page
+    res.render('reports', { title: 'Reports - Vortex Claims System' }); // Render the reports page
 });
 
 // Route to generate and download reports in various formats (CSV, Excel, PDF)
