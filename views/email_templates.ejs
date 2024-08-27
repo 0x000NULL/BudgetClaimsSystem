@@ -6,24 +6,33 @@
     <title>Email Templates - Vortex Claims System</title> <!-- Title of the document -->
     <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS file for styling -->
 </head>
-<body>
-    <header>
-        <!-- Logo and navigation -->
-        <img src="/images/VortexITLogo.png" alt="Vortex Logo" class="logo"> <!-- Company logo -->
-        <h1>Vortex Claims System</h1> <!-- Main heading -->
-        <nav>
-            <ul>
-                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
-                <li><a href="/claims/search">Search Claims</a></li> <!-- Link to Search Claims -->
-                <li><a href="/claims/add">Add Claim</a></li> <!-- Link to Add Claim -->
-                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
-                <li><a href="/user-management">User Management</a></li> <!-- Link to User Management -->
-                <li><a href="/email-templates">Email Templates</a></li> <!-- Link to Email Templates -->
-                <li><a href="/help">Help</a></li> <!-- Link to Help -->
-                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
-            </ul>
-        </nav>
-    </header>
+<header>
+    <!-- Logo and navigation -->
+    <img src="/images/VortexITLogo.png" alt="Vortex Logo" class="logo"> <!-- Company logo -->
+    <h1>Vortex Claims System</h1> <!-- Main heading -->
+    <nav>
+        <ul>
+            <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+            <li class="Claims">
+                <a href="javascript:void(0)" class="dropbtn">Claims</a> <!-- Dropdown trigger -->
+                <div class="dropdown-content">
+                    <a href="/claims/search">Search Claims</a> <!-- Link to Search Claims -->
+                    <a href="/claims/add">Add Claim</a> <!-- Link to Add Claim -->
+                </div>
+            </li>
+            <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+            <li class="Settings">
+                <a href="javascript:void(0)" class="dropbtn">Settings</a> <!-- Dropdown trigger -->
+                <div class="dropdown-content">
+                    <a href="/user-management">User Management</a> <!-- Link to User Management -->
+                    <a href="/email-templates">Email Templates</a> <!-- Link to Email Templates -->
+                </div>
+            </li>
+            <li><a href="/help">Help</a></li> <!-- Link to Help -->
+            <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
+        </ul>
+    </nav>
+</header>
     <main>
         <h2>Email Templates</h2> <!-- Section heading -->
 
