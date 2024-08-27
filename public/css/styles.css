@@ -14,29 +14,63 @@ header {
     align-items: center; /* Center items vertically */
 }
 
-    header .logo {
-        height: 40px; /* Set the height of the logo */
-    }
+header .logo {
+    height: 40px; /* Set the height of the logo */
+}
 
-    header h1 {
-        margin: 0; /* Remove default margin */
-        font-size: 1.5em; /* Set font size */
-    }
+header h1 {
+    margin: 0; /* Remove default margin */
+    font-size: 1.5em; /* Set font size */
+}
 
-    header nav ul {
-        list-style: none; /* Remove bullet points */
-        padding: 0; /* Remove default padding */
-    }
+header nav ul {
+    list-style: none; /* Remove bullet points */
+    padding: 0; /* Remove default padding */
+}
 
-        header nav ul li {
-            display: inline; /* Display list items inline */
-            margin: 0 10px; /* Margin between items */
-        }
+header nav ul li {
+    display: inline-block; /* Display list items inline-block for dropdown */
+    margin: 0 10px; /* Margin between items */
+    position: relative; /* Needed for dropdown positioning */
+}
 
-            header nav ul li a {
-                text-decoration: none; /* Remove underline from links */
-                color: #007bff; /* Set link color */
-            }
+header nav ul li a {
+    text-decoration: none; /* Remove underline from links */
+    color: #007bff; /* Set link color */
+}
+
+/* Dropdown styles */
+.dropdown-content {
+    display: none; /* Hide dropdown content by default */
+    position: absolute; /* Position relative to the parent li */
+    background-color: #f9f9f9; /* Light gray background */
+    min-width: 160px; /* Minimum width for dropdown */
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); /* Add shadow for depth */
+    z-index: 1; /* Ensure dropdown appears on top */
+    border-radius: 4px; /* Slight rounding for dropdown edges */
+}
+
+.dropdown-content a {
+    color: black; /* Set dropdown link color */
+    padding: 12px 16px; /* Padding inside dropdown links */
+    text-decoration: none; /* Remove underline from dropdown links */
+    display: block; /* Make links block-level elements */
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f1f1; /* Light background on hover */
+}
+
+/* Show the dropdown content on hover */
+header nav ul li:hover .dropdown-content {
+    display: block; /* Show dropdown content */
+}
+
+/* Button hover effect */
+header nav ul li:hover a {
+    background-color: #e9ecef; /* Light background color when hovering over the dropdown button */
+    border-radius: 4px; /* Rounding for hover effect */
+}
 
 main {
     padding: 20px; /* Padding around the main content */
@@ -64,9 +98,9 @@ form button {
     cursor: pointer; /* Pointer cursor on hover */
 }
 
-    form button:hover {
-        background-color: #0056b3; /* Darker background on hover */
-    }
+form button:hover {
+    background-color: #0056b3; /* Darker background on hover */
+}
 
 .stats p {
     margin: 5px 0; /* Margin around stats paragraphs */
@@ -85,10 +119,10 @@ canvas {
         align-items: flex-start; /* Align items to the start */
     }
 
-        header nav ul li {
-            display: block; /* Display list items as block elements */
-            margin: 5px 0; /* Margin around list items */
-        }
+    header nav ul li {
+        display: block; /* Display list items as block elements */
+        margin: 5px 0; /* Margin around list items */
+    }
 }
 
 .responsive-textarea {
