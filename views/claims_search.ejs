@@ -46,6 +46,10 @@
             border-radius: 4px;
         }
 
+        .results {
+            margin-top: 20px;
+        }
+
         .results table {
             width: 100%;
             border-collapse: collapse;
@@ -62,27 +66,27 @@
             background-color: #f1f1f1;
         }
 
-        .dynamic-field-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
+        .pagination {
+            text-align: center;
+            margin: 20px 0;
         }
 
-        .dynamic-field-container input {
-            width: auto;
-            flex-grow: 1;
-        }
-
-        .dynamic-field-container .add-btn {
-            margin-left: 10px;
-            background-color: green;
+        .pagination a {
+            margin: 0 5px;
+            padding: 8px 12px;
+            background-color: #007bff;
             color: white;
+            text-decoration: none;
+            border-radius: 4px;
         }
 
-        .dynamic-field-container .remove-btn {
-            background-color: red;
-            color: white;
-            margin-left: 10px;
+        .pagination a.active {
+            background-color: #0056b3;
+        }
+
+        .pagination a.disabled {
+            background-color: #cccccc;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -169,6 +173,14 @@
                     <button type="button" class="btn add-btn" onclick="addStatus()">Add Status</button>
                 </div>
 
+                <label for="resultsPerPage">Results per page:</label>
+                <select id="resultsPerPage" name="resultsPerPage">
+                    <option value="5" <%= resultsPerPage == 5 ? 'selected' : '' %>>5</option>
+                    <option value="10" <%= resultsPerPage == 10 ? 'selected' : '' %>>10</option>
+                    <option value="15" <%= resultsPerPage == 15 ? 'selected' : '' %>>15</option>
+                    <option value="25" <%= resultsPerPage == 25 ? 'selected' : '' %>>25</option>
+                </select>
+
                 <button type="submit" class="btn">Search</button> <!-- Button to submit the search form -->
             </form>
 
@@ -205,6 +217,26 @@
                             <% }) %>
                         </tbody>
                     </table>
+
+                    <!-- Pagination controls -->
+                    <div class="pagination">
+                        <% if (page > 1) { %>
+                            <a href="?page=<%= page - 1 %>&resultsPerPage=<%= resultsPerPage %><%= queryString %>">&laquo; Previous</a>
+                        <% } else { %>
+                            <a href="#" class="disabled">&laquo; Previous</a>
+                        <% } %>
+
+                        <% for (let i = 1; i <= totalPages; i++) { %>
+                            <a href="?page=<%= i %>&resultsPerPage=<%= resultsPerPage %><%= queryString %>" class="<%= i === page ? 'active' : '' %>"><%= i %></a>
+                        <% } %>
+
+                        <% if (page < totalPages) { %>
+                            <a href="?page=<%= page + 1 %>&resultsPerPage=<%= resultsPerPage %><%= queryString %>">Next &raquo;</a>
+                        <% } else { %>
+                            <a href="#" class="disabled">Next &raquo;</a>
+                        <% } %>
+                    </div>
+
                 <% } else { %>
                     <p>No claims found.</p> <!-- Message if no claims are found -->
                 <% } %>
@@ -257,4 +289,3 @@
     </script>
 </body>
 </html>
-
