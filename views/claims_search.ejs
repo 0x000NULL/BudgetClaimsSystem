@@ -61,6 +61,29 @@
         .results th {
             background-color: #f1f1f1;
         }
+
+        .dynamic-field-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .dynamic-field-container input {
+            width: auto;
+            flex-grow: 1;
+        }
+
+        .dynamic-field-container .add-btn {
+            margin-left: 10px;
+            background-color: green;
+            color: white;
+        }
+
+        .dynamic-field-container .remove-btn {
+            background-color: red;
+            color: white;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -126,19 +149,25 @@
 
                 <label for="damageType">Damage Type:</label> <!-- Label for damage type selection -->
                 <select id="damageType" name="damageType" multiple> <!-- Multiple select for damage types -->
-                    <% const damageTypes = ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windsheild', 'Undercarraige', 'Mechanical', 'interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee']; %>
                     <% damageTypes.forEach(type => { %>
                         <option value="<%= type %>" <%= filter && filter.damageType && filter.damageType.$in.includes(type) ? 'selected' : '' %>><%= type %></option>
                     <% }) %>
                 </select>
+                <div class="dynamic-field-container">
+                    <input type="text" id="newDamageType" placeholder="New Damage Type">
+                    <button type="button" class="btn add-btn" onclick="addDamageType()">Add Damage Type</button>
+                </div>
 
                 <label for="status">Status:</label> <!-- Label for status selection -->
                 <select id="status" name="status" multiple> <!-- Multiple select for statuses -->
-                    <% const statuses = ['Closed', 'Vince Pre-Sub', 'Vince Sub', 'Deonte Pre-Sub', 'Deonte Sub', 'Stef Claim', 'Bodyshop', 'LDW Discharge', 'Stef Pre-Litigation', 'Stef Litigation', 'Tina Pre-Litigation', 'Tina Litigation', 'Collections', 'Collections Review']; %>
                     <% statuses.forEach(status => { %>
                         <option value="<%= status %>" <%= filter && filter.status && filter.status.$in.includes(status) ? 'selected' : '' %>><%= status %></option>
                     <% }) %>
                 </select>
+                <div class="dynamic-field-container">
+                    <input type="text" id="newStatus" placeholder="New Status">
+                    <button type="button" class="btn add-btn" onclick="addStatus()">Add Status</button>
+                </div>
 
                 <button type="submit" class="btn">Search</button> <!-- Button to submit the search form -->
             </form>
@@ -182,5 +211,50 @@
             </div>
         </div>
     </main>
+
+    <script>
+        async function addStatus() {
+            const status = document.getElementById('newStatus').value;
+            if (status) {
+                const response = await fetch('/claims/statuses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                if (response.ok) {
+                    const option = document.createElement('option');
+                    option.value = status;
+                    option.textContent = status;
+                    document.getElementById('status').appendChild(option);
+                    document.getElementById('newStatus').value = '';
+                }
+            }
+        }
+
+        async function addDamageType() {
+            const damageType = document.getElementById('newDamageType').value;
+            if (damageType) {
+                const response = await fetch('/claims/damageTypes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ damageType })
+                });
+
+                if (response.ok) {
+                    const option = document.createElement('option');
+                    option.value = damageType;
+                    option.textContent = damageType;
+                    document.getElementById('damageType').appendChild(option);
+                    document.getElementById('newDamageType').value = '';
+                }
+            }
+        }
+    </script>
 </body>
 </html>
+
