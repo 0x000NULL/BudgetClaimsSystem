@@ -11,6 +11,9 @@ const fs = require('fs'); // Import File System to handle file operations
 const cacheManager = require('cache-manager'); // Import cache manager for caching
 const redisStore = require('cache-manager-redis-store'); // Import Redis store for cache manager
 const pinoLogger = require('../logger'); // Import Pino logger
+const Status = require('../models/Status'); // Import Status model
+const Location = require('../models/Location'); // Import Location model
+const DamageType = require('../models/DamageType'); // Import DamageType model
 
 // Setup cache manager with Redis
 const cache = cacheManager.caching({
@@ -184,10 +187,26 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
 });
 
 // Route to display the add claim form
-router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
-    logRequest(req, 'Add claim route accessed');
-    res.render('add_claim', { title: 'Add Claim' });
+router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+    try {
+        const statuses = await Status.find().sort({ name: 1 });
+        const locations = await Location.find().sort({ name: 1 });
+        const damageTypes = await DamageType.find().sort({ name: 1 });
+
+        logRequest(req, 'Add claim route accessed');
+
+        res.render('add_claim', {
+            title: 'Add Claim',
+            statuses,
+            locations,
+            damageTypes
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
+// Route to display the add claim form
+
 
 // Route to search for claims, accessible by admin, manager, and employee
 router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), (req, res) => {
@@ -580,5 +599,44 @@ router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
         res.status(500).render('500', { message: 'Internal Server Error' });
     }
 });
+
+// Route to add a new status
+router.post('/status/add', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    const { name } = req.body;
+
+    try {
+        const newStatus = new Status({ name });
+        await newStatus.save();
+        res.status(201).json({ message: 'Status added successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Route to add a new damage type
+router.post('/damage-type/add', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    const { name } = req.body;
+
+    try {
+        const newDamageType = new DamageType({ name });
+        await newDamageType.save();
+        res.status(201).json({ message: 'Damage Type added successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Route to add a new location
+router.post('/location/add', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    const { name } = req.body;
+
+    try {
+        const newLocation = new Location({ name });
+        await newLocation.save();
+        res.status(201).json({ message: 'Location added successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+})
 
 module.exports = router; // Export the router
