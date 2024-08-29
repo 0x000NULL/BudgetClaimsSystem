@@ -6,6 +6,7 @@
     <title>Add Claim - Vortex Claims System</title> <!-- Title of the document -->
     <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
     <style>
+        /* Styles for buttons */
         .btn {
             display: inline-block;
             padding: 8px 12px;
@@ -21,6 +22,7 @@
             background-color: #0056b3;
         }
 
+        /* Container for the main content */
         .container {
             max-width: 800px;
             margin: auto;
@@ -30,6 +32,7 @@
             background-color: #f9f9f9;
         }
 
+        /* Styles for the claim information section */
         .claim-info {
             margin-bottom: 20px;
         }
@@ -46,6 +49,7 @@
             border-radius: 4px;
         }
 
+        /* Styles for file upload sections */
         .file-section {
             margin-bottom: 20px;
         }
@@ -58,10 +62,33 @@
             margin-bottom: 10px;
         }
 
+        /* Button group styles */
         .button-group {
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
+        }
+
+        /* Styles for dynamic fields (e.g., adding new statuses, locations, etc.) */
+        .dynamic-field-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .dynamic-field-container input {
+            width: auto;
+            flex-grow: 1;
+        }
+
+        .dynamic-field-container .add-btn {
+            margin-left: 10px;
+            background-color: green;
+        }
+
+        .dynamic-field-container .remove-btn {
+            background-color: red;
+            color: white;
+            margin-left: 10px;
         }
     </style>
 </head>
@@ -98,178 +125,214 @@
             <h2>Add Claim</h2> <!-- Section heading -->
             <form action="/claims" method="POST" enctype="multipart/form-data"> <!-- Form to add a new claim -->
                 <div class="claim-info">
-                    <label for="mva">MVA:</label> <!-- Label for MVA input -->
-                    <input type="text" id="mva" name="mva"> <!-- Input for MVA -->
+                    <!-- MVA field -->
+                    <label for="mva">MVA:</label>
+                    <input type="text" id="mva" name="mva">
 
-                    <label for="customerName">Customer Name:</label> <!-- Label for Customer Name input -->
-                    <input type="text" id="customerName" name="customerName"> <!-- Input for Customer Name -->
+                    <!-- Customer Name field -->
+                    <label for="customerName">Customer Name:</label>
+                    <input type="text" id="customerName" name="customerName">
 
-                    <label for="customerNumber">Customer Number:</label> <!-- Label for Customer Number input -->
-                    <input type="text" id="customerNumber" name="customerNumber"> <!-- Input for Customer Number -->
+                    <!-- Customer Number field -->
+                    <label for="customerNumber">Customer Number:</label>
+                    <input type="text" id="customerNumber" name="customerNumber">
 
-                    <label for="customerEmail">Customer Email:</label> <!-- Label for Customer Email input -->
-                    <input type="email" id="customerEmail" name="customerEmail"> <!-- Input for Customer Email -->
+                    <!-- Customer Email field -->
+                    <label for="customerEmail">Customer Email:</label>
+                    <input type="email" id="customerEmail" name="customerEmail">
 
-                    <label for="customerAddress">Customer Address:</label> <!-- Label for Customer Address input -->
-                    <input type="text" id="customerAddress" name="customerAddress"> <!-- Input for Customer Address -->
+                    <!-- Customer Address field -->
+                    <label for="customerAddress">Customer Address:</label>
+                    <input type="text" id="customerAddress" name="customerAddress">
 
-                    <label for="customerDriversLicense">Customer Drivers License:</label> <!-- Label for Customer Drivers License input -->
-                    <input type="text" id="customerDriversLicense" name="customerDriversLicense"> <!-- Input for Customer Drivers License -->
+                    <!-- Customer Drivers License field -->
+                    <label for="customerDriversLicense">Customer Drivers License:</label>
+                    <input type="text" id="customerDriversLicense" name="customerDriversLicense">
 
-                    <label for="carMake">Car Make:</label> <!-- Label for Car Make input -->
-                    <input type="text" id="carMake" name="carMake"> <!-- Input for Car Make -->
+                    <!-- Car Make field -->
+                    <label for="carMake">Car Make:</label>
+                    <input type="text" id="carMake" name="carMake">
 
-                    <label for="carModel">Car Model:</label> <!-- Label for Car Model input -->
-                    <input type="text" id="carModel" name="carModel"> <!-- Input for Car Model -->
+                    <!-- Car Model field -->
+                    <label for="carModel">Car Model:</label>
+                    <input type="text" id="carModel" name="carModel">
 
-                    <label for="carYear">Car Year:</label> <!-- Label for Car Year input -->
-                    <input type="text" id="carYear" name="carYear"> <!-- Input for Car Year -->
+                    <!-- Car Year field -->
+                    <label for="carYear">Car Year:</label>
+                    <input type="text" id="carYear" name="carYear">
 
-                    <label for="carColor">Car Color:</label> <!-- Label for Car Color input -->
-                    <input type="text" id="carColor" name="carColor"> <!-- Input for Car Color -->
+                    <!-- Car Color field -->
+                    <label for="carColor">Car Color:</label>
+                    <input type="text" id="carColor" name="carColor">
 
-                    <label for="carVIN">Car VIN:</label> <!-- Label for Car VIN input -->
-                    <input type="text" id="carVIN" name="carVIN"> <!-- Input for Car VIN -->
+                    <!-- Car VIN field -->
+                    <label for="carVIN">Car VIN:</label>
+                    <input type="text" id="carVIN" name="carVIN">
 
-                    <label for="accidentDate">Accident Date:</label> <!-- Label for Accident Date input -->
-                    <input type="date" id="accidentDate" name="accidentDate"> <!-- Input for Accident Date -->
+                    <!-- Accident Date field -->
+                    <label for="accidentDate">Accident Date:</label>
+                    <input type="date" id="accidentDate" name="accidentDate">
 
-                    <label for="billable">Billable:</label> <!-- Label for Billable select -->
-                    <select id="billable" name="billable"> <!-- Select for Billable -->
+                    <!-- Billable field -->
+                    <label for="billable">Billable:</label>
+                    <select id="billable" name="billable">
                         <option value="true">Yes</option>
                         <option value="false">No</option>
                     </select>
 
-                    <label for="isRenterAtFault">Is Renter At Fault:</label> <!-- Label for Is Renter At Fault select -->
-                    <select id="isRenterAtFault" name="isRenterAtFault"> <!-- Select for Is Renter At Fault -->
+                    <!-- Is Renter At Fault field -->
+                    <label for="isRenterAtFault">Is Renter At Fault:</label>
+                    <select id="isRenterAtFault" name="isRenterAtFault">
                         <option value="true">Yes</option>
                         <option value="false">No</option>
                     </select>
 
-                    <label for="damagesTotal">Damages Total:</label> <!-- Label for Damages Total input -->
-                    <input type="text" id="damagesTotal" name="damagesTotal"> <!-- Input for Damages Total -->
+                    <!-- Damages Total field -->
+                    <label for="damagesTotal">Damages Total:</label>
+                    <input type="text" id="damagesTotal" name="damagesTotal">
 
-                    <label for="bodyShopName">Body Shop Name:</label> <!-- Label for Body Shop Name input -->
-                    <input type="text" id="bodyShopName" name="bodyShopName"> <!-- Input for Body Shop Name -->
+                    <!-- Body Shop Name field -->
+                    <label for="bodyShopName">Body Shop Name:</label>
+                    <input type="text" id="bodyShopName" name="bodyShopName">
 
-                    <label for="raNumber">RA Number:</label> <!-- Label for RA Number input -->
-                    <input type="text" id="raNumber" name="raNumber"> <!-- Input for RA Number -->
+                    <!-- RA Number field -->
+                    <label for="raNumber">RA Number:</label>
+                    <input type="text" id="raNumber" name="raNumber">
 
-                    <label for="insuranceCarrier">Insurance Carrier:</label> <!-- Label for Insurance Carrier input -->
-                    <input type="text" id="insuranceCarrier" name="insuranceCarrier"> <!-- Input for Insurance Carrier -->
+                    <!-- Insurance Carrier field -->
+                    <label for="insuranceCarrier">Insurance Carrier:</label>
+                    <input type="text" id="insuranceCarrier" name="insuranceCarrier">
 
-                    <label for="insuranceAdjuster">Insurance Adjuster:</label> <!-- Label for Insurance Adjuster input -->
-                    <input type="text" id="insuranceAdjuster" name="insuranceAdjuster"> <!-- Input for Insurance Adjuster -->
+                    <!-- Insurance Adjuster field -->
+                    <label for="insuranceAdjuster">Insurance Adjuster:</label>
+                    <input type="text" id="insuranceAdjuster" name="insuranceAdjuster">
 
-                    <label for="insuranceEmail">Insurance Email:</label> <!-- Label for Insurance Email input -->
-                    <input type="email" id="insuranceEmail" name="insuranceEmail"> <!-- Input for Insurance Email -->
+                    <!-- Insurance Email field -->
+                    <label for="insuranceEmail">Insurance Email:</label>
+                    <input type="email" id="insuranceEmail" name="insuranceEmail">
 
-                    <label for="insurancePhoneNumber">Insurance Phone Number:</label> <!-- Label for Insurance Phone Number input -->
-                    <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber"> <!-- Input for Insurance Phone Number -->
+                    <!-- Insurance Phone Number field -->
+                    <label for="insurancePhoneNumber">Insurance Phone Number:</label>
+                    <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber">
 
-                    <label for="insuranceFaxNumber">Insurance Fax Number:</label> <!-- Label for Insurance Fax Number input -->
-                    <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber"> <!-- Input for Insurance Fax Number -->
+                    <!-- Insurance Fax Number field -->
+                    <label for="insuranceFaxNumber">Insurance Fax Number:</label>
+                    <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber">
 
-                    <label for="insuranceAddress">Insurance Address:</label> <!-- Label for Insurance Address input -->
-                    <input type="text" id="insuranceAddress" name="insuranceAddress"> <!-- Input for Insurance Address -->
+                    <!-- Insurance Address field -->
+                    <label for="insuranceAddress">Insurance Address:</label>
+                    <input type="text" id="insuranceAddress" name="insuranceAddress">
 
-                    <label for="insurancePolicyNumber">Insurance Policy Number:</label> <!-- Label for Insurance Policy Number input -->
-                    <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber"> <!-- Input for Insurance Policy Number -->
+                    <!-- Insurance Policy Number field -->
+                    <label for="insurancePolicyNumber">Insurance Policy Number:</label>
+                    <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber">
 
-                    <label for="insuranceClaimNumber">Insurance Claim Number:</label> <!-- Label for Insurance Claim Number input -->
-                    <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber"> <!-- Input for Insurance Claim Number -->
+                    <!-- Insurance Claim Number field -->
+                    <label for="insuranceClaimNumber">Insurance Claim Number:</label>
+                    <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber">
 
-                    <label for="thirdPartyName">Third Party Name:</label> <!-- Label for Third Party Name input -->
-                    <input type="text" id="thirdPartyName" name="thirdPartyName"> <!-- Input for Third Party Name -->
+                    <!-- Third Party Name field -->
+                    <label for="thirdPartyName">Third Party Name:</label>
+                    <input type="text" id="thirdPartyName" name="thirdPartyName">
 
-                    <label for="thirdPartyAddress">Third Party Address:</label> <!-- Label for Third Party Address input -->
-                    <input type="text" id="thirdPartyAddress" name="thirdPartyAddress"> <!-- Input for Third Party Address -->
+                    <!-- Third Party Address field -->
+                    <label for="thirdPartyAddress">Third Party Address:</label>
+                    <input type="text" id="thirdPartyAddress" name="thirdPartyAddress">
 
-                    <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label> <!-- Label for Third Party Phone Number input -->
-                    <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber"> <!-- Input for Third Party Phone Number -->
+                    <!-- Third Party Phone Number field -->
+                    <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
+                    <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber">
 
-                    <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label> <!-- Label for Third Party Insurance Name input -->
-                    <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName"> <!-- Input for Third Party Insurance Name -->
+                    <!-- Third Party Insurance Name field -->
+                    <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
+                    <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName">
 
-                    <label for="thirdPartyAdjusterName">Third Party Adjuster Name:</label> <!-- Label for Third Party Adjuster Name input -->
-                    <input type="text" id="thirdPartyAdjusterName" name="thirdPartyAdjusterName"> <!-- Input for Third Party Adjuster Name -->
+                    <!-- Third Party Adjuster Name field -->
+                    <label for="thirdPartyAdjusterName">Third Party Adjuster Name:</label>
+                    <input type="text" id="thirdPartyAdjusterName" name="thirdPartyAdjusterName">
 
-                    <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label> <!-- Label for Third Party Policy Number input -->
-                    <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber"> <!-- Input for Third Party Policy Number -->
+                    <!-- Third Party Policy Number field -->
+                    <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
+                    <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber">
 
-                    <label for="thirdPartyClaimNumber">Third Party Claim Number:</label> <!-- Label for Third Party Claim Number input -->
-                    <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber"> <!-- Input for Third Party Claim Number -->
+                    <!-- Third Party Claim Number field -->
+                    <label for="thirdPartyClaimNumber">Third Party Claim Number:</label>
+                    <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber">
 
-                    <label for="rentingLocation">Renting Location:</label> <!-- Label for Renting Location select -->
-                    <select id="rentingLocation" name="rentingLocation"> <!-- Select for Renting Location -->
-                        <option value="LAS Airport">LAS Airport</option>
-                        <option value="Henderson Executive Airport">Henderson Executive Airport</option>
-                        <option value="Toyota Las Vegas">Toyota Las Vegas</option>
-                        <option value="Center Strip">Center Strip</option>
-                        <option value="Losee">Losee</option>
-                        <option value="Tropicana">Tropicana</option>
-                        <option value="West Sahara">West Sahara</option>
-                        <option value="Gibson">Gibson</option>
-                        <option value="Golden Nugget">Golden Nugget</option>
-                    </select>
-
-                    <label for="ldwAccepted">LDW Accepted:</label> <!-- Label for LDW Accepted select -->
-                    <select id="ldwAccepted" name="ldwAccepted"> <!-- Select for LDW Accepted -->
-                        <option value="true">Yes</option>
-                        <option value="false">No</option>
-                    </select>
-
-                    <label for="policeDepartment">Police Department:</label> <!-- Label for Police Department input -->
-                    <input type="text" id="policeDepartment" name="policeDepartment"> <!-- Input for Police Department -->
-
-                    <label for="policeReportNumber">Police Report Number:</label> <!-- Label for Police Report Number input -->
-                    <input type="text" id="policeReportNumber" name="policeReportNumber"> <!-- Input for Police Report Number -->
-
-                    <label for="claimCloseDate">Claim Close Date:</label> <!-- Label for Claim Close Date input -->
-                    <input type="date" id="claimCloseDate" name="claimCloseDate"> <!-- Input for Claim Close Date -->
-
-                    <label for="vehicleOdometer">Vehicle Odometer:</label> <!-- Label for Vehicle Odometer input -->
-                    <input type="number" id="vehicleOdometer" name="vehicleOdometer"> <!-- Input for Vehicle Odometer -->
-
-                    <label for="description">Description:</label> <!-- Label for Description textarea -->
-                    <textarea id="description" name="description"></textarea> <!-- Textarea for Description -->
-
-                    <label for="damageType">Damage Type:</label> <!-- Label for Damage Type checkboxes -->
-                    <div>
-                        <% const damageTypes = ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windshield', 'Undercarriage', 'Mechanical', 'Interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left Quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee']; %> <!-- List of damage types -->
-                        <% damageTypes.forEach(type => { %> <!-- Loop to create checkboxes for each damage type -->
-                            <input type="checkbox" id="damageType_<%= type %>" name="damageType" value="<%= type %>"> <!-- Checkbox for each damage type -->
-                            <label for="damageType_<%= type %>"><%= type %></label><br> <!-- Label for each damage type -->
+                    <!-- Renting Location field with dynamic addition -->
+                    <label for="rentingLocation">Renting Location:</label>
+                    <select id="rentingLocation" name="rentingLocation">
+                        <% locations.forEach(location => { %> <!-- Loop through locations from the database -->
+                            <option value="<%= location %>"><%= location %></option>
                         <% }) %>
+                    </select>
+                    <div class="dynamic-field-container">
+                        <input type="text" id="newLocation" placeholder="New Location"> <!-- Input for adding a new location -->
+                        <button type="button" class="btn add-btn" onclick="addLocation()">Add Location</button> <!-- Button to add the new location -->
                     </div>
 
-                    <label for="status">Status:</label> <!-- Label for Status select -->
-                    <select id="status" name="status"> <!-- Select for Status -->
-                        <option value="Closed">Closed</option>
-                        <option value="Vince Pre-Sub">Vince Pre-Sub</option>
-                        <option value="Vince Sub">Vince Sub</option>
-                        <option value="Deonte Pre-Sub">Deonte Pre-Sub</option>
-                        <option value="Deonte Sub">Deonte Sub</option>
-                        <option value="Stef Claim">Stef Claim</option>
-                        <option value="Bodyshop">Bodyshop</option>
-                        <option value="LDW Discharge">LDW Discharge</option>
-                        <option value="Stef Pre-Litigation">Stef Pre-Litigation</option>
-                        <option value="Stef Litigation">Stef Litigation</option>
-                        <option value="Tina Pre-Litigation">Tina Pre-Litigation</option>
-                        <option value="Tina Litigation">Tina Litigation</option>
-                        <option value="Collections">Collections</option>
-                        <option value="Collections Review">Collections Review</option>
+                    <!-- LDW Accepted field -->
+                    <label for="ldwAccepted">LDW Accepted:</label>
+                    <select id="ldwAccepted" name="ldwAccepted">
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
                     </select>
 
-                    <!-- New fields for Renters Liability Insurance and Loss Damage Waiver -->
-                    <label for="rentersLiabilityInsurance">Was Renters Liability Insurance purchased?</label> <!-- Label for Renters Liability Insurance select -->
-                    <select id="rentersLiabilityInsurance" name="rentersLiabilityInsurance"> <!-- Select for Renters Liability Insurance -->
+                    <!-- Police Department field -->
+                    <label for="policeDepartment">Police Department:</label>
+                    <input type="text" id="policeDepartment" name="policeDepartment">
+
+                    <!-- Police Report Number field -->
+                    <label for="policeReportNumber">Police Report Number:</label>
+                    <input type="text" id="policeReportNumber" name="policeReportNumber">
+
+                    <!-- Claim Close Date field -->
+                    <label for="claimCloseDate">Claim Close Date:</label>
+                    <input type="date" id="claimCloseDate" name="claimCloseDate">
+
+                    <!-- Vehicle Odometer field -->
+                    <label for="vehicleOdometer">Vehicle Odometer:</label>
+                    <input type="number" id="vehicleOdometer" name="vehicleOdometer">
+
+                    <!-- Description field -->
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description"></textarea>
+
+                    <!-- Damage Type field with dynamic addition -->
+                    <label for="damageType">Damage Type:</label>
+                    <div>
+                        <% damageTypes.forEach(type => { %> <!-- Loop through damage types from the database -->
+                            <input type="checkbox" id="damageType_<%= type %>" name="damageType" value="<%= type %>">
+                            <label for="damageType_<%= type %>"><%= type %></label><br>
+                        <% }) %>
+                    </div>
+                    <div class="dynamic-field-container">
+                        <input type="text" id="newDamageType" placeholder="New Damage Type"> <!-- Input for adding a new damage type -->
+                        <button type="button" class="btn add-btn" onclick="addDamageType()">Add Damage Type</button> <!-- Button to add the new damage type -->
+                    </div>
+
+                    <!-- Status field with dynamic addition -->
+                    <label for="status">Status:</label>
+                    <select id="status" name="status">
+                        <% statuses.forEach(status => { %> <!-- Loop through statuses from the database -->
+                            <option value="<%= status %>"><%= status %></option>
+                        <% }) %>
+                    </select>
+                    <div class="dynamic-field-container">
+                        <input type="text" id="newStatus" placeholder="New Status"> <!-- Input for adding a new status -->
+                        <button type="button" class="btn add-btn" onclick="addStatus()">Add Status</button> <!-- Button to add the new status -->
+                    </div>
+
+                    <!-- Renters Liability Insurance field -->
+                    <label for="rentersLiabilityInsurance">Was Renters Liability Insurance purchased?</label>
+                    <select id="rentersLiabilityInsurance" name="rentersLiabilityInsurance">
                         <option value="yes">Yes</option>
                         <option value="no">No</option>
                     </select>
 
-                    <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label> <!-- Label for Loss Damage Waiver select -->
-                    <select id="lossDamageWaiver" name="lossDamageWaiver"> <!-- Select for Loss Damage Waiver -->
+                    <!-- Loss Damage Waiver field -->
+                    <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label>
+                    <select id="lossDamageWaiver" name="lossDamageWaiver">
                         <option value="yes">Yes</option>
                         <option value="no">No</option>
                     </select>
@@ -277,41 +340,124 @@
 
                 <!-- File upload sections -->
                 <div class="file-section">
-                    <h3>Incident Reports</h3> <!-- Subheading for incident reports -->
-                    <input type="file" id="incidentReports" name="incidentReports" multiple> <!-- Input for uploading incident reports -->
+                    <h3>Incident Reports</h3>
+                    <input type="file" id="incidentReports" name="incidentReports" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Correspondence</h3> <!-- Subheading for correspondence -->
-                    <input type="file" id="correspondence" name="correspondence" multiple> <!-- Input for uploading correspondence -->
+                    <h3>Correspondence</h3>
+                    <input type="file" id="correspondence" name="correspondence" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Rental Agreement</h3> <!-- Subheading for rental agreement -->
-                    <input type="file" id="rentalAgreement" name="rentalAgreement" multiple> <!-- Input for uploading rental agreement -->
+                    <h3>Rental Agreement</h3>
+                    <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Police Report</h3> <!-- Subheading for police report -->
-                    <input type="file" id="policeReport" name="policeReport" multiple> <!-- Input for uploading police report -->
+                    <h3>Police Report</h3>
+                    <input type="file" id="policeReport" name="policeReport" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Invoices</h3> <!-- Subheading for invoices -->
-                    <input type="file" id="invoices" name="invoices" multiple> <!-- Input for uploading invoices -->
+                    <h3>Invoices</h3>
+                    <input type="file" id="invoices" name="invoices" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Photos</h3> <!-- Subheading for photos -->
-                    <input type="file" id="photos" name="photos" multiple> <!-- Input for uploading photos -->
+                    <h3>Photos</h3>
+                    <input type="file" id="photos" name="photos" multiple>
                 </div>
 
+                <!-- Button group -->
                 <div class="button-group">
-                    <button type="submit" class="btn">Add Claim</button> <!-- Button to submit the form -->
-                    <a href="/claims" class="btn">Cancel</a> <!-- Button to cancel and go back to claims -->
+                    <button type="submit" class="btn">Add Claim</button>
+                    <a href="/claims" class="btn">Cancel</a>
                 </div>
             </form>
         </div>
     </main>
+    <script>
+        // Function to add a new status dynamically
+        async function addStatus() {
+            const status = document.getElementById('newStatus').value;
+            if (status) {
+                const response = await fetch('/claims/statuses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                if (response.ok) {
+                    const option = document.createElement('option');
+                    option.value = status;
+                    option.textContent = status;
+                    document.getElementById('status').appendChild(option);
+                    document.getElementById('newStatus').value = '';
+                }
+            }
+        }
+
+        // Function to add a new damage type dynamically
+        async function addDamageType() {
+            const damageType = document.getElementById('newDamageType').value;
+            if (damageType) {
+                const response = await fetch('/claims/damageTypes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ damageType })
+                });
+
+                if (response.ok) {
+                    const container = document.querySelector('#damageType_' + damageType);
+                    if (!container) {
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = 'damageType_' + damageType;
+                        checkbox.name = 'damageType';
+                        checkbox.value = damageType;
+
+                        const label = document.createElement('label');
+                        label.htmlFor = 'damageType_' + damageType;
+                        label.textContent = damageType;
+
+                        const br = document.createElement('br');
+
+                        document.querySelector('#damageType').appendChild(checkbox);
+                        document.querySelector('#damageType').appendChild(label);
+                        document.querySelector('#damageType').appendChild(br);
+
+                        document.getElementById('newDamageType').value = '';
+                    }
+                }
+            }
+        }
+
+        // Function to add a new location dynamically
+        async function addLocation() {
+            const location = document.getElementById('newLocation').value;
+            if (location) {
+                const response = await fetch('/claims/locations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ location })
+                });
+
+                if (response.ok) {
+                    const option = document.createElement('option');
+                    option.value = location;
+                    option.textContent = location;
+                    document.getElementById('rentingLocation').appendChild(option);
+                    document.getElementById('newLocation').value = '';
+                }
+            }
+        }
+    </script>
 </body>
 </html>
