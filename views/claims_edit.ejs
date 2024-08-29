@@ -6,6 +6,7 @@
     <title>Edit Claim - Vortex Claims System</title> <!-- Title of the document -->
     <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
     <style>
+        /* General button styling */
         .btn {
             display: inline-block;
             padding: 8px 12px;
@@ -17,10 +18,12 @@
             border-radius: 4px;
         }
 
+        /* Button hover effect */
         .btn:hover {
             background-color: #0056b3;
         }
 
+        /* Container styling */
         .container {
             max-width: 800px;
             margin: auto;
@@ -30,14 +33,17 @@
             background-color: #f9f9f9;
         }
 
+        /* Form section styling */
         .claim-info {
             margin-bottom: 20px;
         }
 
+        /* Label styling */
         .claim-info label {
             font-weight: bold;
         }
 
+        /* Input, textarea, and select field styling */
         .claim-info input, .claim-info textarea, .claim-info select {
             width: 100%;
             padding: 8px;
@@ -46,33 +52,64 @@
             border-radius: 4px;
         }
 
+        /* File section styling */
         .file-section {
             margin-bottom: 20px;
         }
 
+        /* File section headings */
         .file-section h3 {
             margin-bottom: 10px;
         }
 
+        /* File input styling */
         .file-section input {
             margin-bottom: 10px;
         }
 
+        /* Button group styling */
         .button-group {
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
         }
 
+        /* Checkbox group styling */
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
             margin: 5px 0 15px 0;
         }
 
+        /* Checkbox labels styling */
         .checkbox-group label {
             width: 50%;
             padding: 5px;
+        }
+
+        /* Dynamic field container styling for adding/removing statuses, locations, and damage types */
+        .dynamic-field-container {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Input field within dynamic field container */
+        .dynamic-field-container input {
+            width: auto;
+            flex-grow: 1;
+        }
+
+        /* Add button within dynamic field container */
+        .dynamic-field-container .add-btn {
+            margin-left: 10px;
+            background-color: green;
+        }
+
+        /* Remove button within dynamic field container */
+        .dynamic-field-container .remove-btn {
+            background-color: red;
+            color: white;
+            margin-left: 10px;
         }
     </style>
 </head>
@@ -85,7 +122,7 @@
             <ul>
                 <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
                 <li class="Claims">
-                    <a href="javascript:void(0)" class="dropbtn">Claims</a> <!-- Dropdown trigger -->
+                    <a href="javascript:void(0)" class="dropbtn">Claims</a> <!-- Dropdown trigger for claims -->
                     <div class="dropdown-content">
                         <a href="/claims/search">Search Claims</a> <!-- Link to Search Claims -->
                         <a href="/claims/add">Add Claim</a> <!-- Link to Add Claim -->
@@ -93,7 +130,7 @@
                 </li>
                 <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
                 <li class="Settings">
-                    <a href="javascript:void(0)" class="dropbtn">Settings</a> <!-- Dropdown trigger -->
+                    <a href="javascript:void(0)" class="dropbtn">Settings</a> <!-- Dropdown trigger for settings -->
                     <div class="dropdown-content">
                         <a href="/user-management">User Management</a> <!-- Link to User Management -->
                         <a href="/email-templates">Email Templates</a> <!-- Link to Email Templates -->
@@ -213,122 +250,200 @@
                     <label for="thirdPartyClaimNumber">Third Party Claim Number:</label> <!-- Label for third party claim number input -->
                     <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber" value="<%= claim.thirdPartyClaimNumber %>"> <!-- Input for third party claim number -->
 
-                    <label for="rentingLocation">Renting Location:</label> <!-- Label for renting location selection -->
-                    <select id="rentingLocation" name="rentingLocation" required> <!-- Dropdown for renting location selection -->
-                        <option value="">Select Location</option> <!-- Default option -->
-                        <option value="LAS Airport" <%= claim.rentingLocation === 'LAS Airport' ? 'selected' : '' %>>LAS Airport</option> <!-- Option for LAS Airport -->
-                        <option value="Henderson Executive Airport" <%= claim.rentingLocation === 'Henderson Executive Airport' ? 'selected' : '' %>>Henderson Executive Airport</option> <!-- Option for Henderson Executive Airport -->
-                        <option value="Toyota Las Vegas" <%= claim.rentingLocation === 'Toyota Las Vegas' ? 'selected' : '' %>>Toyota Las Vegas</option> <!-- Option for Toyota Las Vegas -->
-                        <option value="Center Strip" <%= claim.rentingLocation === 'Center Strip' ? 'selected' : '' %>>Center Strip</option> <!-- Option for Center Strip -->
-                        <option value="Losee" <%= claim.rentingLocation === 'Losee' ? 'selected' : '' %>>Losee</option> <!-- Option for Losee -->
-                        <option value="Tropicana" <%= claim.rentingLocation === 'Tropicana' ? 'selected' : '' %>>Tropicana</option> <!-- Option for Tropicana -->
-                        <option value="West Sahara" <%= claim.rentingLocation === 'West Sahara' ? 'selected' : '' %>>West Sahara</option> <!-- Option for West Sahara -->
-                        <option value="Gibson" <%= claim.rentingLocation === 'Gibson' ? 'selected' : '' %>>Gibson</option> <!-- Option for Gibson -->
-                        <option value="Golden Nugget" <%= claim.rentingLocation === 'Golden Nugget' ? 'selected' : '' %>>Golden Nugget</option> <!-- Option for Golden Nugget -->
+                    <!-- Dropdown to select the Renting Location -->
+                    <label for="rentingLocation">Renting Location:</label>
+                    <select id="rentingLocation" name="rentingLocation">
+                        <% rentingLocations.forEach(location => { %>
+                            <option value="<%= location %>" <%= claim.rentingLocation === location ? 'selected' : '' %>><%= location %></option>
+                        <% }) %>
+                    </select>
+                    <!-- Dynamic field for adding new locations -->
+                    <div class="dynamic-field-container">
+                        <input type="text" id="newLocation" placeholder="New Location">
+                        <button type="button" class="btn add-btn" onclick="addLocation()">Add Location</button>
+                    </div>
+
+                    <!-- LDW (Loss Damage Waiver) Accepted dropdown -->
+                    <label for="ldwAccepted">LDW Accepted:</label>
+                    <select id="ldwAccepted" name="ldwAccepted">
+                        <option value="true" <%= claim.ldwAccepted ? 'selected' : '' %>>Yes</option>
+                        <option value="false" <%= !claim.ldwAccepted ? 'selected' : '' %>>No</option>
                     </select>
 
-                    <label for="ldwAccepted">LDW Accepted:</label> <!-- Label for LDW accepted selection -->
-                    <select id="ldwAccepted" name="ldwAccepted"> <!-- Dropdown for LDW accepted selection -->
-                        <option value="true" <%= claim.ldwAccepted ? 'selected' : '' %>>Yes</option> <!-- Option for Yes -->
-                        <option value="false" <%= !claim.ldwAccepted ? 'selected' : '' %>>No</option> <!-- Option for No -->
-                    </select>
+                    <!-- Police Department and Report Number -->
+                    <label for="policeDepartment">Police Department:</label>
+                    <input type="text" id="policeDepartment" name="policeDepartment" value="<%= claim.policeDepartment %>">
 
-                    <label for="policeDepartment">Police Department:</label> <!-- Label for police department input -->
-                    <input type="text" id="policeDepartment" name="policeDepartment" value="<%= claim.policeDepartment %>"> <!-- Input for police department -->
+                    <label for="policeReportNumber">Police Report Number:</label>
+                    <input type="text" id="policeReportNumber" name="policeReportNumber" value="<%= claim.policeReportNumber %>">
 
-                    <label for="policeReportNumber">Police Report Number:</label> <!-- Label for police report number input -->
-                    <input type="text" id="policeReportNumber" name="policeReportNumber" value="<%= claim.policeReportNumber %>"> <!-- Input for police report number -->
+                    <!-- Claim Close Date -->
+                    <label for="claimCloseDate">Claim Close Date:</label>
+                    <input type="date" id="claimCloseDate" name="claimCloseDate" value="<%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toISOString().split('T')[0] : '' %>">
 
-                    <label for="claimCloseDate">Claim Close Date:</label> <!-- Label for claim close date input -->
-                    <input type="date" id="claimCloseDate" name="claimCloseDate" value="<%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toISOString().split('T')[0] : '' %>"> <!-- Input for claim close date -->
+                    <!-- Vehicle Odometer -->
+                    <label for="vehicleOdometer">Vehicle Odometer:</label>
+                    <input type="number" id="vehicleOdometer" name="vehicleOdometer" value="<%= claim.vehicleOdometer %>">
 
-                    <label for="vehicleOdometer">Vehicle Odometer:</label> <!-- Label for vehicle odometer input -->
-                    <input type="number" id="vehicleOdometer" name="vehicleOdometer" value="<%= claim.vehicleOdometer %>"> <!-- Input for vehicle odometer -->
-
-                    <label for="description">Description:</label> <!-- Label for description textarea -->
-                    <textarea id="description" name="description" class="responsive-textarea"><%= claim.description %></textarea> <!-- Textarea for description -->
+                    <!-- Description -->
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" class="responsive-textarea"><%= claim.description %></textarea>
 
                     <!-- New fields for Renters Liability Insurance and Loss Damage Waiver -->
-                    <label for="rentersLiabilityInsurance">Was Renters Liability Insurance purchased?</label> <!-- Label for Renters Liability Insurance select -->
-                    <select id="rentersLiabilityInsurance" name="rentersLiabilityInsurance"> <!-- Select for Renters Liability Insurance -->
-                        <option value="yes" <%= claim.rentersLiabilityInsurance === 'yes' ? 'selected' : '' %>>Yes</option> <!-- Option for Yes -->
-                        <option value="no" <%= claim.rentersLiabilityInsurance === 'no' ? 'selected' : '' %>>No</option> <!-- Option for No -->
+                    <label for="rentersLiabilityInsurance">Was Renters Liability Insurance purchased?</label>
+                    <select id="rentersLiabilityInsurance" name="rentersLiabilityInsurance">
+                        <option value="yes" <%= claim.rentersLiabilityInsurance === 'yes' ? 'selected' : '' %>>Yes</option>
+                        <option value="no" <%= claim.rentersLiabilityInsurance === 'no' ? 'selected' : '' %>>No</option>
                     </select>
 
-                    <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label> <!-- Label for Loss Damage Waiver select -->
-                    <select id="lossDamageWaiver" name="lossDamageWaiver"> <!-- Select for Loss Damage Waiver -->
-                        <option value="yes" <%= claim.lossDamageWaiver === 'yes' ? 'selected' : '' %>>Yes</option> <!-- Option for Yes -->
-                        <option value="no" <%= claim.lossDamageWaiver === 'no' ? 'selected' : '' %>>No</option> <!-- Option for No -->
+                    <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label>
+                    <select id="lossDamageWaiver" name="lossDamageWaiver">
+                        <option value="yes" <%= claim.lossDamageWaiver === 'yes' ? 'selected' : '' %>>Yes</option>
+                        <option value="no" <%= claim.lossDamageWaiver === 'no' ? 'selected' : '' %>>No</option>
                     </select>
 
-                    <label for="damageType">Damage Type:</label> <!-- Label for damage type checkboxes -->
-                    <div class="checkbox-group">
-                        <% const damageTypes = ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windsheild', 'Undercarraige', 'Mechanical', 'interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee']; %>
-                        <% damageTypes.forEach(type => { %> <!-- Iterate over damage types -->
+                    <!-- Dynamic checkboxes for Damage Types -->
+                    <label for="damageType">Damage Type:</label>
+                    <div id="damageTypeContainer" class="checkbox-group">
+                        <% damageTypes.forEach(type => { %>
                             <label>
-                                <input type="checkbox" name="damageType" value="<%= type %>" <%= claim.damageType.includes(type) ? 'checked' : '' %>> <!-- Checkbox for damage type -->
-                                <%= type %>
+                                <input type="checkbox" name="damageType" value="<%= type %>" <%= claim.damageType.includes(type) ? 'checked' : '' %>> <%= type %>
                             </label>
                         <% }) %>
                     </div>
+                    <!-- Dynamic field for adding new damage types -->
+                    <div class="dynamic-field-container">
+                        <input type="text" id="newDamageType" placeholder="New Damage Type">
+                        <button type="button" class="btn add-btn" onclick="addDamageType()">Add Damage Type</button>
+                    </div>
 
-                    <label for="status">Status:</label> <!-- Label for status selection -->
-                    <select id="status" name="status" required> <!-- Dropdown for status selection -->
-                        <option value="">Select Status</option> <!-- Default option -->
-                        <option value="Closed" <%= claim.status === 'Closed' ? 'selected' : '' %>>Closed</option> <!-- Option for Closed status -->
-                        <option value="Vince Pre-Sub" <%= claim.status === 'Vince Pre-Sub' ? 'selected' : '' %>>Vince Pre-Sub</option> <!-- Option for Vince Pre-Sub status -->
-                        <option value="Vince Sub" <%= claim.status === 'Vince Sub' ? 'selected' : '' %>>Vince Sub</option> <!-- Option for Vince Sub status -->
-                        <option value="Deonte Pre-Sub" <%= claim.status === 'Deonte Pre-Sub' ? 'selected' : '' %>>Deonte Pre-Sub</option> <!-- Option for Deonte Pre-Sub status -->
-                        <option value="Deonte Sub" <%= claim.status === 'Deonte Sub' ? 'selected' : '' %>>Deonte Sub</option> <!-- Option for Deonte Sub status -->
-                        <option value="Stef Claim" <%= claim.status === 'Stef Claim' ? 'selected' : '' %>>Stef Claim</option> <!-- Option for Stef Claim status -->
-                        <option value="Bodyshop" <%= claim.status === 'Bodyshop' ? 'selected' : '' %>>Bodyshop</option> <!-- Option for Bodyshop status -->
-                        <option value="LDW Discharge" <%= claim.status === 'LDW Discharge' ? 'selected' : '' %>>LDW Discharge</option> <!-- Option for LDW Discharge status -->
-                        <option value="Stef Pre-Litigation" <%= claim.status === 'Stef Pre-Litigation' ? 'selected' : '' %>>Stef Pre-Litigation</option> <!-- Option for Stef Pre-Litigation status -->
-                        <option value="Stef Litigation" <%= claim.status === 'Stef Litigation' ? 'selected' : '' %>>Stef Litigation</option> <!-- Option for Stef Litigation status -->
-                        <option value="Tina Pre-Litigation" <%= claim.status === 'Tina Pre-Litigation' ? 'selected' : '' %>>Tina Pre-Litigation</option> <!-- Option for Tina Pre-Litigation status -->
-                        <option value="Tina Litigation" <%= claim.status === 'Tina Litigation' ? 'selected' : '' %>>Tina Litigation</option> <!-- Option for Tina Litigation status -->
-                        <option value="Collections" <%= claim.status === 'Collections' ? 'selected' : '' %>>Collections</option> <!-- Option for Collections status -->
-                        <option value="Collections Review" <%= claim.status === 'Collections Review' ? 'selected' : '' %>>Collections Review</option> <!-- Option for Collections Review status -->
+                    <!-- Dropdown for selecting Status -->
+                    <label for="status">Status:</label>
+                    <select id="status" name="status">
+                        <% statuses.forEach(status => { %>
+                            <option value="<%= status %>" <%= claim.status === status ? 'selected' : '' %>><%= status %></option>
+                        <% }) %>
                     </select>
+                    <!-- Dynamic field for adding new statuses -->
+                    <div class="dynamic-field-container">
+                        <input type="text" id="newStatus" placeholder="New Status">
+                        <button type="button" class="btn add-btn" onclick="addStatus()">Add Status</button>
+                    </div>
                 </div>
 
                 <!-- File upload sections -->
                 <div class="file-section">
-                    <h3>Incident Reports</h3> <!-- Section heading for incident reports -->
-                    <input type="file" id="incidentReports" name="incidentReports" multiple> <!-- Input for incident reports -->
+                    <h3>Incident Reports</h3>
+                    <input type="file" id="incidentReports" name="incidentReports" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Correspondence</h3> <!-- Section heading for correspondence -->
-                    <input type="file" id="correspondence" name="correspondence" multiple> <!-- Input for correspondence -->
+                    <h3>Correspondence</h3>
+                    <input type="file" id="correspondence" name="correspondence" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Rental Agreement</h3> <!-- Section heading for rental agreement -->
-                    <input type="file" id="rentalAgreement" name="rentalAgreement" multiple> <!-- Input for rental agreement -->
+                    <h3>Rental Agreement</h3>
+                    <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Police Report</h3> <!-- Section heading for police report -->
-                    <input type="file" id="policeReport" name="policeReport" multiple> <!-- Input for police report -->
+                    <h3>Police Report</h3>
+                    <input type="file" id="policeReport" name="policeReport" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Invoices</h3> <!-- Section heading for invoices -->
-                    <input type="file" id="invoices" name="invoices" multiple> <!-- Input for invoices -->
+                    <h3>Invoices</h3>
+                    <input type="file" id="invoices" name="invoices" multiple>
                 </div>
 
                 <div class="file-section">
-                    <h3>Photos</h3> <!-- Section heading for photos -->
-                    <input type="file" id="photos" name="photos" multiple> <!-- Input for photos -->
+                    <h3>Photos</h3>
+                    <input type="file" id="photos" name="photos" multiple>
                 </div>
 
+                <!-- Form submission buttons -->
                 <div class="button-group">
-                    <button type="submit" class="btn">Update Claim</button> <!-- Button to submit the form -->
-                    <a href="/claims/<%= claim._id %>" class="btn">Cancel</a> <!-- Button to cancel and go back -->
+                    <button type="submit" class="btn">Update Claim</button>
+                    <a href="/claims/<%= claim._id %>" class="btn">Cancel</a>
                 </div>
             </form>
         </div>
     </main>
+    <script>
+        // Function to add a new status
+        async function addStatus() {
+            const status = document.getElementById('newStatus').value;
+            if (status) {
+                const response = await fetch('/claims/statuses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                if (response.ok) {
+                    const option = document.createElement('option');
+                    option.value = status;
+                    option.textContent = status;
+                    document.getElementById('status').appendChild(option);
+                    document.getElementById('newStatus').value = '';
+                }
+            }
+        }
+
+        // Function to add a new damage type
+        async function addDamageType() {
+            const damageType = document.getElementById('newDamageType').value;
+            if (damageType) {
+                const response = await fetch('/claims/damageTypes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ damageType })
+                });
+
+                if (response.ok) {
+                    const container = document.querySelector('#damageTypeContainer');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.name = 'damageType';
+                    checkbox.value = damageType;
+
+                    const label = document.createElement('label');
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(' ' + damageType));
+
+                    container.appendChild(label);
+
+                    document.getElementById('newDamageType').value = '';
+                }
+            }
+        }
+
+        // Function to add a new location
+        async function addLocation() {
+            const location = document.getElementById('newLocation').value;
+            if (location) {
+                const response = await fetch('/claims/locations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ location })
+                });
+
+                if (response.ok) {
+                    const option = document.createElement('option');
+                    option.value = location;
+                    option.textContent = location;
+                    document.getElementById('rentingLocation').appendChild(option);
+                    document.getElementById('newLocation').value = '';
+                }
+            }
+        }
+    </script>
 </body>
 </html>
