@@ -53,18 +53,23 @@
                     <div class="claim-info">
                         <label for="customerName">Customer Name:</label>
                         <input type="text" id="customerName" name="customerName">
+                        <span class="error-message" id="errorCustomerName"></span>
 
                         <label for="customerNumber">Customer Number:</label>
                         <input type="text" id="customerNumber" name="customerNumber">
+                        <span class="error-message" id="errorCustomerNumber"></span>
 
                         <label for="customerEmail">Customer Email:</label>
                         <input type="email" id="customerEmail" name="customerEmail">
+                        <span class="error-message" id="errorCustomerEmail"></span>
 
                         <label for="customerAddress">Customer Address:</label>
                         <input type="text" id="customerAddress" name="customerAddress">
+                        <span class="error-message" id="errorCustomerAddress"></span>
 
                         <label for="customerDriversLicense">Customer Drivers License:</label>
                         <input type="text" id="customerDriversLicense" name="customerDriversLicense">
+                        <span class="error-message" id="errorCustomerDriversLicense"></span>
                     </div>
                 </div>
 
@@ -73,24 +78,31 @@
                     <div class="claim-info">
                         <label for="carMake">Car Make:</label>
                         <input type="text" id="carMake" name="carMake">
+                        <span class="error-message" id="errorCarMake"></span>
 
                         <label for="carModel">Car Model:</label>
                         <input type="text" id="carModel" name="carModel">
+                        <span class="error-message" id="errorCarModel"></span>
 
                         <label for="carYear">Car Year:</label>
                         <input type="text" id="carYear" name="carYear">
+                        <span class="error-message" id="errorCarYear"></span>
 
                         <label for="carColor">Car Color:</label>
                         <input type="text" id="carColor" name="carColor">
+                        <span class="error-message" id="errorCarColor"></span>
 
                         <label for="carVIN">Car VIN:</label>
                         <input type="text" id="carVIN" name="carVIN">
+                        <span class="error-message" id="errorCarVIN"></span>
 
                         <label for="vehicleOdometer">Vehicle Odometer:</label>
                         <input type="number" id="vehicleOdometer" name="vehicleOdometer">
+                        <span class="error-message" id="errorVehicleOdometer"></span>
 
                         <label for="accidentDate">Accident Date:</label>
                         <input type="date" id="accidentDate" name="accidentDate">
+                        <span class="error-message" id="errorAccidentDate"></span>
                     </div>
                 </div>
 
@@ -99,24 +111,29 @@
                     <div class="claim-info">
                         <label for="mva">MVA:</label>
                         <input type="text" id="mva" name="mva">
+                        <span class="error-message" id="errorMVA"></span>
 
                         <label for="raNumber">RA Number:</label>
                         <input type="text" id="raNumber" name="raNumber">
+                        <span class="error-message" id="errorRANumber"></span>
 
                         <label for="damagesTotal">Damages Total:</label>
                         <input type="text" id="damagesTotal" name="damagesTotal">
+                        <span class="error-message" id="errorDamagesTotal"></span>
 
                         <label for="billable">Billable:</label>
                         <select id="billable" name="billable">
                             <option value="true">Yes</option>
                             <option value="false">No</option>
                         </select>
+                        <span class="error-message" id="errorBillable"></span>
 
                         <label for="isRenterAtFault">Is Renter At Fault:</label>
                         <select id="isRenterAtFault" name="isRenterAtFault">
                             <option value="true">Yes</option>
                             <option value="false">No</option>
                         </select>
+                        <span class="error-message" id="errorIsRenterAtFault"></span>
 
                         <label for="damageType">Damage Type:</label>
                         <div>
@@ -125,6 +142,7 @@
                             <label for="damageType_<%= type %>"><%= type %></label><br>
                             <% }) %>
                         </div>
+                        <span class="error-message" id="errorDamageType"></span>
                         <div class="dynamic-field-container">
                             <input type="text" id="newDamageType" placeholder="New Damage Type">
                             <button type="button" class="btn add-btn" onclick="addDamageType()">Add Damage Type</button>
@@ -136,6 +154,7 @@
                             <option value="<%= status %>"><%= status %></option>
                             <% }) %>
                         </select>
+                        <span class="error-message" id="errorStatus"></span>
                         <div class="dynamic-field-container">
                             <input type="text" id="newStatus" placeholder="New Status">
                             <button type="button" class="btn add-btn" onclick="addStatus()">Add Status</button>
@@ -148,27 +167,35 @@
                     <div class="claim-info">
                         <label for="insuranceCarrier">Insurance Carrier:</label>
                         <input type="text" id="insuranceCarrier" name="insuranceCarrier">
+                        <span class="error-message" id="errorInsuranceCarrier"></span>
 
                         <label for="insuranceAdjuster">Insurance Adjuster:</label>
                         <input type="text" id="insuranceAdjuster" name="insuranceAdjuster">
+                        <span class="error-message" id="errorInsuranceAdjuster"></span>
 
                         <label for="insuranceEmail">Insurance Email:</label>
                         <input type="email" id="insuranceEmail" name="insuranceEmail">
+                        <span class="error-message" id="errorInsuranceEmail"></span>
 
                         <label for="insurancePhoneNumber">Insurance Phone Number:</label>
                         <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber">
+                        <span class="error-message" id="errorInsurancePhoneNumber"></span>
 
                         <label for="insuranceFaxNumber">Insurance Fax Number:</label>
                         <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber">
+                        <span class="error-message" id="errorInsuranceFaxNumber"></span>
 
                         <label for="insuranceAddress">Insurance Address:</label>
                         <input type="text" id="insuranceAddress" name="insuranceAddress">
+                        <span class="error-message" id="errorInsuranceAddress"></span>
 
                         <label for="insurancePolicyNumber">Insurance Policy Number:</label>
                         <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber">
+                        <span class="error-message" id="errorInsurancePolicyNumber"></span>
 
                         <label for="insuranceClaimNumber">Insurance Claim Number:</label>
                         <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber">
+                        <span class="error-message" id="errorInsuranceClaimNumber"></span>
                     </div>
                 </div>
 
@@ -177,24 +204,31 @@
                     <div class="claim-info">
                         <label for="thirdPartyName">Third Party Name:</label>
                         <input type="text" id="thirdPartyName" name="thirdPartyName">
+                        <span class="error-message" id="errorThirdPartyName"></span>
 
                         <label for="thirdPartyAddress">Third Party Address:</label>
                         <input type="text" id="thirdPartyAddress" name="thirdPartyAddress">
+                        <span class="error-message" id="errorThirdPartyAddress"></span>
 
                         <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
                         <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber">
+                        <span class="error-message" id="errorThirdPartyPhoneNumber"></span>
 
                         <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
                         <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName">
+                        <span class="error-message" id="errorThirdPartyInsuranceName"></span>
 
                         <label for="thirdPartyAdjusterName">Third Party Adjuster Name:</label>
                         <input type="text" id="thirdPartyAdjusterName" name="thirdPartyAdjusterName">
+                        <span class="error-message" id="errorThirdPartyAdjusterName"></span>
 
                         <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
                         <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber">
+                        <span class="error-message" id="errorThirdPartyPolicyNumber"></span>
 
                         <label for="thirdPartyClaimNumber">Third Party Claim Number:</label>
                         <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber">
+                        <span class="error-message" id="errorThirdPartyClaimNumber"></span>
                     </div>
                 </div>
 
@@ -207,6 +241,7 @@
                             <option value="<%= location %>"><%= location %></option>
                             <% }) %>
                         </select>
+                        <span class="error-message" id="errorRentingLocation"></span>
                         <div class="dynamic-field-container">
                             <input type="text" id="newLocation" placeholder="New Location">
                             <button type="button" class="btn add-btn" onclick="addLocation()">Add Location</button>
@@ -214,12 +249,15 @@
 
                         <label for="policeDepartment">Police Department:</label>
                         <input type="text" id="policeDepartment" name="policeDepartment">
+                        <span class="error-message" id="errorPoliceDepartment"></span>
 
                         <label for="policeReportNumber">Police Report Number:</label>
                         <input type="text" id="policeReportNumber" name="policeReportNumber">
+                        <span class="error-message" id="errorPoliceReportNumber"></span>
 
                         <label for="claimCloseDate">Claim Close Date:</label>
                         <input type="date" id="claimCloseDate" name="claimCloseDate">
+                        <span class="error-message" id="errorClaimCloseDate"></span>
                     </div>
                 </div>
 
@@ -231,12 +269,14 @@
                             <option value="yes">Yes</option>
                             <option value="no">No</option>
                         </select>
+                        <span class="error-message" id="errorRentersLiabilityInsurance"></span>
 
                         <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label>
                         <select id="lossDamageWaiver" name="lossDamageWaiver">
                             <option value="yes">Yes</option>
                             <option value="no">No</option>
                         </select>
+                        <span class="error-message" id="errorLossDamageWaiver"></span>
                     </div>
                 </div>
 
@@ -245,26 +285,32 @@
                     <div class="file-section">
                         <h3>Incident Reports</h3>
                         <input type="file" id="incidentReports" name="incidentReports" multiple>
+                        <span class="error-message" id="errorIncidentReports"></span>
                     </div>
                     <div class="file-section">
                         <h3>Correspondence</h3>
                         <input type="file" id="correspondence" name="correspondence" multiple>
+                        <span class="error-message" id="errorCorrespondence"></span>
                     </div>
                     <div class="file-section">
                         <h3>Rental Agreement</h3>
                         <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
+                        <span class="error-message" id="errorRentalAgreement"></span>
                     </div>
                     <div class="file-section">
                         <h3>Police Report</h3>
                         <input type="file" id="policeReport" name="policeReport" multiple>
+                        <span class="error-message" id="errorPoliceReport"></span>
                     </div>
                     <div class="file-section">
                         <h3>Invoices</h3>
                         <input type="file" id="invoices" name="invoices" multiple>
+                        <span class="error-message" id="errorInvoices"></span>
                     </div>
                     <div class="file-section">
                         <h3>Photos</h3>
                         <input type="file" id="photos" name="photos" multiple>
+                        <span class="error-message" id="errorPhotos"></span>
                     </div>
                 </div>
 
@@ -276,6 +322,9 @@
             </form>
         </div>
     </main>
+
+    <!-- Toast notifications for success and error messages -->
+    <div id="toast" class="toast"></div>
 
     <script>
         // Function to open a specific tab
@@ -296,7 +345,24 @@
         // Set the default tab to be open
         document.getElementById("defaultOpen").click();
 
-        // Existing dynamic addition functions remain unchanged...
+        // Function to display a toast message
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            toast.style.display = 'block';
+
+            // Hide the toast after 3 seconds
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Example usage of toast notifications
+        // showToast('Claim added successfully!', 'success');
+        // showToast('Error adding claim!', 'error');
+
+        // Existing dynamic addition functions
         async function addStatus() {
             const status = document.getElementById('newStatus').value;
             if (status) {
@@ -314,6 +380,9 @@
                     option.textContent = status;
                     document.getElementById('status').appendChild(option);
                     document.getElementById('newStatus').value = '';
+                    showToast('Status added successfully!', 'success');
+                } else {
+                    showToast('Error adding status!', 'error');
                 }
             }
         }
@@ -333,8 +402,11 @@
                     const option = document.createElement('option');
                     option.value = damageType;
                     option.textContent = damageType;
-                    .getElementById('damageType').appendChild(option);
+                    document.getElementById('damageType').appendChild(option);
                     document.getElementById('newDamageType').value = '';
+                    showToast('Damage type added successfully!', 'success');
+                } else {
+                    showToast('Error adding damage type!', 'error');
                 }
             }
         }
@@ -356,10 +428,12 @@
                     option.textContent = location;
                     document.getElementById('rentingLocation').appendChild(option);
                     document.getElementById('newLocation').value = '';
+                    showToast('Location added successfully!', 'success');
+                } else {
+                    showToast('Error adding location!', 'error');
                 }
             }
         }
     </script>
 </body>
 </html>
-
