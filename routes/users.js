@@ -18,12 +18,6 @@ const router = express.Router();
 // Define sensitive fields that should not be logged
 const sensitiveFields = ['password', 'token', 'ssn'];
 
-/**
- * Filters out sensitive fields from the request data.
- * 
- * @param {Object} data - The request data to filter.
- * @returns {Object} The filtered data with sensitive fields masked.
- */
 const filterSensitiveData = (data) => {
     if (!data || typeof data !== 'object') {
         return data;
@@ -31,9 +25,9 @@ const filterSensitiveData = (data) => {
 
     return Object.keys(data).reduce((filteredData, key) => {
         if (sensitiveFields.includes(key)) {
-            filteredData[key] = '***REDACTED***'; // Mask the sensitive field
+            filteredData[key] = '***REDACTED***';
         } else if (typeof data[key] === 'object') {
-            filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
+            filteredData[key] = filterSensitiveData(data[key]);
         } else {
             filteredData[key] = data[key];
         }
@@ -41,27 +35,20 @@ const filterSensitiveData = (data) => {
     }, {});
 };
 
-/**
- * Logs requests with user and session information.
- * 
- * @param {Object} req - The request object.
- * @param {string} message - The log message.
- * @param {Object} [extra={}] - Additional data to log.
- */
 const logRequest = (req, message, extra = {}) => {
     const { method, originalUrl, headers, body } = req;
-    const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
+    const filteredBody = filterSensitiveData(body);
 
     pinoLogger.info({
-        message, // Log message
-        user: req.user ? req.user.email : 'Unauthenticated', // Log user
-        ip: req.ip, // Log IP address
-        sessionId: req.sessionID, // Log session ID
-        timestamp: new Date().toISOString(), // Add a timestamp
-        method, // Log HTTP method
-        url: originalUrl, // Log originating URL
-        requestBody: filteredBody, // Log the filtered request body
-        headers: headers // Log request headers
+        message,
+        user: req.user ? req.user.email : 'Unauthenticated',
+        ip: req.ip,
+        sessionId: req.sessionID,
+        timestamp: new Date().toISOString(),
+        method,
+        url: originalUrl,
+        requestBody: filteredBody,
+        headers: headers
     });
 };
 
@@ -69,134 +56,85 @@ const logRequest = (req, message, extra = {}) => {
 passport.use(new LocalStrategy({
     usernameField: 'email',
     passReqToCallback: true // This enables passing `req` to the callback
-}, (req, email, password, done) => {
+}, async (req, email, password, done) => {
     logRequest(req, 'Authenticating user:', { email });
 
-    // Find the user by email
-    User.findOne({ email: email.toLowerCase() }, (err, user) => {
-        if (err) {
-            logRequest(req, 'Error fetching user:', { error: err });
-            return done(err);
-        }
+    try {
+        // Find the user by email using async/await syntax
+        const user = await User.findOne({ email: email.toLowerCase() });
         if (!user) {
             logRequest(req, 'No user found with email:', { email });
             return done(null, false, { message: 'That email is not registered' });
         }
 
         // Compare the provided password with the stored hashed password
-        logRequest(req, 'Comparing passwords', { storedPasswordHash: user.password });
+        const isMatch = await bcrypt.compare(password, user.password);
+        logRequest(req, 'Password match status:', { isMatch });
 
-        bcrypt.compare(password, user.password, (err, isMatch) => {
-            if (err) {
-                logRequest(req, 'Error comparing passwords:', { error: err });
-                return done(err);
-            }
-            logRequest(req, 'Password match status:', { isMatch });
-
-            if (isMatch) {
-                return done(null, user); // Password matches, proceed with user authentication
-            } else {
-                return done(null, false, { message: 'Password incorrect' });
-            }
-        });
-    });
+        if (isMatch) {
+            return done(null, user);
+        } else {
+            return done(null, false, { message: 'Password incorrect' });
+        }
+    } catch (err) {
+        logRequest(req, 'Error fetching user or comparing passwords:', { error: err });
+        return done(err);
+    }
 }));
 
-// Serialize user information into the session
 passport.serializeUser((user, done) => {
     done(null, user.id);
 });
 
-// Deserialize user information from the session
-passport.deserializeUser((id, done) => {
-    User.findById(id, (err, user) => done(err, user));
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (err) {
+        done(err);
+    }
 });
 
-/**
- * Route to display the registration form.
- * 
- * @name GET /register
- * @function
- * @memberof module:routes/users
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- */
 router.get('/register', (req, res) => {
     logRequest(req, 'Register route accessed');
     res.render('register', { title: 'Register' });
 });
 
-/**
- * Route to handle user registration.
- * 
- * @name POST /register
- * @function
- * @memberof module:routes/users
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- */
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
     const { name, email, password, role } = req.body;
     logRequest(req, 'Register POST request received', { data: req.body });
 
-    // Basic validation
     let errors = [];
-    // Uncomment this if block to enable validation for required fields
-    // if (!name || !email || !password || !role) {
-    //     errors.push({ msg: 'Please enter all fields' });
-    // }
 
     if (errors.length > 0) {
         logRequest(req, 'Validation errors:', { errors });
         res.render('register', { errors, name, email, password, role });
     } else {
-        // Check if the user already exists
-        User.findOne({ email }).then(user => {
-            if (user) {
+        try {
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
                 errors.push({ msg: 'Email already exists' });
                 logRequest(req, 'Email already exists', { email });
-                res.render('register', { errors, name, email, password, role });
-            } else {
-                // Create a new user object
-                const newUser = new User({ name, email, password, role });
-
-                // Save the new user to the database
-                newUser.save()
-                    .then(user => {
-                        logRequest(req, 'New user registered:', { user });
-                        req.flash('success_msg', 'You are now registered and can log in');
-                        res.redirect('/login'); // Redirect to the login page
-                    })
-                    .catch(err => logRequest(req, 'Error saving new user:', { error: err }));
+                return res.render('register', { errors, name, email, password, role });
             }
-        });
+
+            const newUser = new User({ name, email, password, role });
+            await newUser.save();
+            logRequest(req, 'New user registered:', { newUser });
+            req.flash('success_msg', 'You are now registered and can log in');
+            res.redirect('/login');
+        } catch (err) {
+            logRequest(req, 'Error saving new user:', { error: err });
+            res.status(500).send('Server error');
+        }
     }
 });
 
-/**
- * Route to display the login form.
- * 
- * @name GET /login
- * @function
- * @memberof module:routes/users
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- */
 router.get('/login', (req, res) => {
     logRequest(req, 'Login route accessed');
     res.render('login', { title: 'Login' });
 });
 
-/**
- * Route to handle user login.
- * 
- * @name POST /login
- * @function
- * @memberof module:routes/users
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @param {Function} next - The next middleware function.
- */
 router.post('/login', (req, res, next) => {
     logRequest(req, 'Login POST request received');
     passport.authenticate('local', {
@@ -206,15 +144,6 @@ router.post('/login', (req, res, next) => {
     })(req, res, next);
 });
 
-/**
- * Route to handle user logout.
- * 
- * @name GET /logout
- * @function
- * @memberof module:routes/users
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- */
 router.get('/logout', (req, res) => {
     logRequest(req, 'Logout route accessed');
     req.logout(err => {
@@ -224,19 +153,9 @@ router.get('/logout', (req, res) => {
     });
 });
 
-/**
- * Route to display user management page (accessible only by admin).
- * 
- * @name GET /user-management
- * @function
- * @memberof module:routes/users
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- */
 router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     logRequest(req, 'User Management route accessed');
     try {
-        // Fetch all users from the database
         const users = await User.find();
         logRequest(req, 'Users fetched:', { users });
         res.render('user_management', { title: 'User Management', users });
@@ -246,22 +165,12 @@ router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), asyn
     }
 });
 
-/**
- * Route to edit user details (accessible only by admin).
- * 
- * @name GET /:id/edit
- * @function
- * @memberof module:routes/users
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- */
 router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     logRequest(req, `Fetching user details for editing with ID: ${userId}`);
 
     try {
-        // Find the user by ID
-        const user = await User.findById(userId).exec();
+        const user = await User.findById(userId);
         if (!user) {
             logRequest(req, `User with ID ${userId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'User not found' });
@@ -274,34 +183,22 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req,
     }
 });
 
-/**
- * Route to handle user update (accessible only by admin).
- * 
- * @name PUT /:id
- * @function
- * @memberof module:routes/users
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- */
 router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     logRequest(req, `Updating user with ID: ${userId}`, { data: req.body });
 
     try {
-        // Find the user by ID
-        let user = await User.findById(userId).exec();
+        let user = await User.findById(userId);
         if (!user) {
             logRequest(req, `User with ID ${userId} not found`, { level: 'error' });
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Update user details with the new data from the request
         const { name, email, role } = req.body;
         user.name = name || user.name;
         user.email = email || user.email;
         user.role = role || user.role;
 
-        // Save the updated user details
         user = await user.save();
         logRequest(req, 'User updated:', { user });
         res.redirect('/user-management');
@@ -311,21 +208,11 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res)
     }
 });
 
-/**
- * Route to handle user deletion (accessible only by admin).
- * 
- * @name DELETE /:id
- * @function
- * @memberof module:routes/users
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- */
 router.delete('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     logRequest(req, `Deleting user with ID: ${userId}`);
 
     try {
-        // Delete the user by ID
         await User.findByIdAndDelete(userId);
         logRequest(req, 'User deleted:', { userId });
         res.redirect('/user-management');

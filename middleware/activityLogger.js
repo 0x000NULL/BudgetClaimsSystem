@@ -7,7 +7,7 @@ const pinoLogger = require('../logger'); // Import Pino logger
  * @returns {Function} - Middleware function to log activity
  */
 const logActivity = (action) => {
-    return (req, res, next) => { // Return a middleware function
+    return async (req, res, next) => { // Return a middleware function
         // Log that the middleware has been called
         pinoLogger.info({
             message: 'logActivity middleware called',
@@ -27,30 +27,31 @@ const logActivity = (action) => {
             });
 
             // Save the activity log entry to the database
-            log.save((err) => {
-                if (err) {
-                    // Log any errors that occur while saving the activity log entry
-                    pinoLogger.error({
-                        message: 'Error logging activity',
-                        error: err.message,
-                        action,
-                        user: req.user.email,
-                        ip: req.ip,
-                        sessionId: req.sessionID,
-                        timestamp: new Date().toISOString()
-                    });
-                } else {
-                    // Log success message if the activity log entry was saved successfully
-                    pinoLogger.info({
-                        message: 'Activity log saved successfully',
-                        action,
-                        user: req.user.email,
-                        ip: req.ip,
-                        sessionId: req.sessionID,
-                        timestamp: new Date().toISOString()
-                    });
-                }
-            });
+            try {
+                await log.save();
+                // Log success message if the activity log entry was saved successfully
+                pinoLogger.info({
+                    message: 'Activity log saved successfully',
+                    action,
+                    user: req.user.email,
+                    ip: req.ip,
+                    sessionId: req.sessionID,
+                    timestamp: new Date().toISOString()
+                });
+            } catch (err) {
+                // Log any errors that occur while saving the activity log entry
+                pinoLogger.error({
+                    message: 'Error logging activity',
+                    error: err.message,
+                    action,
+                    user: req.user.email,
+                    ip: req.ip,
+                    sessionId: req.sessionID,
+                    timestamp: new Date().toISOString()
+                });
+                next(err);
+                return;
+            }
         } else {
             // Log that the user is not authenticated
             pinoLogger.warn({

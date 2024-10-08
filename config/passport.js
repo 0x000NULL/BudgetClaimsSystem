@@ -6,7 +6,7 @@ const pinoLogger = require('../logger'); // Import Pino logger
 module.exports = function (passport) {
     // Define a new Passport LocalStrategy
     passport.use(
-        new LocalStrategy({ usernameField: 'email' }, (email, password, done) => {
+        new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
             // Log the email being used for authentication
             pinoLogger.info({
                 message: 'Attempting to authenticate user',
@@ -14,64 +14,54 @@ module.exports = function (passport) {
                 timestamp: new Date().toISOString()
             });
 
-            // Match user based on the provided email
-            User.findOne({ email: email })
-                .then(user => {
-                    // If no user is found with the provided email
-                    if (!user) {
-                        pinoLogger.warn({
-                            message: 'Authentication failed: email not registered',
-                            email,
-                            timestamp: new Date().toISOString()
-                        });
-                        return done(null, false, { message: 'That email is not registered' });
-                    }
+            try {
+                // Match user based on the provided email
+                const user = await User.findOne({ email: email });
 
-                    // Compare the provided password with the stored hashed password
-                    bcrypt.compare(password, user.password, (err, isMatch) => {
-                        if (err) {
-                            pinoLogger.error({
-                                message: 'Error comparing passwords',
-                                error: err.message,
-                                email,
-                                timestamp: new Date().toISOString()
-                            });
-                            throw err; // Throw error if there is an issue during comparison
-                        }
-
-                        pinoLogger.info({
-                            message: 'Password comparison completed',
-                            email,
-                            isMatch,
-                            timestamp: new Date().toISOString()
-                        });
-
-                        if (isMatch) {
-                            pinoLogger.info({
-                                message: 'Password matched',
-                                email,
-                                timestamp: new Date().toISOString()
-                            });
-                            return done(null, user); // Return the user object if passwords match
-                        } else {
-                            pinoLogger.warn({
-                                message: 'Password did not match',
-                                email,
-                                timestamp: new Date().toISOString()
-                            });
-                            return done(null, false, { message: 'Password incorrect' }); // Return false if passwords do not match
-                        }
-                    });
-                })
-                .catch(err => {
-                    pinoLogger.error({
-                        message: 'Error during user authentication',
-                        error: err.message,
+                // If no user is found with the provided email
+                if (!user) {
+                    pinoLogger.warn({
+                        message: 'Authentication failed: email not registered',
                         email,
                         timestamp: new Date().toISOString()
                     });
-                    return done(err);
+                    return done(null, false, { message: 'That email is not registered' });
+                }
+
+                // Compare the provided password with the stored hashed password
+                const isMatch = await bcrypt.compare(password, user.password);
+                
+                pinoLogger.info({
+                    message: 'Password comparison completed',
+                    email,
+                    isMatch,
+                    timestamp: new Date().toISOString()
                 });
+
+                if (isMatch) {
+                    pinoLogger.info({
+                        message: 'Password matched',
+                        email,
+                        timestamp: new Date().toISOString()
+                    });
+                    return done(null, user); // Return the user object if passwords match
+                } else {
+                    pinoLogger.warn({
+                        message: 'Password did not match',
+                        email,
+                        timestamp: new Date().toISOString()
+                    });
+                    return done(null, false, { message: 'Password incorrect' }); // Return false if passwords do not match
+                }
+            } catch (err) {
+                pinoLogger.error({
+                    message: 'Error during user authentication',
+                    error: err.message,
+                    email,
+                    timestamp: new Date().toISOString()
+                });
+                return done(err);
+            }
         })
     );
 
@@ -86,23 +76,32 @@ module.exports = function (passport) {
     });
 
     // Deserialize user instance by user ID stored in the session
-    passport.deserializeUser((id, done) => {
-        User.findById(id, (err, user) => {
-            if (err) {
-                pinoLogger.error({
-                    message: 'Error deserializing user',
-                    error: err.message,
+    passport.deserializeUser(async (id, done) => {
+        try {
+            const user = await User.findById(id);
+            if (!user) {
+                pinoLogger.warn({
+                    message: 'User not found during deserialization',
                     userId: id,
                     timestamp: new Date().toISOString()
                 });
-            } else {
-                pinoLogger.info({
-                    message: 'User deserialized',
-                    userId: id,
-                    timestamp: new Date().toISOString()
-                });
+                return done(null, false);
             }
-            done(err, user);
-        });
+
+            pinoLogger.info({
+                message: 'User deserialized',
+                userId: id,
+                timestamp: new Date().toISOString()
+            });
+            done(null, user);
+        } catch (err) {
+            pinoLogger.error({
+                message: 'Error deserializing user',
+                error: err.message,
+                userId: id,
+                timestamp: new Date().toISOString()
+            });
+            done(err, null);
+        }
     });
 };

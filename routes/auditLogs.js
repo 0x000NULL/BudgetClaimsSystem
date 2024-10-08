@@ -5,19 +5,19 @@
  * @module routes/auditLogs
  */
 
- /**
-    * Route to get and display audit logs.
-    * 
-    * @name get/
-    * @function
-    * @memberof module:routes/auditLogs
-    * @inner
-    * @param {Object} req - Express request object.
-    * @param {Object} res - Express response object.
-    * @throws Will throw an error if there is an issue fetching audit logs from the database.
-    * @middleware ensureAuthenticated - Middleware to ensure the user is authenticated.
-    * @middleware ensureRoles - Middleware to ensure the user has the required roles ('admin' or 'manager').
-    */
+/**
+ * Route to get and display audit logs.
+ * 
+ * @name get/
+ * @function
+ * @memberof module:routes/auditLogs
+ * @inner
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @throws Will throw an error if there is an issue fetching audit logs from the database.
+ * @middleware ensureAuthenticated - Middleware to ensure the user is authenticated.
+ * @middleware ensureRoles - Middleware to ensure the user has the required roles ('admin' or 'manager').
+ */
 // Import necessary modules
 const express = require('express'); // Import Express to create a router
 const router = express.Router(); // Create a new router
@@ -28,17 +28,21 @@ const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // I
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     try {
         // Fetch audit logs from the database, populate the 'user' field with the username, sort by timestamp in descending order, and convert to plain JavaScript objects
-        const logs = await AuditLog.find().populate('user', 'username').sort({ timestamp: -1 }).lean();
+        const logs = await AuditLog.find()
+            .populate({ path: 'user', select: 'username' })
+            .sort({ timestamp: -1 })
+            .lean();
+
         console.log('Audit logs fetched:', logs); // Log the fetched audit logs for debugging purposes
 
         // Render the 'audit_logs' view and pass the fetched logs
         res.render('audit_logs', { logs });
     } catch (err) {
         // Log any errors that occur during the fetching of audit logs
-        console.error('Error fetching audit logs:', err);
+        console.error('Error fetching audit logs:', err.message);
 
         // Send a 500 status code and an error message if an error occurs
-        res.status(500).send('Server Error');
+        res.status(500).json({ message: 'Server Error: Unable to fetch audit logs.' });
     }
 });
 

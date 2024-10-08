@@ -47,6 +47,7 @@ const cache = cacheManager.caching({
     ttl: 600 // Time-to-live for cached data (in seconds)
 });
 
+
 const router = express.Router(); // Create a new router
 
 // Define sensitive fields that should not be logged
@@ -130,7 +131,7 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
     logRequest(req, `Exporting claim to PDF with ID: ${claimId}`);
 
     try {
-        const claim = await Claim.findById(claimId).exec();
+        const claim = await Claim.findById(claimId);
         if (!claim) {
             logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Claim not found' });
@@ -138,7 +139,6 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
 
         const doc = new PDFDocument();
         const filename = `claim_${claimId}.pdf`;
-
         res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.setHeader('Content-Type', 'application/pdf');
 
