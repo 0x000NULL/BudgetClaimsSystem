@@ -1,3 +1,205 @@
+/**
+ * @file /home/stripcheese/Desktop/BudgetClaimsSystem/routes/customers.js
+ * @description This file contains the routes for customer-related operations in the Budget Claims System.
+ * It includes routes for customer registration, login, claim submission, viewing claims, settings management,
+ * password reset, and two-factor authentication setup and verification.
+ * 
+ * @requires express
+ * @requires bcryptjs
+ * @requires passport
+ * @requires jsonwebtoken
+ * @requires ../models/Customer
+ * @requires ../models/Claim
+ * @requires ../middleware/auth
+ * @requires speakeasy
+ * @requires qrcode
+ * @requires ../logger
+ */
+
+ /**
+ * @typedef {Object} Request
+ * @property {Object} body - The request body.
+ * @property {Object} user - The authenticated user.
+ * @property {string} ip - The IP address of the request.
+ * @property {string} sessionID - The session ID of the request.
+ * @property {string} method - The HTTP method of the request.
+ * @property {string} originalUrl - The original URL of the request.
+ * @property {Object} headers - The headers of the request.
+ */
+
+ /**
+ * @typedef {Object} Response
+ * @property {Function} json - Sends a JSON response.
+ * @property {Function} status - Sets the HTTP status for the response.
+ * @property {Function} render - Renders a view template.
+ */
+
+ /**
+ * @typedef {Object} NextFunction
+ * @description A callback function to pass control to the next middleware function.
+ */
+
+ /**
+ * @typedef {Object} Customer
+ * @property {string} name - The name of the customer.
+ * @property {string} email - The email of the customer.
+ * @property {string} password - The hashed password of the customer.
+ * @property {boolean} twoFactorEnabled - Indicates if two-factor authentication is enabled.
+ * @property {string} twoFactorSecret - The secret key for two-factor authentication.
+ */
+
+ /**
+ * @typedef {Object} Claim
+ * @property {string} mva - The MVA of the claim.
+ * @property {string} customerName - The name of the customer who submitted the claim.
+ * @property {string} description - The description of the claim.
+ * @property {string} status - The status of the claim.
+ * @property {Array} files - The files associated with the claim.
+ */
+
+ /**
+ * @typedef {Object} Error
+ * @property {string} message - The error message.
+ */
+
+ /**
+ * @typedef {Object} Logger
+ * @property {Function} info - Logs an informational message.
+ */
+
+ /**
+ * @typedef {Object} QRCode
+ * @property {Function} toDataURL - Generates a QR code data URL.
+ */
+
+ /**
+ * @typedef {Object} Speakeasy
+ * @property {Function} generateSecret - Generates a secret key for two-factor authentication.
+ * @property {Function} totp.verify - Verifies a TOTP token.
+ */
+
+ /**
+ * @typedef {Object} Passport
+ * @property {Function} authenticate - Authenticates a request using a specified strategy.
+ */
+
+ /**
+ * @typedef {Object} Bcrypt
+ * @property {Function} genSalt - Generates a salt for hashing.
+ * @property {Function} hash - Hashes a password.
+ * @property {Function} compare - Compares a password with a hash.
+ */
+
+ /**
+ * @typedef {Object} JWT
+ * @property {Function} sign - Generates a JSON Web Token.
+ */
+
+ /**
+ * @typedef {Object} Express
+ * @property {Function} Router - Creates a new router.
+ */
+
+ /**
+ * @typedef {Object} Middleware
+ * @property {Function} ensureAuthenticated - Middleware to ensure the user is authenticated.
+ */
+
+ /**
+ * @typedef {Object} SensitiveFields
+ * @property {Array} sensitiveFields - List of sensitive fields that should not be logged.
+ */
+
+ /**
+ * @function filterSensitiveData
+ * @description Filters out sensitive fields from the request body.
+ * @param {Object} data - The data to be filtered.
+ * @returns {Object} The filtered data with sensitive fields masked.
+ */
+
+ /**
+ * @function logRequest
+ * @description Logs requests with user and session info.
+ * @param {Request} req - The request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional information to log.
+ */
+
+ /**
+ * @function router.post('/register')
+ * @description Route for customer registration.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+ /**
+ * @function router.post('/login')
+ * @description Route for customer login.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ * @param {NextFunction} next - The next middleware function.
+ */
+
+ /**
+ * @function router.post('/claims')
+ * @description Route for submitting a new claim.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+ /**
+ * @function router.get('/claims')
+ * @description Route for viewing customer's claims.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+ /**
+ * @function router.get('/settings')
+ * @description Route to view settings page.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+ /**
+ * @function router.post('/settings/reset-password')
+ * @description Route to reset password.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+ /**
+ * @function router.post('/settings/setup-2fa')
+ * @description Route to setup two-factor authentication.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+ /**
+ * @function router.post('/settings/verify-2fa')
+ * @description Route to verify two-factor authentication code.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+ /**
+ * @function router.post('/settings/disable-2fa')
+ * @description Route to disable two-factor authentication.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+ /**
+ * @function router.get('/help')
+ * @description Route for customer help page.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+ /**
+ * @module routes/customers
+ * @description Exports the router for customer-related routes.
+ */
 const express = require('express'); // Import Express to create a router
 const bcrypt = require('bcryptjs'); // Import Bcrypt for hashing passwords
 const passport = require('passport'); // Import Passport for authentication

@@ -1,3 +1,40 @@
+/**
+ * @fileoverview This module defines the routes for handling data import in the Budget Claims System.
+ * It uses Express for routing, Multer for file uploads, and various Node.js modules for file operations.
+ * The main functionality includes uploading a zip file, extracting its contents, and importing users and claims data into MongoDB.
+ * Sensitive fields in the request body are filtered out before logging.
+ * 
+ * @module routes/import
+ */
+
+ /**
+ * Filters out sensitive fields from the provided data object.
+ * 
+ * @function filterSensitiveData
+ * @param {Object} data - The data object to be filtered.
+ * @returns {Object} - The filtered data object with sensitive fields masked.
+ */
+
+ /**
+ * Logs the request details along with user and session information.
+ * 
+ * @function logRequest
+ * @param {Object} req - The Express request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional information to log.
+ */
+
+ /**
+ * Route to handle full data import.
+ * 
+ * @name POST /full
+ * @function
+ * @memberof module:routes/import
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {void}
+ * @throws Will throw an error if the import process fails.
+ */
 const express = require('express'); // Import Express to create a router
 const fs = require('fs'); // Import Node.js file system module to handle file operations
 const path = require('path'); // Import Node.js path module to handle and transform file paths

@@ -1,3 +1,68 @@
+/**
+ * @file /home/stripcheese/Desktop/BudgetClaimsSystem/routes/emailTemplates.js
+ * @description This file contains the routes for managing email templates in the Budget Claims System.
+ * It includes routes for listing, adding, editing, and deleting email templates.
+ * The routes are protected by authentication and role-based access control.
+ * Sensitive fields in the request body are filtered out before logging.
+ */
+
+ /**
+ * @function filterSensitiveData
+ * @description Filters out sensitive fields from the request body.
+ * @param {Object} data - The data object to filter.
+ * @returns {Object} The filtered data object with sensitive fields masked.
+ */
+
+ /**
+ * @function logRequest
+ * @description Logs requests with user and session information.
+ * @param {Object} req - The Express request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional data to log.
+ */
+
+ /**
+ * @route GET /
+ * @description Route to list all email templates.
+ * @access Admin, Manager
+ * @middleware ensureAuthenticated, ensureRoles(['admin', 'manager'])
+ */
+
+ /**
+ * @route GET /add
+ * @description Route to display the add email template form.
+ * @access Admin
+ * @middleware ensureAuthenticated, ensureRoles(['admin'])
+ */
+
+ /**
+ * @route POST /add
+ * @description Route to handle the creation of a new email template.
+ * @access Admin
+ * @middleware ensureAuthenticated, ensureRoles(['admin'])
+ */
+
+ /**
+ * @route GET /:id/edit
+ * @description Route to display the edit email template form.
+ * @access Admin
+ * @middleware ensureAuthenticated, ensureRoles(['admin'])
+ */
+
+ /**
+ * @route POST /:id/edit
+ * @description Route to handle the updating of an email template.
+ * @access Admin
+ * @middleware ensureAuthenticated, ensureRoles(['admin'])
+ */
+
+ /**
+ * @route POST /:id/delete
+ * @description Route to handle the deletion of an email template.
+ * @access Admin
+ * @middleware ensureAuthenticated, ensureRoles(['admin'])
+ */
+
 const express = require('express'); // Import Express to create a router
 const EmailTemplate = require('../models/EmailTemplate'); // Import the EmailTemplate model to interact with the emailTemplates collection in MongoDB
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware

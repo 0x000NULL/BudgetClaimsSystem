@@ -1,3 +1,49 @@
+/**
+ * @fileoverview This module defines routes for generating and downloading reports in various formats (CSV, Excel, PDF) 
+ * for the Budget Claims System. It includes middleware for authentication, role-checking, and activity logging.
+ * 
+ * @module routes/reports
+ */
+
+ /**
+ * Filters out sensitive fields from the request body.
+ * 
+ * @function filterSensitiveData
+ * @param {Object} data - The data object to be filtered.
+ * @returns {Object} The filtered data object with sensitive fields masked.
+ */
+
+ /**
+ * Logs requests with user and session information.
+ * 
+ * @function logRequest
+ * @param {Object} req - The Express request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional information to log.
+ */
+
+ /**
+ * Route to render the reports page.
+ * Only accessible to authenticated users with 'admin' or 'manager' roles.
+ * 
+ * @name GET /
+ * @function
+ * @memberof module:routes/reports
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ */
+
+ /**
+ * Route to generate and download reports in various formats (CSV, Excel, PDF).
+ * Only accessible to authenticated users with 'admin' or 'manager' roles.
+ * 
+ * @name POST /generate
+ * @function
+ * @memberof module:routes/reports
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise<void>}
+ */
 const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware

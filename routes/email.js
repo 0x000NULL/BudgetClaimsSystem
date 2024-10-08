@@ -1,3 +1,78 @@
+/**
+ * @file /home/stripcheese/Desktop/BudgetClaimsSystem/routes/email.js
+ * @description This file contains routes for handling email-related operations in the Budget Claims System.
+ * It includes routes for displaying email forms, fetching email templates, and sending emails.
+ * The routes use Express.js for routing, Nodemailer for sending emails, and Pino for logging.
+ * Sensitive data in request bodies is filtered out before logging.
+ * 
+ * @requires express
+ * @requires express.Router
+ * @requires nodemailer
+ * @requires ../models/EmailTemplate
+ * @requires ../models/Claim
+ * @requires ../middleware/auth
+ * @requires ../logger
+ */
+
+/**
+ * @constant {Array<string>} sensitiveFields - List of sensitive fields that should not be logged.
+ */
+
+/**
+ * @function filterSensitiveData
+ * @description Filters out sensitive fields from the request body.
+ * @param {Object} data - The data object to filter.
+ * @returns {Object} The filtered data object with sensitive fields masked.
+ */
+
+/**
+ * @function logRequest
+ * @description Logs requests with user and session information.
+ * @param {Object} req - The Express request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional information to log.
+ */
+
+/**
+ * @function replaceVariables
+ * @description Replaces template variables with actual claim data.
+ * @param {Object} template - The email template object.
+ * @param {Object} claim - The claim object containing data to replace in the template.
+ * @returns {Object} The populated template with variables replaced.
+ */
+
+/**
+ * @route GET /form/:id
+ * @description Route to display the email form.
+ * @middleware ensureAuthenticated
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ */
+
+/**
+ * @route GET /templates/:templateId
+ * @description Route to get a specific email template and replace variables.
+ * @middleware ensureAuthenticated
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ */
+
+/**
+ * @route GET /send/:claimId
+ * @description Route to display the email sending form.
+ * @middleware ensureAuthenticated
+ * @middleware ensureRoles(['admin', 'manager'])
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ */
+
+/**
+ * @route POST /send
+ * @description Route to send an email.
+ * @middleware ensureAuthenticated
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ */
 const express = require('express'); // Import Express to create a router
 const router = express.Router(); // Create a new router
 const nodemailer = require('nodemailer'); // Import Nodemailer for sending emails

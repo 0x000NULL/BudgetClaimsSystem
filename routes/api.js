@@ -1,3 +1,171 @@
+/**
+ * @file /home/stripcheese/Desktop/BudgetClaimsSystem/routes/api.js
+ * @description This file contains the API routes for the Budget Claims System. It includes routes for managing claims and customers, with appropriate logging and authentication.
+ */
+
+ /**
+ * @typedef {Object} Claim
+ * @property {string} mva - The MVA of the claim.
+ * @property {string} customerName - The name of the customer.
+ * @property {string} description - The description of the claim.
+ * @property {string} status - The status of the claim.
+ * @property {Array} files - The files associated with the claim.
+ */
+
+ /**
+ * @typedef {Object} Customer
+ * @property {string} name - The name of the customer.
+ * @property {string} email - The email of the customer.
+ * @property {string} password - The password of the customer.
+ */
+
+ /**
+ * @typedef {Object} Request
+ * @property {string} method - The HTTP method of the request.
+ * @property {string} originalUrl - The original URL of the request.
+ * @property {Object} headers - The headers of the request.
+ * @property {Object} body - The body of the request.
+ * @property {Object} user - The authenticated user making the request.
+ * @property {string} ip - The IP address of the request.
+ * @property {string} sessionID - The session ID of the request.
+ */
+
+ /**
+ * @typedef {Object} Response
+ * @property {Function} json - Function to send a JSON response.
+ * @property {Function} status - Function to set the status code of the response.
+ */
+
+ /**
+ * @typedef {Object} Logger
+ * @property {Function} info - Function to log informational messages.
+ */
+
+ /**
+ * @typedef {Object} Middleware
+ * @property {Function} ensureAuthenticated - Middleware to ensure the user is authenticated.
+ * @property {Function} ensureRole - Middleware to ensure the user has a specific role.
+ */
+
+ /**
+ * @typedef {Object} Router
+ * @property {Function} get - Function to define a GET route.
+ * @property {Function} post - Function to define a POST route.
+ * @property {Function} put - Function to define a PUT route.
+ * @property {Function} delete - Function to define a DELETE route.
+ */
+
+ /**
+ * @constant {Array<string>} sensitiveFields - Fields that should not be logged.
+ */
+
+ /**
+ * @function filterSensitiveData
+ * @description Filters out sensitive fields from the request body.
+ * @param {Object} data - The data to filter.
+ * @returns {Object} The filtered data.
+ */
+
+ /**
+ * @function logRequest
+ * @description Logs requests with user and session info.
+ * @param {Request} req - The request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional data to log.
+ */
+
+ /**
+ * @function router.get
+ * @description API route to get all claims.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @function router.get
+ * @description API route to get a specific claim by ID.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @function router.post
+ * @description API route to add a new claim.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @function router.put
+ * @description API route to update a claim by ID.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @function router.delete
+ * @description API route to delete a claim by ID.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Middleware.ensureRole} middleware - Middleware to ensure the user has the 'admin' role.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @function router.get
+ * @description API route to get all customers.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @function router.get
+ * @description API route to get a specific customer by ID.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @function router.post
+ * @description API route to add a new customer.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Middleware.ensureRole} middleware - Middleware to ensure the user has the 'admin' role.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @function router.put
+ * @description API route to update a customer by ID.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Middleware.ensureRole} middleware - Middleware to ensure the user has the 'admin' role.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @function router.delete
+ * @description API route to delete a customer by ID.
+ * @param {string} path - The route path.
+ * @param {Middleware.ensureAuthenticated} middleware - Middleware to ensure the user is authenticated.
+ * @param {Middleware.ensureRole} middleware - Middleware to ensure the user has the 'admin' role.
+ * @param {Function} handler - The route handler.
+ */
+
+ /**
+ * @module routes/api
+ * @requires express
+ * @requires ../models/Claim
+ * @requires ../models/Customer
+ * @requires ../middleware/auth
+ * @requires ../logger
+ */
 // Import necessary modules
 const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB

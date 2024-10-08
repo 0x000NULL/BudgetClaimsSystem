@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This module defines routes for user management in the Budget Claims System.
+ * It includes routes for user registration, login, logout, and user management (accessible only by admin).
+ * It also configures Passport.js for local authentication and integrates Pino logger for request logging.
+ * 
+ * @module routes/users
+ */
+
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const passport = require('passport');
@@ -10,7 +18,12 @@ const router = express.Router();
 // Define sensitive fields that should not be logged
 const sensitiveFields = ['password', 'token', 'ssn'];
 
-// Function to filter out sensitive fields from the request body
+/**
+ * Filters out sensitive fields from the request data.
+ * 
+ * @param {Object} data - The request data to filter.
+ * @returns {Object} The filtered data with sensitive fields masked.
+ */
 const filterSensitiveData = (data) => {
     if (!data || typeof data !== 'object') {
         return data;
@@ -28,7 +41,13 @@ const filterSensitiveData = (data) => {
     }, {});
 };
 
-// Helper function to log requests with user and session info
+/**
+ * Logs requests with user and session information.
+ * 
+ * @param {Object} req - The request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional data to log.
+ */
 const logRequest = (req, message, extra = {}) => {
     const { method, originalUrl, headers, body } = req;
     const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
@@ -93,13 +112,29 @@ passport.deserializeUser((id, done) => {
     User.findById(id, (err, user) => done(err, user));
 });
 
-// Route to display the registration form
+/**
+ * Route to display the registration form.
+ * 
+ * @name GET /register
+ * @function
+ * @memberof module:routes/users
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.get('/register', (req, res) => {
     logRequest(req, 'Register route accessed');
     res.render('register', { title: 'Register' });
 });
 
-// Route to handle user registration
+/**
+ * Route to handle user registration.
+ * 
+ * @name POST /register
+ * @function
+ * @memberof module:routes/users
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.post('/register', (req, res) => {
     const { name, email, password, role } = req.body;
     logRequest(req, 'Register POST request received', { data: req.body });
@@ -138,13 +173,30 @@ router.post('/register', (req, res) => {
     }
 });
 
-// Route to display the login form
+/**
+ * Route to display the login form.
+ * 
+ * @name GET /login
+ * @function
+ * @memberof module:routes/users
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.get('/login', (req, res) => {
     logRequest(req, 'Login route accessed');
     res.render('login', { title: 'Login' });
 });
 
-// Route to handle user login
+/**
+ * Route to handle user login.
+ * 
+ * @name POST /login
+ * @function
+ * @memberof module:routes/users
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ */
 router.post('/login', (req, res, next) => {
     logRequest(req, 'Login POST request received');
     passport.authenticate('local', {
@@ -154,7 +206,15 @@ router.post('/login', (req, res, next) => {
     })(req, res, next);
 });
 
-// Route to handle user logout
+/**
+ * Route to handle user logout.
+ * 
+ * @name GET /logout
+ * @function
+ * @memberof module:routes/users
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.get('/logout', (req, res) => {
     logRequest(req, 'Logout route accessed');
     req.logout(err => {
@@ -164,7 +224,15 @@ router.get('/logout', (req, res) => {
     });
 });
 
-// Route to display user management page (accessible only by admin)
+/**
+ * Route to display user management page (accessible only by admin).
+ * 
+ * @name GET /user-management
+ * @function
+ * @memberof module:routes/users
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     logRequest(req, 'User Management route accessed');
     try {
@@ -178,7 +246,15 @@ router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), asyn
     }
 });
 
-// Route to edit user details (accessible only by admin)
+/**
+ * Route to edit user details (accessible only by admin).
+ * 
+ * @name GET /:id/edit
+ * @function
+ * @memberof module:routes/users
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     logRequest(req, `Fetching user details for editing with ID: ${userId}`);
@@ -198,7 +274,15 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin']), async (req,
     }
 });
 
-// Route to handle user update (accessible only by admin)
+/**
+ * Route to handle user update (accessible only by admin).
+ * 
+ * @name PUT /:id
+ * @function
+ * @memberof module:routes/users
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     logRequest(req, `Updating user with ID: ${userId}`, { data: req.body });
@@ -227,7 +311,15 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res)
     }
 });
 
-// Route to handle user deletion (accessible only by admin)
+/**
+ * Route to handle user deletion (accessible only by admin).
+ * 
+ * @name DELETE /:id
+ * @function
+ * @memberof module:routes/users
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ */
 router.delete('/:id', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
     const userId = req.params.id;
     logRequest(req, `Deleting user with ID: ${userId}`);
