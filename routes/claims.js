@@ -209,41 +209,61 @@ router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
 
 
 // Route to search for claims, accessible by admin, manager, and employee
-router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), (req, res) => {
+router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
     logRequest(req, 'Claims search route accessed');
-    const { mva, customerName, vin, claimNumber, damageType, status, raNumber, dateOfLossStart, dateOfLossEnd, startDate, endDate } = req.query;
 
-    // Build a filter object based on provided query parameters
-    let filter = {};
-    if (mva) filter.mva = mva;
-    if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
-    if (vin) filter.carVIN = new RegExp(vin, 'i'); // Case-insensitive search for VIN
-    if (claimNumber) filter.insuranceClaimNumber = new RegExp(claimNumber, 'i'); // Case-insensitive search for claim number
-    if (damageType) filter.damageType = { $in: Array.isArray(damageType) ? damageType : [damageType] }; // Search for any of the selected damage types
-    if (status) filter.status = { $in: Array.isArray(status) ? status : [status] }; // Search for any of the selected statuses
-    if (raNumber) filter.raNumber = raNumber;
-    if (dateOfLossStart || dateOfLossEnd) {
-        filter.dateOfLoss = {};
-        if (dateOfLossStart) filter.dateOfLoss.$gte = new Date(dateOfLossStart); // Filter by start date of loss
-        if (dateOfLossEnd) filter.dateOfLoss.$lte = new Date(dateOfLossEnd); // Filter by end date of loss
-    }
-    if (startDate || endDate) {
-        filter.date = {};
-        if (startDate) filter.date.$gte = new Date(startDate); // Filter by start date
-        if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
-    }
+    try {
+        // Fetch necessary data for the search form
+        const damageTypes = await DamageType.find().sort({ name: 1 });
+        const statuses = await Status.find().sort({ name: 1 });
+        const locations = await Location.find().sort({ name: 1 });
 
-    // Find claims based on the filter object
-    Claim.find(filter)
-        .then(claims => {
-            logRequest(req, 'Claims found', { claims });
-            res.render('claims_search', { claims, filter }); // Pass the filter back to the view to maintain search criteria
-        }) // Respond with filtered claims
-        .catch(err => {
-            logRequest(req, 'Error fetching claims:', { error: err });
-            res.status(500).json({ error: err.message });
-        }); // Handle errors
+        // Extract query parameters
+        const { mva, customerName, vin, claimNumber, damageType, status, raNumber, dateOfLossStart, dateOfLossEnd, startDate, endDate } = req.query;
+
+        // Build a filter object based on provided query parameters
+        let filter = {};
+        if (mva) filter.mva = mva;
+        if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
+        if (vin) filter.carVIN = new RegExp(vin, 'i'); // Case-insensitive search for VIN
+        if (claimNumber) filter.insuranceClaimNumber = new RegExp(claimNumber, 'i'); // Case-insensitive search for claim number
+        if (damageType) filter.damageType = { $in: Array.isArray(damageType) ? damageType : [damageType] }; // Search for any of the selected damage types
+        if (status) filter.status = { $in: Array.isArray(status) ? status : [status] }; // Search for any of the selected statuses
+        if (raNumber) filter.raNumber = raNumber;
+        if (dateOfLossStart || dateOfLossEnd) {
+            filter.dateOfLoss = {};
+            if (dateOfLossStart) filter.dateOfLoss.$gte = new Date(dateOfLossStart); // Filter by start date of loss
+            if (dateOfLossEnd) filter.dateOfLoss.$lte = new Date(dateOfLossEnd); // Filter by end date of loss
+        }
+        if (startDate || endDate) {
+            filter.date = {};
+            if (startDate) filter.date.$gte = new Date(startDate); // Filter by start date
+            if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
+        }
+
+        // Find claims based on the filter object
+        const claims = await Claim.find(filter);
+
+        logRequest(req, 'Claims found', { claims });
+
+        // Render the view and pass the fetched data along with the filter
+        res.render('claims_search', {
+            claims,
+            filter,
+            damageTypes,
+            statuses,
+            locations, // Pass the locations to the view if necessary
+            resultsPerPage: req.query.resultsPerPage || 10, // Default to 10 results per page if not specified
+            page: req.query.page || 1, // Default to page 1 if not specified
+            totalPages: Math.ceil(claims.length / (req.query.resultsPerPage || 10)), // Calculate total pages
+            queryString: `&mva=${mva || ''}&customerName=${customerName || ''}&vin=${vin || ''}&claimNumber=${claimNumber || ''}&damageType=${damageType || ''}&status=${status || ''}` // Query string to maintain search criteria
+        });
+    } catch (err) {
+        logRequest(req, 'Error fetching claims:', { error: err });
+        res.status(500).json({ error: err.message });
+    }
 });
+
 
 // Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), async (req, res) => {
