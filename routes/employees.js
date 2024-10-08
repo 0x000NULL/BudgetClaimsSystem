@@ -1,3 +1,117 @@
+/**
+ * @file /home/stripcheese/Desktop/BudgetClaimsSystem/routes/employees.js
+ * @description This file contains routes for managing employee-related functionalities such as login, settings, password reset, and two-factor authentication (2FA).
+ * @requires express
+ * @requires bcryptjs
+ * @requires passport
+ * @requires jsonwebtoken
+ * @requires ../models/User
+ * @requires ../middleware/auth
+ * @requires speakeasy
+ * @requires qrcode
+ * @requires ../logger
+ */
+
+ /**
+ * @typedef {Object} Request
+ * @property {Object} user - The authenticated user object.
+ * @property {string} ip - The IP address of the request.
+ * @property {string} sessionID - The session ID of the request.
+ * @property {Object} body - The body of the request.
+ * @property {Object} headers - The headers of the request.
+ * @property {string} method - The HTTP method of the request.
+ * @property {string} originalUrl - The original URL of the request.
+ */
+
+/**
+ * @typedef {Object} Response
+ * @property {Function} status - Sets the HTTP status code.
+ * @property {Function} json - Sends a JSON response.
+ * @property {Function} render - Renders a view template.
+ */
+
+/**
+ * @typedef {Object} NextFunction
+ * @description A callback function to pass control to the next middleware function.
+ */
+
+/**
+ * @typedef {Object} User
+ * @property {string} _id - The unique identifier of the user.
+ * @property {string} email - The email of the user.
+ * @property {string} password - The hashed password of the user.
+ * @property {boolean} twoFactorEnabled - Indicates if 2FA is enabled for the user.
+ * @property {string} twoFactorSecret - The secret key for 2FA.
+ */
+
+/**
+ * @typedef {Object} Logger
+ * @property {Function} info - Logs informational messages.
+ */
+
+/**
+ * @typedef {Object} FilteredData
+ * @description An object with sensitive fields redacted.
+ */
+
+/**
+ * @function filterSensitiveData
+ * @description Filters out sensitive fields from the request body.
+ * @param {Object} data - The data to be filtered.
+ * @returns {FilteredData} The filtered data with sensitive fields redacted.
+ */
+
+/**
+ * @function logRequest
+ * @description Logs requests with user and session information.
+ * @param {Request} req - The request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional information to log.
+ */
+
+/**
+ * @function router.post('/login')
+ * @description Route for employee login.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ * @param {NextFunction} next - The next middleware function.
+ */
+
+/**
+ * @function router.get('/settings')
+ * @description Route for managing employee settings.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+/**
+ * @function router.post('/settings/reset-password')
+ * @description Route to reset password.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+/**
+ * @function router.post('/settings/setup-2fa')
+ * @description Route to setup 2FA.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+/**
+ * @function router.post('/settings/verify-2fa')
+ * @description Route to verify 2FA code.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
+/**
+ * @function router.post('/settings/disable-2fa')
+ * @description Route to disable 2FA.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ */
+
 const express = require('express'); // Import Express to create a router
 const bcrypt = require('bcryptjs'); // Import Bcrypt for hashing passwords
 const passport = require('passport'); // Import Passport for authentication

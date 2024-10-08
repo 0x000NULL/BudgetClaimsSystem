@@ -1,3 +1,23 @@
+/**
+ * @fileoverview This file defines the routes for handling audit logs in the Budget Claims System.
+ * It includes a route to fetch and display audit logs, with authentication and role-checking middleware.
+ * 
+ * @module routes/auditLogs
+ */
+
+ /**
+    * Route to get and display audit logs.
+    * 
+    * @name get/
+    * @function
+    * @memberof module:routes/auditLogs
+    * @inner
+    * @param {Object} req - Express request object.
+    * @param {Object} res - Express response object.
+    * @throws Will throw an error if there is an issue fetching audit logs from the database.
+    * @middleware ensureAuthenticated - Middleware to ensure the user is authenticated.
+    * @middleware ensureRoles - Middleware to ensure the user has the required roles ('admin' or 'manager').
+    */
 // Import necessary modules
 const express = require('express'); // Import Express to create a router
 const router = express.Router(); // Create a new router

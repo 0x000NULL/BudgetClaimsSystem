@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This module defines the export routes for the Budget Claims System.
+ * It handles the creation of a full export of users, claims, and uploaded files into a zip archive.
+ * Sensitive fields in the request body are filtered out before logging.
+ * 
+ * @module routes/export
+ */
+
 const express = require('express'); // Import Express to create a router
 const fs = require('fs'); // Import the file system module to interact with the file system
 const path = require('path'); // Import the path module to work with file and directory paths
@@ -11,7 +19,12 @@ const router = express.Router(); // Create a new router
 // Define sensitive fields that should not be logged
 const sensitiveFields = ['password', 'token', 'ssn'];
 
-// Function to filter out sensitive fields from the request body
+/**
+ * Filters out sensitive fields from the provided data object.
+ * 
+ * @param {Object} data - The data object to filter.
+ * @returns {Object} The filtered data object with sensitive fields masked.
+ */
 const filterSensitiveData = (data) => {
     if (!data || typeof data !== 'object') {
         return data;
@@ -29,7 +42,13 @@ const filterSensitiveData = (data) => {
     }, {});
 };
 
-// Helper function to log requests with user and session info
+/**
+ * Logs the request details along with user and session information.
+ * 
+ * @param {Object} req - The Express request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional information to log.
+ */
 const logRequest = (req, message, extra = {}) => {
     const { method, originalUrl, headers, body } = req;
     const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
@@ -47,7 +66,16 @@ const logRequest = (req, message, extra = {}) => {
     });
 };
 
-// Route to handle full export
+/**
+ * Route to handle full export of users, claims, and uploaded files.
+ * Creates a zip archive containing the data and sends it as a download.
+ * 
+ * @name GET /full
+ * @function
+ * @memberof module:routes/export
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ */
 router.get('/full', async (req, res) => {
     logRequest(req, 'Full export initiated');
 

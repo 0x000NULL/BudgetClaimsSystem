@@ -1,3 +1,27 @@
+/**
+ * @fileoverview This file defines the routes for handling claims in the Budget Claims System.
+ * It includes routes for exporting claims as PDF, adding new claims, searching for claims,
+ * fetching all claims, and updating existing claims. The routes are protected by authentication
+ * and role-based access control middleware.
+ * 
+ * @requires express
+ * @requires ../models/Claim
+ * @requires path
+ * @requires ../middleware/auth
+ * @requires ../middleware/activityLogger
+ * @requires ../notifications/notify
+ * @requires csv-express
+ * @requires exceljs
+ * @requires pdfkit
+ * @requires fs
+ * @requires cache-manager
+ * @requires cache-manager-redis-store
+ * @requires ../logger
+ * @requires ../models/Status
+ * @requires ../models/Location
+ * @requires ../models/DamageType
+ */
+
 const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
 const path = require('path'); // Import Path to handle file and directory paths
@@ -47,6 +71,25 @@ const filterSensitiveData = (data) => {
 };
 
 // Helper function to log requests with user and session info
+/**
+ * Logs an HTTP request with relevant details using pinoLogger.
+ *
+ * @param {Object} req - The HTTP request object.
+ * @param {string} message - A custom log message.
+ * @param {Object} [extra={}] - Additional information to log.
+ * @param {string} [extra.someKey] - Example of additional information.
+ *
+ * @property {string} req.method - The HTTP method of the request.
+ * @property {string} req.originalUrl - The original URL of the request.
+ * @property {Object} req.headers - The headers of the request.
+ * @property {Object} req.body - The body of the request.
+ * @property {Object} req.user - The user object, if authenticated.
+ * @property {string} req.user.email - The email of the authenticated user.
+ * @property {string} req.ip - The IP address of the request.
+ * @property {string} req.sessionID - The session ID of the request.
+ *
+ * @returns {void}
+ */
 const logRequest = (req, message, extra = {}) => {
     const { method, originalUrl, headers, body } = req;
     const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
@@ -146,6 +189,26 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
 
         // Ensure claim.files is defined
         const files = claim.files || {};
+        /**
+         * An array of file category objects, each containing a title and an array of files.
+         * 
+         * @typedef {Object} FileCategory
+         * @property {string} title - The title of the file category.
+         * @property {Array} files - An array of files belonging to the category.
+         * 
+         * @type {FileCategory[]}
+         * @constant
+         * @default
+         * @example
+         * const fileCategories = [
+         *   { title: 'Incident Reports', files: [] },
+         *   { title: 'Correspondence', files: [] },
+         *   { title: 'Rental Agreement', files: [] },
+         *   { title: 'Police Report', files: [] },
+         *   { title: 'Invoices', files: [] },
+         *   { title: 'Photos', files: [] }
+         * ];
+         */
         const fileCategories = [
             { title: 'Incident Reports', files: files.incidentReports || [] },
             { title: 'Correspondence', files: files.correspondence || [] },
@@ -385,13 +448,28 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
         // Ensure files field is initialized correctly
         claim.files = initializeFileCategories(claim.files || {});
 
+        // Fetch dropdown data if needed
+        const statuses = await Status.find().sort({ name: 1 });
+        const rentingLocations = await Location.find().sort({ name: 1 });
+        const damageTypes = await DamageType.find().sort({ name: 1 });
+
         logRequest(req, `Claim fetched for editing: ${claim}`);
-        res.render('claims_edit', { title: 'Edit Claim', claim });
+        
+        // Pass the claim, dropdown data, and an empty errors object
+        res.render('claims_edit', { 
+            title: 'Edit Claim', 
+            claim, 
+            statuses, 
+            rentingLocations, 
+            damageTypes, 
+            errors: {}  // Pass an empty errors object to avoid undefined reference
+        });
     } catch (err) {
         logRequest(req, 'Error fetching claim for editing:', { error: err });
         res.status(500).render('500', { message: 'Internal Server Error' });
     }
 });
+
 
 // Route to update a claim by ID, accessible by admin and manager
 router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), async (req, res) => {
@@ -403,6 +481,30 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         if (!claim) {
             logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).json({ error: 'Claim not found' });
+        }
+
+        // Perform validation here (e.g., using express-validator or custom logic)
+        const errors = {}; // Initialize an empty object to store error messages
+
+        if (!req.body.customerName) {
+            errors.customerName = { msg: 'Customer Name is required' };
+        }
+        // Perform other field validations as necessary
+
+        // If there are errors, re-render the edit view with the errors object
+        if (Object.keys(errors).length > 0) {
+            const statuses = await Status.find().sort({ name: 1 });
+            const rentingLocations = await Location.find().sort({ name: 1 });
+            const damageTypes = await DamageType.find().sort({ name: 1 });
+
+            return res.render('claims_edit', { 
+                title: 'Edit Claim', 
+                claim, 
+                statuses, 
+                rentingLocations, 
+                damageTypes, 
+                errors 
+            });
         }
 
         if (!claim.versions) {

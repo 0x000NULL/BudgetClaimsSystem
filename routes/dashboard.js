@@ -1,3 +1,35 @@
+/**
+ * @fileoverview This file defines the routes for the dashboard in the Budget Claims System.
+ * It includes middleware for authentication and role-checking, and logs requests using Pino logger.
+ * The dashboard route fetches various statistics about claims and renders the dashboard view.
+ */
+
+ /**
+ * Filters out sensitive fields from the request body.
+ * 
+ * @param {Object} data - The data object to filter.
+ * @returns {Object} The filtered data with sensitive fields masked.
+ */
+ 
+ /**
+ * Logs requests with user and session info.
+ * 
+ * @param {Object} req - The request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional data to log.
+ */
+
+ /**
+ * Route to render the dashboard.
+ * 
+ * @name GET/dashboard
+ * @function
+ * @memberof module:routes/dashboard
+ * @inner
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @throws Will throw an error if fetching dashboard data fails.
+ */
 const express = require('express'); // Import Express to create a router
 const router = express.Router(); // Create a new router
 const Claim = require('../models/Claim'); // Import the Claim model

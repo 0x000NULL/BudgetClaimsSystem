@@ -1,3 +1,37 @@
+/**
+ * @file /home/stripcheese/Desktop/BudgetClaimsSystem/routes/feedback.js
+ * @description This file defines the routes for handling feedback in the Budget Claims System.
+ * It includes middleware for authentication and role-based access control, as well as logging functionality.
+ */
+
+ /**
+ * Filters out sensitive fields from the provided data object.
+ * 
+ * @function filterSensitiveData
+ * @param {Object} data - The data object to be filtered.
+ * @returns {Object} The filtered data object with sensitive fields redacted.
+ */
+
+ /**
+ * Logs the details of an incoming request, including user and session information.
+ * 
+ * @function logRequest
+ * @param {Object} req - The Express request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional information to log.
+ */
+
+ /**
+ * Route to view feedback, accessible only by users with 'admin' or 'manager' roles.
+ * 
+ * @name GET /
+ * @function
+ * @memberof module:routes/feedback
+ * @inner
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {void}
+ */
 const express = require('express'); // Import Express to create a router
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import middleware to ensure authentication and role-based access
 const pinoLogger = require('../logger'); // Import Pino logger

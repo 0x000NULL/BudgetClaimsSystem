@@ -1,3 +1,136 @@
+/**
+ * @fileoverview This file defines the routes for the Budget Claims System application.
+ * It includes routes for home, login, register, dashboard, help, user management, reports, logout, audit logs, and import data.
+ * The routes are protected by authentication and role-checking middleware where necessary.
+ * Sensitive data in request bodies is filtered out before logging.
+ * 
+ * @module routes/index
+ */
+
+ /**
+    * Filters out sensitive fields from the request body.
+    * 
+    * @function filterSensitiveData
+    * @param {Object} data - The data object to filter.
+    * @returns {Object} The filtered data object with sensitive fields masked.
+    */
+
+ /**
+    * Logs requests with user and session information.
+    * 
+    * @function logRequest
+    * @param {Object} req - The request object.
+    * @param {string} message - The log message.
+    * @param {Object} [extra={}] - Additional data to log.
+    */
+
+ /**
+    * Home page route.
+    * Redirects to the login page.
+    * 
+    * @name get/
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    */
+
+ /**
+    * Login page route.
+    * 
+    * @name get/login
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    */
+
+ /**
+    * Register page route.
+    * 
+    * @name get/register
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    */
+
+ /**
+    * Dashboard page route.
+    * Only accessible to authenticated users with 'admin' or 'manager' roles.
+    * 
+    * @name get/dashboard
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    * @throws Will throw an error if there is an issue fetching dashboard data.
+    */
+
+ /**
+    * Help page route.
+    * 
+    * @name get/help
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    */
+
+ /**
+    * User management route.
+    * Only accessible to authenticated users with 'admin' role.
+    * 
+    * @name get/user-management
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    * @throws Will throw an error if there is an issue fetching users.
+    */
+
+ /**
+    * Reports page route.
+    * Only accessible to authenticated users with 'admin' or 'manager' roles.
+    * 
+    * @name get/reports
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    */
+
+ /**
+    * Logout route.
+    * 
+    * @name get/logout
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    */
+
+ /**
+    * Audit Logs route.
+    * Only accessible to authenticated users with 'admin' role.
+    * 
+    * @name get/audit-logs
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    * @throws Will throw an error if there is an issue fetching audit logs.
+    */
+
+ /**
+    * Import data page route.
+    * 
+    * @name get/import
+    * @function
+    * @memberof module:routes/index
+    * @param {Object} req - The request object.
+    * @param {Object} res - The response object.
+    */
 const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
 const User = require('../models/User'); // Import the User model to interact with the users collection in MongoDB
@@ -46,10 +179,9 @@ const logRequest = (req, message, extra = {}) => {
 };
 
 // Home page route
-// Redirects to the login page
 router.get('/', (req, res) => {
-    logRequest(req, 'Home route accessed, redirecting to login');
-    res.redirect('/login'); // Redirect to the login page
+    logRequest(req, 'Home route accessed');
+    res.render('home', { title: 'Welcome to Budget Claims System' }); // Render the home page with the title 'Welcome to Budget Claims System'
 });
 
 // Login page route
