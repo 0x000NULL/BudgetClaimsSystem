@@ -144,18 +144,18 @@
                         <div class="error-message"><%= errors.mva.msg %></div>
                         <% } %>
 
-                        <label for="raNumber">RA Number:</label?
-                                                <input type="text" id="raNumber" name="raNumber" value="<%= claim.raNumber %>">
+                        <label for="raNumber">RA Number:</label>
+                        <input type="text" id="raNumber" name="raNumber" value="<%= claim.raNumber %>">
                         <% if (errors && errors.raNumber) { %>
                         <div class="error-message"><%= errors.raNumber.msg %></div>
                         <% } %>
-
+                        
                         <label for="damagesTotal">Damages Total:</label>
                         <input type="text" id="damagesTotal" name="damagesTotal" value="<%= claim.damagesTotal %>">
                         <% if (errors && errors.damagesTotal) { %>
                         <div class="error-message"><%= errors.damagesTotal.msg %></div>
                         <% } %>
-
+                        
                         <label for="billable">Billable:</label>
                         <select id="billable" name="billable">
                             <option value="true" <%= claim.billable ? 'selected' : '' %>>Yes</option>
@@ -164,7 +164,7 @@
                         <% if (errors && errors.billable) { %>
                         <div class="error-message"><%= errors.billable.msg %></div>
                         <% } %>
-
+                        
                         <label for="isRenterAtFault">Is Renter At Fault:</label>
                         <select id="isRenterAtFault" name="isRenterAtFault">
                             <option value="true" <%= claim.isRenterAtFault ? 'selected' : '' %>>Yes</option>
@@ -173,7 +173,7 @@
                         <% if (errors && errors.isRenterAtFault) { %>
                         <div class="error-message"><%= errors.isRenterAtFault.msg %></div>
                         <% } %>
-
+                        
                         <label for="damageType">Damage Type:</label>
                         <div id="damageTypeContainer" class="checkbox-group">
                             <% damageTypes.forEach(type => { %>
@@ -189,7 +189,7 @@
                         <% if (errors && errors.damageType) { %>
                         <div class="error-message"><%= errors.damageType.msg %></div>
                         <% } %>
-
+                        
                         <label for="status">Status:</label>
                         <select id="status" name="status">
                             <% statuses.forEach(status => { %>
@@ -202,6 +202,22 @@
                         </div>
                         <% if (errors && errors.status) { %>
                         <div class="error-message"><%= errors.status.msg %></div>
+                        <% } %>
+                        
+                        <!-- New Invoice Totals Field -->
+                        <label for="invoiceTotals">Invoice Totals:</label>
+                        <div id="invoiceTotalsContainer">
+                            <% claim.invoiceTotals.forEach((invoice, index) => { %>
+                            <div class="invoice-total">
+                                <label for="invoiceTotal_<%= index %>">Invoice <%= index + 1 %>:</label>
+                                <input type="text" id="invoiceTotal_<%= index %>" name="invoiceTotals[<%= index %>].total" value="<%= invoice.total %>">
+                                <input type="hidden" name="invoiceTotals[<%= index %>].fileName" value="<%= invoice.fileName %>">
+                            </div>
+                            <% }) %>
+                        </div>
+                        <button type="button" class="btn add-btn" onclick="addInvoiceTotal()">Add Invoice Total</button>
+                        <% if (errors && errors.invoiceTotals) { %>
+                        <div class="error-message"><%= errors.invoiceTotals.msg %></div>
                         <% } %>
                     </div>
                 </div>

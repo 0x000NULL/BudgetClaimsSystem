@@ -220,6 +220,11 @@ const ClaimSchema = new Schema({
         invoices: [String], // Array of strings for invoices
         photos: [String] // Array of strings for photos
     },
+    // New field: Invoice totals
+    invoiceTotals: [{
+        fileName: String,
+        total: Number
+    }],
     // Field for storing different versions of the claim
     versions: {
         type: [Object] // Data type is an array of objects
