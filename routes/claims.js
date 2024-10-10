@@ -379,7 +379,6 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
         insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
         thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
-        // New fields
         rentersLiabilityInsurance, lossDamageWaiver
     } = req.body;
 
@@ -394,6 +393,10 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
                         await file.mv(filePath);
                         logRequest(req, 'File uploaded successfully:', { fileName: file.name });
                         files[category].push(file.name);
+                        if (category === 'invoices') {
+                            const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
+                            invoiceTotals.push({ fileName: file.name, total });
+                        }
                     }));
                 } else {
                     const file = req.files[category];
@@ -401,6 +404,10 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
                     await file.mv(filePath);
                     logRequest(req, 'File uploaded successfully:', { fileName: file.name });
                     files[category].push(file.name);
+                    if (category === 'invoices') {
+                        const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
+                        invoiceTotals.push({ fileName: file.name, total });
+                    }
                 }
             }));
         } catch (err) {
@@ -563,6 +570,7 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         claim.lossDamageWaiver = req.body.lossDamageWaiver || claim.lossDamageWaiver; // Added lossDamageWaiver
 
         let existingFiles = claim.files || {};
+        let invoiceTotals = claim.invoiceTotals || [];
 
         if (req.files) {
             try {
@@ -576,6 +584,11 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
                                 existingFiles[category] = [];
                             }
                             existingFiles[category].push(file.name);
+
+                            if (category === 'invoices') {
+                                const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
+                                invoiceTotals.push({ fileName: file.name, total });
+                            }
                         }));
                     } else {
                         const file = req.files[category];
@@ -586,6 +599,11 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
                             existingFiles[category] = [];
                         }
                         existingFiles[category].push(file.name);
+
+                        if (category === 'invoices') {
+                            const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
+                            invoiceTotals.push({ fileName: file.name, total });
+                        }
                     }
                 }));
             } catch (err) {
@@ -595,6 +613,7 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         }
 
         claim.files = existingFiles;
+        claim.invoiceTotals = invoiceTotals;
 
         const updatedClaim = await claim.save();
         logRequest(req, 'Claim updated:', { updatedClaim });

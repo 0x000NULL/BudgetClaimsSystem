@@ -251,6 +251,29 @@
                         </ul>
                     <% }) %>
                 </ul>
+
+                <!-- Display Invoice Totals -->
+                <label>Invoice Totals:</label>
+                <ul>
+                    <% claim.invoiceTotals.forEach(invoice => { %>
+                        <li><%= invoice.fileName %>: $<%= invoice.total.toFixed(2) %></li>
+                    <% }) %>
+                </ul>
+
+                <!-- Calculate and Display Admin Fee -->
+                <%
+                    let totalInvoices = claim.invoiceTotals.reduce((sum, invoice) => sum + invoice.total, 0);
+                    let adminFee = 0;
+                    if (totalInvoices >= 100 && totalInvoices < 500) {
+                        adminFee = 50;
+                    } else if (totalInvoices >= 500 && totalInvoices < 1500) {
+                        adminFee = 100;
+                    } else if (totalInvoices >= 1500) {
+                        adminFee = 150;
+                    }
+                %>
+                <label>Admin Fee:</label>
+                <p>$<%= adminFee.toFixed(2) %></p>
             </div>
             <div class="button-group">
                 <a href="/claims/<%= claim._id %>/edit" class="btn">Edit Claim</a> <!-- Button to edit claim -->
