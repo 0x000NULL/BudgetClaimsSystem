@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: routes/dashboard.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: routes/dashboard.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview This file defines the routes for the dashboard in the Budget Claims System.
+ * It includes middleware for authentication and role-checking, and logs requests using Pino logger.
+ * The dashboard route fetches various statistics about claims and renders the dashboard view.
+ */
+
+ /**
+ * Filters out sensitive fields from the request body.
+ * 
+ * @param {Object} data - The data object to filter.
+ * @returns {Object} The filtered data with sensitive fields masked.
+ */
+ 
+ /**
+ * Logs requests with user and session info.
+ * 
+ * @param {Object} req - The request object.
+ * @param {string} message - The log message.
+ * @param {Object} [extra={}] - Additional data to log.
+ */
+
+ /**
+ * Route to render the dashboard.
+ * 
+ * @name GET/dashboard
+ * @function
+ * @memberof module:routes/dashboard
+ * @inner
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @throws Will throw an error if fetching dashboard data fails.
+ */
+const express = require('express'); // Import Express to create a router
+const router = express.Router(); // Create a new router
+const Claim = require('../models/Claim'); // Import the Claim model
+const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
+const pinoLogger = require('../logger'); // Import Pino logger
+
+// Define sensitive fields that should not be logged
+const sensitiveFields = ['password', 'token', 'ssn'];
+
+// Function to filter out sensitive fields from the request body
+const filterSensitiveData = (data) => {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+
+    return Object.keys(data).reduce((filteredData, key) => {
+        if (sensitiveFields.includes(key)) {
+            filteredData[key] = '***REDACTED***'; // Mask the sensitive field
+        } else if (typeof data[key] === 'object') {
+            filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
+        } else {
+            filteredData[key] = data[key];
+        }
+        return filteredData;
+    }, {});
+};
+
+// Helper function to log requests with user and session info
+const logRequest = (req, message, extra = {}) => {
+    const { method, originalUrl, headers, body } = req;
+    const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
+
+    pinoLogger.info({
+        message, // Log message
+        user: req.user ? req.user.email : 'Unauthenticated', // Log user
+        ip: req.ip, // Log IP address
+        sessionId: req.sessionID, // Log session ID
+        timestamp: new Date().toISOString(), // Add a timestamp
+        method, // Log HTTP method
+        url: originalUrl, // Log originating URL
+        requestBody: filteredBody, // Log the filtered request body
+        headers // Log request headers
+    });
+};
+
+// Route to render the dashboard
+router.get('/dashboard', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    logRequest(req, 'Accessing dashboard');
+    try {
+        // Fetch total number of claims
+        const totalClaims = await Claim.countDocuments({});
+        logRequest(req, 'Total claims fetched', { totalClaims });
+
+        // Fetch number of open claims
+        const openClaims = await Claim.countDocuments({ status: 'Open' });
+        logRequest(req, 'Open claims fetched', { openClaims });
+
+        // Fetch number of in-progress claims
+        const inProgressClaims = await Claim.countDocuments({ status: 'In Progress' });
+        logRequest(req, 'In-progress claims fetched', { inProgressClaims });
+
+        // Fetch number of closed claims
+        const closedClaims = await Claim.countDocuments({ status: 'Closed' });
+        logRequest(req, 'Closed claims fetched', { closedClaims });
+
+        // Fetch number of claims with 'Heavy hit' damage type
+        const heavyHitClaims = await Claim.countDocuments({ damageType: 'Heavy hit' });
+        logRequest(req, 'Heavy hit claims fetched', { heavyHitClaims });
+
+        // Fetch number of claims with 'Light hit' damage type
+        const lightHitClaims = await Claim.countDocuments({ damageType: 'Light hit' });
+        logRequest(req, 'Light hit claims fetched', { lightHitClaims });
+
+        // Fetch number of claims with 'Mystery' damage type
+        const mysteryClaims = await Claim.countDocuments({ damageType: 'Mystery' });
+        logRequest(req, 'Mystery claims fetched', { mysteryClaims });
+
+        // Calculate average resolution time for closed claims
+        const avgResolutionTime = await Claim.aggregate([
+            { $match: { status: 'Closed' } },
+            {
+                $group: {
+                    _id: null,
+                    avgResolutionTime: { $avg: { $subtract: ['$updatedAt', '$createdAt'] } }
+                }
+            }
+        ]);
+        logRequest(req, 'Average resolution time calculated', { avgResolutionTime });
+
+        // Fetch the most recent 10 claim activities, sorted by the latest updated date
+        const recentActivities = await Claim.find({})
+            .sort({ updatedAt: -1 })
+            .limit(10)
+            .select('customerName mva updatedAt')
+            .lean();
+        logRequest(req, 'Recent activities fetched', { recentActivities });
+
+        // Map the recent activities to a human-readable message
+        const recentActivityMessages = recentActivities.map(activity =>
+            `Claim ${activity.mva} for ${activity.customerName} was updated on ${new Date(activity.updatedAt).toLocaleDateString()}`
+        );
+
+        // Render the dashboard view with the collected data
+        res.render('dashboard', {
+            title: 'Dashboard - Budget Claims System',
+            totalClaims,
+            openClaims,
+            inProgressClaims,
+            closedClaims,
+            heavyHitClaims,
+            lightHitClaims,
+            mysteryClaims,
+            avgResolutionTime: avgResolutionTime[0] ? (avgResolutionTime[0].avgResolutionTime / (1000 * 60 * 60 * 24)).toFixed(2) : 'N/A', // Convert ms to days
+            recentActivities: recentActivityMessages
+        });
+        logRequest(req, 'Dashboard rendered successfully');
+    } catch (err) {
+        // Log error if fetching dashboard data fails
+        logRequest(req, 'Error fetching dashboard data', { error: err });
+        // Send server error response
+        res.status(500).send('Server Error');
+    }
+});
+
+module.exports = router; // Export the router
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_customers.html">routes/customers</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#FileCategory">FileCategory</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 10 2024 21:40:02 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
