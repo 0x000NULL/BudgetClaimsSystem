@@ -35,8 +35,7 @@ pinoLogger.info('SESSION_SECRET:', process.env.SESSION_SECRET);
 
 // Connect to MongoDB using Mongoose
 mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true, // Use the new URL parser
-    useUnifiedTopology: true // Use the new Server Discover and Monitoring engine
+
 })
     .then(() => pinoLogger.info('MongoDB connected')) // Log successful connection
     .catch(err => pinoLogger.error('MongoDB connection error:', err)); // Log connection errors
@@ -52,7 +51,8 @@ app.use(helmet({ // Security middleware configuration
         directives: {
             defaultSrc: ["'self'", "data:", "http://localhost"], // Allow self and data URLs for default source
             scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"], // Allow inline scripts and scripts from jsdelivr CDN
-            styleSrc: ["'self'", "'unsafe-inline'"] // Allow inline styles
+            styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+            scriptSrcAttr: ["'unsafe-inline'"], // Allow unsafe inline event handlers
         }
     }
 }));

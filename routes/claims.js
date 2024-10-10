@@ -33,7 +33,7 @@ const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
 const PDFDocument = require('pdfkit'); // Import PDFKit for PDF export
 const fs = require('fs'); // Import File System to handle file operations
 const cacheManager = require('cache-manager'); // Import cache manager for caching
-const redisStore = require('cache-manager-redis-store'); // Import Redis store for cache manager
+const { redisStore } = require('cache-manager-redis-store'); // Import Redis store for cache manager
 const pinoLogger = require('../logger'); // Import Pino logger
 const Status = require('../models/Status'); // Import Status model
 const Location = require('../models/Location'); // Import Location model
@@ -344,22 +344,22 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
         if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
     }
 
-    const cacheKey = JSON.stringify(filter); // Create a cache key based on the filter
+    //const cacheKey = JSON.stringify(filter); // Create a cache key based on the filter
 
     try {
         // Attempt to get the cached data
-        const cachedClaims = await cache.get(cacheKey);
-        if (cachedClaims) {
-            logRequest(req, 'Returning cached claims data:', { cachedClaims });
+        //const cachedClaims = await cache.get(cacheKey);
+        //if (cachedClaims) {
+            //logRequest(req, 'Returning cached claims data:', { cachedClaims });
             // If cached data exists, respond with it
-            return res.json(cachedClaims);
-        }
+            //return res.json(cachedClaims);
+        //}
 
         // If no cached data, fetch claims from the database
         const claims = await Claim.find(filter).exec();
         logRequest(req, 'Claims fetched from database:', { claims });
         // Cache the fetched data
-        await cache.set(cacheKey, claims);
+        //await cache.set(cacheKey, claims);
         // Respond with the fetched data
         res.json(claims);
     } catch (err) {
@@ -425,7 +425,7 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         const claim = await newClaim.save();
         logRequest(req, 'New claim added:', { claim });
         notifyNewClaim(req.user.email, claim);
-        cache.del('/claims');
+        //cache.store.del('/claims');
         res.redirect('/dashboard');
     } catch (err) {
         logRequest(req, 'Error adding new claim:', { error: err });
@@ -599,8 +599,8 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         const updatedClaim = await claim.save();
         logRequest(req, 'Claim updated:', { updatedClaim });
         notifyClaimStatusUpdate(req.user.email, updatedClaim);
-        cache.del(`claim_${claimId}`);
-        cache.del('/claims');
+        //cache.del(`claim_${claimId}`);
+        //cache.del('/claims');
         res.redirect(`/claims/${claimId}`); // Redirect to the updated claim's detail page
     } catch (err) {
         logRequest(req, `Error updating claim: ${err}`, { error: err });
@@ -622,8 +622,8 @@ router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Del
         }
         logRequest(req, 'Claim deleted:', { claimId });
         res.json({ msg: 'Claim deleted' }); // Respond with deletion confirmation
-        cache.del(`claim_${claimId}`); // Invalidate the cache for the deleted claim
-        cache.del('/claims'); // Invalidate the cache for claims list
+        //cache.del(`claim_${claimId}`); // Invalidate the cache for the deleted claim
+        //cache.del('/claims'); // Invalidate the cache for claims list
     } catch (err) {
         logRequest(req, 'Error deleting claim:', { error: err });
         res.status(500).json({ error: err.message });
@@ -642,7 +642,7 @@ router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']
         logRequest(req, 'Claims updated:', { result });
         res.json({ msg: 'Claims updated', result }); // Respond with update result
         claimIds.forEach(id => cache.del(`claim_${id}`)); // Invalidate the cache for the updated claims
-        cache.del('/claims'); // Invalidate the cache for claims list
+        //cache.del('/claims'); // Invalidate the cache for claims list
     } catch (err) {
         logRequest(req, 'Error bulk updating claims:', { error: err });
         res.status(500).json({ error: err.message }); // Handle errors
