@@ -240,7 +240,7 @@ canvas {
 .tab {
     overflow: hidden;
     border: 1px solid #ccc;
-    background-color: #f1f1f1;
+    background-color: #007bff;
     margin-bottom: 20px;
 }
 
@@ -255,11 +255,11 @@ canvas {
     }
 
         .tab button:hover {
-            background-color: #ddd;
+            background-color: #f88222;
         }
 
         .tab button.active {
-            background-color: #ccc;
+            background-color: #f88222;
         }
 
 .tabcontent {
