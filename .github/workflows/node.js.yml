@@ -18,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x, 16.x]
+        node-version: [22.3.0]
 
     steps:
       - name: Checkout repository
@@ -31,6 +31,16 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Generate JSDoc
+        run: npx jsdoc -c jsdoc.conf.json
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'  # Only deploy when the code is pushed to main
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs  # Directory where JSDoc generated the documentation
 
      # - name: Run tests
       #  run: npm test
