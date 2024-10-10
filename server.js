@@ -1,3 +1,74 @@
+/**
+ * @file server.js
+ * @description Main server file for the Budget Claims System application. Sets up the Express server, connects to MongoDB, configures middleware, and defines routes.
+ * 
+ * @requires express
+ * @requires mongoose
+ * @requires passport
+ * @requires express-session
+ * @requires connect-mongo
+ * @requires connect-flash
+ * @requires path
+ * @requires cors
+ * @requires express-fileupload
+ * @requires helmet
+ * @requires method-override
+ * @requires ./routes/export
+ * @requires ./routes/auditLogs
+ * @requires express-pino-logger
+ * @requires ./logger
+ * @requires dotenv/config
+ * @requires ./notifications/reminderScheduler
+ * @requires ./config/passport
+ * @requires ./routes/index
+ * @requires ./routes/users
+ * @requires ./routes/claims
+ * @requires ./routes/dashboard
+ * @requires ./routes/api
+ * @requires ./routes/feedback
+ * @requires ./routes/customers
+ * @requires ./routes/employees
+ * @requires ./routes/email
+ * @requires ./routes/reports
+ * @requires ./routes/emailTemplates
+ * @requires ./routes/import
+ * 
+ * @constant {object} app - The Express application instance.
+ * @constant {object} pinoLogger - The Pino logger instance.
+ * @constant {number} PORT - The port number on which the server listens.
+ * 
+ * @function
+ * @name connectMongoDB
+ * @description Connects to MongoDB using Mongoose and logs the connection status.
+ * 
+ * @function
+ * @name configureMiddleware
+ * @description Configures various middleware for the Express application, including JSON parsing, URL encoding, CORS, file uploads, method override, and security settings.
+ * 
+ * @function
+ * @name configureSession
+ * @description Configures the Express session with a MongoDB session store.
+ * 
+ * @function
+ * @name configurePassport
+ * @description Initializes and configures Passport for authentication.
+ * 
+ * @function
+ * @name configureFlashMessages
+ * @description Sets up Connect Flash middleware for flash messages and makes them available in all views.
+ * 
+ * @function
+ * @name configureErrorHandling
+ * @description Sets up error handling middleware to catch and display errors.
+ * 
+ * @function
+ * @name configureRoutes
+ * @description Defines route handlers for various application routes, including home, users, claims, dashboard, API, feedback, customers, employees, email, reports, audit logs, email templates, export, and import.
+ * 
+ * @function
+ * @name startServer
+ * @description Starts the Express server and listens on the specified port.
+ */
 // Import necessary modules
 const express = require('express'); // Framework for building web applications
 const mongoose = require('mongoose'); // MongoDB object modeling tool

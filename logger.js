@@ -1,3 +1,21 @@
+/**
+ * @file logger.js
+ * @description Configures and exports a Pino logger instance that writes logs to a file.
+ * 
+ * @requires pino
+ * @requires path
+ * @requires fs
+ * 
+ * @constant {string} logDirectory - The directory where log files are stored.
+ * @constant {string} logFilePath - The path to the log file.
+ * @constant {object} logStream - The write stream to the log file.
+ * @constant {object} logger - The configured Pino logger instance.
+ * 
+ * @example
+ * const logger = require('./logger');
+ * logger.info('This is an info message');
+ * logger.error('This is an error message');
+ */
 const pino = require('pino');
 const path = require('path');
 const fs = require('fs');

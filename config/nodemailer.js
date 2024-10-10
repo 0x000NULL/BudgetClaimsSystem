@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Configuration for Nodemailer to send emails using Office365 SMTP transport.
+ * @requires nodemailer
+ * @requires ../logger
+ * 
+ * This module sets up a Nodemailer transporter object with the following configurations:
+ * - SMTP server: smtp.office365.com
+ * - Port: 587 (TLS/STARTTLS)
+ * - Authentication: Uses EMAIL_USER and EMAIL_PASS environment variables
+ * - TLS: Enforces strict TLS with rejectUnauthorized set to true
+ * - Logger: Uses Pino logger for logging
+ * - Debug: Enables debug output
+ * 
+ * The transporter object is verified upon creation, logging the result using Pino logger.
+ * 
+ * @throws {Error} Throws an error if EMAIL_USER or EMAIL_PASS environment variables are not set.
+ * 
+ * @module nodemailerConfig
+ */
 const nodemailer = require('nodemailer'); // Import Nodemailer for email sending
 const pinoLogger = require('../logger'); // Import Pino logger
 
