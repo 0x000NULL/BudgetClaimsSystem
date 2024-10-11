@@ -195,7 +195,7 @@
                 <p><%= claim.thirdPartyClaimNumber %></p>
 
                 <label>Renting Location:</label>
-                <p><%= claim.rentingLocation %></p>
+                <p><%= claim.rentingLocation ? claim.rentingLocation.name : 'N/A' %></p> <!-- Display the name of the renting location -->
 
                 <label>LDW Accepted:</label>
                 <p><%= claim.ldwAccepted ? 'Yes' : 'No' %></p>

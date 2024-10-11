@@ -447,6 +447,18 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
     }
 });
 
+// Route to add a new location
+router.post('/locations', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const { location } = req.body;
+        const newLocation = new Location({ name: location });
+        await newLocation.save();
+        res.status(201).json({ message: 'Location added successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error adding location', error });
+    }
+});
+
 // Route to get a specific claim by ID for editing, accessible by admin and manager
 router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Viewed claim edit form'), async (req, res) => {
     const claimId = req.params.id;
@@ -454,6 +466,7 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
 
     try {
         const claim = await Claim.findById(claimId).exec();
+        
         if (!claim) {
             logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Claim not found' });
@@ -737,7 +750,7 @@ router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
     logRequest(req, 'Fetching claim details with ID:', { claimId });
 
     try {
-        const claim = await Claim.findById(claimId).exec();
+        const claim = await Claim.findById(claimId).populate('rentingLocation').exec(); // Populate rentingLocation
         if (!claim) {
             logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Claim not found' });

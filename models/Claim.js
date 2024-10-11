@@ -166,7 +166,6 @@ const ClaimSchema = new Schema({
     // Field for the renting location
     rentingLocation: {
         type: String, // Data type is String
-        enum: ['LAS Airport', 'Henderson Executive Airport', 'Toyota Las Vegas', 'Center Strip', 'Losee', 'Tropicana', 'West Sahara', 'Gibson', 'Golden Nugget'], // Possible values for renting location
         required: false // This field is not required
     },
     // Field for whether LDW was accepted
