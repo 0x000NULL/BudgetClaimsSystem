@@ -190,15 +190,15 @@
                         </div>
                         <div>
                             <label for="invoice">Invoice:</label>
-                            <input type="text" id="invoice" name="invoice" value="<%= claim.invoice %>" required>
+                            <input type="text" id="invoice" name="invoice" value="<%= claim.invoice %>">
                         </div>
                         <div>
                             <label for="amount">Amount:</label>
-                            <input type="number" id="amount" name="amount" value="<%= claim.amount %>" required>
+                            <input type="number" id="amount" name="amount" value="<%= claim.amount %>">
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Tab content for Insurance Information -->
                 <div id="InsuranceInfo" class="tabcontent">
                     <div class="claim-info">
@@ -305,11 +305,11 @@
                         <label for="rentingLocation">Renting Location:</label>
                         <select id="rentingLocation" name="rentingLocation">
                             <% rentingLocations.forEach(location => { %>
-                            <option value="<%= location %>" <%= claim.rentingLocation === location ? 'selected' : '' %>><%= location %></option>
+                            <option value="<%= location._id %>" <%= claim.rentingLocation && claim.rentingLocation.toString() === location._id.toString() ? 'selected' : '' %>><%= location.name %></option>
                             <% }) %>
                         </select>
                         <% if (errors && errors.rentingLocation) { %>
-                        <div class="error-message"><%= errors.rentingLocation.msg %></div>
+                            <div class="error"><%= errors.rentingLocation.msg %></div>
                         <% } %>
                         <div class="dynamic-field-container">
                             <input type="text" id="newLocation" placeholder="New Location">
@@ -462,7 +462,31 @@
         });
     
         async function addStatus() {
-            const status = document.getElementById('newStatus').value;
+        }
+
+        async function addLocation() {
+            const location = document.getElementById('newLocation').value;
+            if (location) {
+                const response = await fetch('/claims/locations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ location })
+                });
+
+                if (response.ok) {
+                    const option = document.createElement('option');
+                    option.value = location;
+                    option.textContent = location;
+                    document.getElementById('rentingLocation').appendChild(option);
+                    document.getElementById('newLocation').value = '';
+                    showToast('Location added successfully!', 'success');
+                } else {
+                    showToast('Error adding location!', 'error');
+                }
+            }
+        const status = document.getElementById('newStatus').value;
             if (status) {
                 const response = await fetch('/claims/status/add', {
                     method: 'POST',
