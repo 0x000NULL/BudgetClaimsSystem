@@ -207,13 +207,20 @@
                         <!-- New Invoice Totals Field -->
                         <label for="invoiceTotals">Invoice Totals:</label>
                         <div id="invoiceTotalsContainer">
+                            <div id="invoiceTotal"></div> <!-- Add this line -->
                             <% claim.invoiceTotals.forEach((invoice, index) => { %>
                             <div class="invoice-total">
-                                <label for="invoiceTotal_<%= index %>">Invoice <%= index + 1 %>:</label>
-                                <input type="text" id="invoiceTotal_<%= index %>" name="invoiceTotals[<%= index %>].total" value="<%= invoice.total %>">
-                                <input type="hidden" name="invoiceTotals[<%= index %>].fileName" value="<%= invoice.fileName %>">
+                        
+                        
+                        
                             </div>
                             <% }) %>
+                        </div>
+                        <button type="button" class="btn add-btn" onclick="addInvoiceTotal()">Add Invoice Total</button>
+                            value="<%= invoice.total %>">
+                                <input type="hidden" name="invoiceTotals[<%= index %>].fileName" value="<%= invoice.fileName %>">
+                            </div>
+                            <% } %>
                         </div>
                         <button type="button" class="btn add-btn" onclick="addInvoiceTotal()">Add Invoice Total</button>
                         <% if (errors && errors.invoiceTotals) { %>
@@ -453,7 +460,7 @@
                 document.getElementById(tabName).style.display = "block"; // Show the current tab content
                 evt.currentTarget.className += " active"; // Add "active" class to the current button
             }
-
+    
             // Add event listeners to each tab button
             document.getElementById('customerInfoTab').addEventListener('click', function (event) {
                 openTab(event, 'CustomerInfo');
@@ -479,37 +486,48 @@
             document.getElementById('fileUploadsTab').addEventListener('click', function (event) {
                 openTab(event, 'FileUploads');
             });
-
+    
             // Set the default tab to be open
             document.getElementById('customerInfoTab').click(); // Open the default tab (first tab)
         });
-
-
+    
         async function addStatus() {
-            console.log(tabName);
             const status = document.getElementById('newStatus').value;
             if (status) {
-                const response = await fetch('/claims/statuses', {
+                const response = await fetch('/claims/status/add', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ status })
                 });
-
+    
                 if (response.ok) {
                     const option = document.createElement('option');
                     option.value = status;
                     option.textContent = status;
-                    console.log(tabName);
                     document.getElementById('status').appendChild(option);
                     document.getElementById('newStatus').value = '';
+                    showToast('Status added successfully!');
                 } else {
-                    showToast("Error adding status.");
+                    showToast('Error adding status.');
                 }
             }
         }
-
+    
+        function addInvoiceTotal() {
+            // Your logic to add the invoice total
+            console.log("Invoice total added");
+            // Example logic
+            const invoiceTotal = calculateInvoiceTotal();
+            document.getElementById('invoiceTotal').innerText = invoiceTotal;
+        }
+    
+        function calculateInvoiceTotal() {
+            // Example calculation logic
+            return 100; // Replace with actual calculation
+        }
+    
         async function addDamageType() {
             const damageType = document.getElementById('newDamageType').value;
             if (damageType) {
@@ -520,27 +538,27 @@
                     },
                     body: JSON.stringify({ damageType })
                 });
-
+    
                 if (response.ok) {
                     const container = document.querySelector('#damageTypeContainer');
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.name = 'damageType';
                     checkbox.value = damageType;
-
+    
                     const label = document.createElement('label');
                     label.appendChild(checkbox);
                     label.appendChild(document.createTextNode(' ' + damageType));
-
+    
                     container.appendChild(label);
-
+    
                     document.getElementById('newDamageType').value = '';
                 } else {
                     showToast("Error adding damage type.");
                 }
             }
         }
-
+    
         async function addLocation() {
             const location = document.getElementById('newLocation').value;
             if (location) {
@@ -551,7 +569,7 @@
                     },
                     body: JSON.stringify({ location })
                 });
-
+    
                 if (response.ok) {
                     const option = document.createElement('option');
                     option.value = location;
@@ -563,7 +581,7 @@
                 }
             }
         }
-
+    
         // Function to show toast notifications
         function showToast(message) {
             const toast = document.getElementById("toast");
