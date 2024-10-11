@@ -379,10 +379,11 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
         insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
         thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
-        rentersLiabilityInsurance, lossDamageWaiver
+        rentersLiabilityInsurance, lossDamageWaiver, invoice, amount // Add these fields
     } = req.body;
 
     let files = initializeFileCategories({});
+    let invoiceTotals = [];
 
     if (req.files) {
         try {
@@ -424,8 +425,9 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
         insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
         thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
-        rentersLiabilityInsurance, lossDamageWaiver, // New fields
-        files
+        rentersLiabilityInsurance, lossDamageWaiver, invoice, amount, // Add these fields
+        files,
+        invoiceTotals // Add invoice totals
     });
 
     try {
@@ -568,6 +570,8 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
         claim.thirdPartyPolicyNumber = req.body.thirdPartyPolicyNumber || claim.thirdPartyPolicyNumber;
         claim.rentersLiabilityInsurance = req.body.rentersLiabilityInsurance || claim.rentersLiabilityInsurance; // Added rentersLiabilityInsurance
         claim.lossDamageWaiver = req.body.lossDamageWaiver || claim.lossDamageWaiver; // Added lossDamageWaiver
+        claim.invoice = req.body.invoice || claim.invoice; // Added invoice
+        claim.amount = req.body.amount || claim.amount; // Added amount
 
         let existingFiles = claim.files || {};
         let invoiceTotals = claim.invoiceTotals || [];

@@ -161,10 +161,11 @@
                         </div>
                         <div>
                             <label for="invoice">Invoice:</label>
-                            <input type="file" id="invoice" name="invoices">
-                            <label for="invoiceTotal">Invoice Total:</label>
-                            <input type="number" id="invoiceTotal" name="invoiceTotal_invoiceFileName">
+                            <input type="text" id="invoice" name="invoice" value="<%= claim.invoice %>" required>
                         </div>
+                        <div>
+                            <label for="amount">Amount:</label>
+                            <input type="number" id="amount" name="amount" value="<%= claim.amount %>" required>
                     </div>
                 </div>
 
