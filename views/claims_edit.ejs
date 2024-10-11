@@ -139,93 +139,62 @@
                 <div id="ClaimDetails" class="tabcontent">
                     <div class="claim-info">
                         <label for="mva">MVA:</label>
-                        <input type="text" id="mva" name="mva" value="<%= claim.mva %>" required>
-                        <% if (errors && errors.mva) { %>
-                        <div class="error-message"><%= errors.mva.msg %></div>
-                        <% } %>
+                        <input type="text" id="mva" name="mva">
+                        <span class="error-message" id="errorMVA"></span>
 
                         <label for="raNumber">RA Number:</label>
-                        <input type="text" id="raNumber" name="raNumber" value="<%= claim.raNumber %>">
-                        <% if (errors && errors.raNumber) { %>
-                        <div class="error-message"><%= errors.raNumber.msg %></div>
-                        <% } %>
-                        
+                        <input type="text" id="raNumber" name="raNumber">
+                        <span class="error-message" id="errorRANumber"></span>
+
                         <label for="damagesTotal">Damages Total:</label>
-                        <input type="text" id="damagesTotal" name="damagesTotal" value="<%= claim.damagesTotal %>">
-                        <% if (errors && errors.damagesTotal) { %>
-                        <div class="error-message"><%= errors.damagesTotal.msg %></div>
-                        <% } %>
-                        
+                        <input type="text" id="damagesTotal" name="damagesTotal">
+                        <span class="error-message" id="errorDamagesTotal"></span>
+
                         <label for="billable">Billable:</label>
                         <select id="billable" name="billable">
-                            <option value="true" <%= claim.billable ? 'selected' : '' %>>Yes</option>
-                            <option value="false" <%= !claim.billable ? 'selected' : '' %>>No</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
                         </select>
-                        <% if (errors && errors.billable) { %>
-                        <div class="error-message"><%= errors.billable.msg %></div>
-                        <% } %>
-                        
+                        <span class="error-message" id="errorBillable"></span>
+
                         <label for="isRenterAtFault">Is Renter At Fault:</label>
                         <select id="isRenterAtFault" name="isRenterAtFault">
-                            <option value="true" <%= claim.isRenterAtFault ? 'selected' : '' %>>Yes</option>
-                            <option value="false" <%= !claim.isRenterAtFault ? 'selected' : '' %>>No</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
                         </select>
-                        <% if (errors && errors.isRenterAtFault) { %>
-                        <div class="error-message"><%= errors.isRenterAtFault.msg %></div>
-                        <% } %>
-                        
+                        <span class="error-message" id="errorIsRenterAtFault"></span>
+
                         <label for="damageType">Damage Type:</label>
-                        <div id="damageTypeContainer" class="checkbox-group">
+                        <div>
                             <% damageTypes.forEach(type => { %>
-                            <label>
-                                <input type="checkbox" name="damageType" value="<%= type %>" <%= claim.damageType.includes(type) ? 'checked' : '' %>> <%= type %>
-                            </label>
+                            <input type="checkbox" id="damageType_<%= type %>" name="damageType" value="<%= type %>">
+                            <label for="damageType_<%= type %>"><%= type %></label><br>
                             <% }) %>
                         </div>
+                        <span class="error-message" id="errorDamageType"></span>
                         <div class="dynamic-field-container">
                             <input type="text" id="newDamageType" placeholder="New Damage Type">
                             <button type="button" class="btn add-btn" onclick="addDamageType()">Add Damage Type</button>
                         </div>
-                        <% if (errors && errors.damageType) { %>
-                        <div class="error-message"><%= errors.damageType.msg %></div>
-                        <% } %>
-                        
+
                         <label for="status">Status:</label>
                         <select id="status" name="status">
                             <% statuses.forEach(status => { %>
-                            <option value="<%= status %>" <%= claim.status === status ? 'selected' : '' %>><%= status %></option>
+                            <option value="<%= status %>"><%= status %></option>
                             <% }) %>
                         </select>
+                        <span class="error-message" id="errorStatus"></span>
                         <div class="dynamic-field-container">
                             <input type="text" id="newStatus" placeholder="New Status">
                             <button type="button" class="btn add-btn" onclick="addStatus()">Add Status</button>
                         </div>
-                        <% if (errors && errors.status) { %>
-                        <div class="error-message"><%= errors.status.msg %></div>
-                        <% } %>
-                        
-                        <!-- New Invoice Totals Field -->
-                        <label for="invoiceTotals">Invoice Totals:</label>
-                        <div id="invoiceTotalsContainer">
-                            <div id="invoiceTotal"></div> <!-- Add this line -->
-                            <% claim.invoiceTotals.forEach((invoice, index) => { %>
-                            <div class="invoice-total">
-                        
-                        
-                        
-                            </div>
-                            <% }) %>
+                        <div>
+                            <label for="invoice">Invoice:</label>
+                            <input type="text" id="invoice" name="invoice" value="<%= claim.invoice %>" required>
                         </div>
-                        <button type="button" class="btn add-btn" onclick="addInvoiceTotal()">Add Invoice Total</button>
-                            value="<%= invoice.total %>">
-                                <input type="hidden" name="invoiceTotals[<%= index %>].fileName" value="<%= invoice.fileName %>">
-                            </div>
-                            <% } %>
-                        </div>
-                        <button type="button" class="btn add-btn" onclick="addInvoiceTotal()">Add Invoice Total</button>
-                        <% if (errors && errors.invoiceTotals) { %>
-                        <div class="error-message"><%= errors.invoiceTotals.msg %></div>
-                        <% } %>
+                        <div>
+                            <label for="amount">Amount:</label>
+                            <input type="number" id="amount" name="amount" value="<%= claim.amount %>" required>
                     </div>
                 </div>
 
