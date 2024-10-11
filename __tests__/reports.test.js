@@ -7,6 +7,9 @@ const Claim = require('../models/Claim');
 const ExcelJS = require('exceljs');
 const pdfkit = require('pdfkit');
 const csv = require('csv-express');
+const filterSensitiveData = require('../routes/reports').filterSensitiveData;
+const pinoLogger = require('../logger');
+const logRequest = require('../routes/reports').logRequest;
 
 jest.mock('../middleware/auth');
 jest.mock('../middleware/activityLogger');
@@ -100,6 +103,63 @@ describe('Reports Routes', () => {
                 .send({ format: 'csv', startDate: '2023-01-01', endDate: '2023-12-31' });
             expect(res.status).toBe(500);
             expect(res.body.error).toBe('Database error');
+        });
+
+        it('should filter out sensitive data from the request body', async () => {
+            const sensitiveData = {
+            mva: '123',
+            customerName: 'John Doe',
+            description: 'Test',
+            status: 'Pending',
+            date: new Date(),
+            password: 'secret',
+            token: 'abc123',
+            ssn: '123-45-6789'
+            };
+
+            const filteredData = {
+            mva: '123',
+            customerName: 'John Doe',
+            description: 'Test',
+            status: 'Pending',
+            date: new Date(),
+            password: '***REDACTED***',
+            token: '***REDACTED***',
+            ssn: '***REDACTED***'
+            };
+
+            expect(filterSensitiveData(sensitiveData)).toEqual(filteredData);
+        });
+
+        it('should log requests with user and session information', async () => {
+            const req = {
+            method: 'POST',
+            originalUrl: '/reports/generate',
+            headers: { 'content-type': 'application/json' },
+            body: { format: 'csv', startDate: '2023-01-01', endDate: '2023-12-31', password: 'secret' },
+            user: { email: 'test@example.com' },
+            ip: '127.0.0.1',
+            sessionID: 'session123'
+            };
+
+
+            logRequest(req, 'Generating report');
+
+            expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
+            message: 'Generating report',
+            user: 'test@example.com',
+            ip: '127.0.0.1',
+            sessionId: 'session123',
+            method: 'POST',
+            url: '/reports/generate',
+            requestBody: expect.objectContaining({
+                format: 'csv',
+                startDate: '2023-01-01',
+                endDate: '2023-12-31',
+                password: '***REDACTED***'
+            }),
+            headers: { 'content-type': 'application/json' }
+            }));
         });
     });
 });
