@@ -255,6 +255,10 @@ router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
         const statuses = await Status.find().sort({ name: 1 });
         const locations = await Location.find().sort({ name: 1 });
         const damageTypes = await DamageType.find().sort({ name: 1 });
+        const claim = {
+            invoice: '',
+            amount: ''
+        };
 
         logRequest(req, 'Add claim route accessed');
 
@@ -262,13 +266,14 @@ router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
             title: 'Add Claim',
             statuses,
             locations,
-            damageTypes
+            damageTypes,
+            claim
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
-// Route to display the add claim form
+
 
 
 // Route to search for claims, accessible by admin, manager, and employee
