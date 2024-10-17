@@ -135,6 +135,7 @@ const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
 const User = require('../models/User'); // Import the User model to interact with the users collection in MongoDB
 const AuditLog = require('../models/AuditLog'); // Import the AuditLog model to interact with audit logs
+const DamageType = require('../models/DamageType'); // Import the DamageType model to interact with damage types collection in MongoDB
 const Status = require('../models/Status'); // Import the Status model to interact with statuses collection in MongoDB
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const pinoLogger = require('../logger'); // Import Pino logger
@@ -304,10 +305,11 @@ router.get('/general-settings', ensureAuthenticated, ensureRoles(['admin']), asy
     logRequest(req, 'General Settings route accessed'); // Log route access
     try {
         const statuses = await Status.find(); // Fetch all statuses from the database
-        logRequest(req, 'Statuses fetched', { statuses }); // Log fetched statuses
-        res.render('general_settings', { title: 'General Settings', statuses }); // Render the general settings page with fetched statuses
+        const damageTypes = await DamageType.find(); // Fetch all damage types from the database
+        logRequest(req, 'Statuses and Damage Types fetched', { statuses, damageTypes }); // Log fetched statuses and damage types
+        res.render('general_settings', { title: 'General Settings', statuses, damageTypes }); // Render the general settings page with fetched statuses and damage types
     } catch (err) {
-        logRequest(req, 'Error fetching statuses', { error: err.message }); // Log error
+        logRequest(req, 'Error fetching statuses or damage types', { error: err.message }); // Log error
         res.status(500).json({ error: err.message }); // Handle errors
     }
 });

@@ -815,4 +815,41 @@ router.get('/statuses', ensureAuthenticated, ensureRoles(['admin']), async (req,
     }
 });
 
+// Route to remove a status
+router.delete('/status/remove/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    const statusId = req.params.id;
+
+    try {
+        await Status.findByIdAndDelete(statusId);
+        res.status(200).json({ message: 'Status removed successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Route to remove a damage type
+router.delete('/damage-type/remove/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    const damageTypeId = req.params.id;
+
+    try {
+        await DamageType.findByIdAndDelete(damageTypeId);
+        res.status(200).json({ message: 'Damage Type removed successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Fetch all damage types
+router.get('/damage-types', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    logRequest(req, 'Damage Types route accessed'); // Log route access
+    try {
+        const damageTypes = await DamageType.find(); // Fetch all damage types from the database
+        logRequest(req, 'Damage Types fetched', { damageTypes }); // Log fetched damage types
+        res.json(damageTypes); // Return damage types as JSON
+    } catch (err) {
+        logRequest(req, 'Error fetching damage types', { error: err.message }); // Log error
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
+});
+
 module.exports = router; // Export the router
