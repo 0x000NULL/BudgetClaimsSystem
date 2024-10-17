@@ -201,13 +201,11 @@ const ClaimSchema = new Schema({
     // Field for the damage type
     damageType: {
         type: [String], // Data type is an array of strings
-        enum: ['Heavy hit', 'Light hit', 'Mystery', 'Tire', 'Windshield', 'Undercarriage', 'Mechanical', 'Interior', 'Trunk', 'Gas/Tank', 'Roof', 'Driver Front Door', 'Driver Rear Door', 'Passenger Rear Door', 'Passenger Front Door', 'Left Rear Bumper', 'Right Rear Bumper', 'Rear Bumper', 'Left Front Bumper', 'Right Front Bumper', 'Front Bumper', 'Headlamp', 'Tail Light', 'Window', 'Left Quarter Panel', 'Right Quarter Panel', 'Right Fender', 'Left Fender', 'Hood', 'Mirrors', 'Left Rocker', 'Right Rocker', 'Vandalism', 'Stolen', 'Totaled', 'Total - Flood', 'Total - Fire', 'Total - Hail', 'Total - Biohazard', 'Left Pillar', 'Right Pillar', 'Stolen - Recovered', 'Employee'], // Possible values for damage type
         required: false // This field is not required
     },
     // Field for the claim status
     status: {
         type: [String], // Data type is an array of strings
-        enum: ['Closed', 'Vince Pre-Sub', 'Vince Sub', 'Deonte Pre-Sub', 'Deonte Sub', 'Stef Claim', 'Bodyshop', 'LDW Discharge', 'Stef Pre-Litigation', 'Stef Litigation', 'Tina Pre-Litigation', 'Tina Litigation', 'Collections', 'Collections Review'], // Possible values for status
         required: false // This field is not required
     },
     // Field for the files associated with the claim

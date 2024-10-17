@@ -200,7 +200,16 @@
                                     <td><%= claim.carVIN %></td>
                                     <td><%= claim.insuranceClaimNumber %></td>
                                     <td><%= claim.damageType.join(', ') %></td>
-                                    <td><%= claim.status %></td>
+                                    <td>
+                                        <% 
+                                            const status = statuses.find(status => status._id.toString() === claim.status.toString());
+                                            if (status) {
+                                                %><%= status.name %><%
+                                            } else {
+                                                %>Unknown Status<%
+                                            }
+                                        %>
+                                    </td> <!-- Display status name -->
                                     <td><%= new Date(claim.date).toLocaleDateString() %></td>
                                     <td>
                                         <a href="/claims/<%= claim._id %>" class="btn">View</a> <!-- Button to view the claim -->

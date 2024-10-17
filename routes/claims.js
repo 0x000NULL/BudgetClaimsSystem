@@ -465,31 +465,22 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
     logRequest(req, `Fetching claim for editing with ID: ${claimId}`);
 
     try {
-        const claim = await Claim.findById(claimId).exec();
-        
+        const claim = await Claim.findById(claimId);
         if (!claim) {
-            logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Claim not found' });
         }
 
-        // Ensure files field is initialized correctly
-        claim.files = initializeFileCategories(claim.files || {});
-
-        // Fetch dropdown data if needed
         const statuses = await Status.find().sort({ name: 1 });
-        const rentingLocations = await Location.find().sort({ name: 1 });
+        const locations = await Location.find().sort({ name: 1 });
         const damageTypes = await DamageType.find().sort({ name: 1 });
 
-        logRequest(req, `Claim fetched for editing: ${claim}`);
-        
-        // Pass the claim, dropdown data, and an empty errors object
-        res.render('claims_edit', { 
-            title: 'Edit Claim', 
-            claim, 
-            statuses, 
-            rentingLocations, 
-            damageTypes, 
-            errors: {}  // Pass an empty errors object to avoid undefined reference
+        res.render('claims_edit', {
+            claim,
+            statuses,
+            locations,
+            damageTypes,
+            rentingLocations: locations,
+            errors: {}
         });
     } catch (err) {
         logRequest(req, 'Error fetching claim for editing:', { error: err });
@@ -849,6 +840,29 @@ router.get('/damage-types', ensureAuthenticated, ensureRoles(['admin']), async (
     } catch (err) {
         logRequest(req, 'Error fetching damage types', { error: err.message }); // Log error
         res.status(500).json({ error: err.message }); // Handle errors
+    }
+});
+
+// Route to add a new renting location
+router.post('/location/add', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    const { name } = req.body;
+    try {
+        const newLocation = new Location({ name });
+        await newLocation.save();
+        res.json({ message: 'Renting location added successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Route to remove a renting location
+router.delete('/location/remove/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    const locationId = req.params.id;
+    try {
+        await Location.findByIdAndDelete(locationId);
+        res.json({ message: 'Renting location removed successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 

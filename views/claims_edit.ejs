@@ -297,17 +297,13 @@
                         <label for="rentingLocation">Renting Location:</label>
                         <select id="rentingLocation" name="rentingLocation">
                             <% rentingLocations.forEach(location => { %>
-                            <option value="<%= location._id %>" <%= claim.rentingLocation && claim.rentingLocation.toString() === location._id.toString() ? 'selected' : '' %>><%= location.name %></option>
+                                <option value="<%= location._id %>" <%= claim.rentingLocation && claim.rentingLocation.toString() === location._id.toString() ? 'selected' : '' %>><%= location.name %></option>
                             <% }) %>
                         </select>
                         <% if (errors && errors.rentingLocation) { %>
                             <div class="error"><%= errors.rentingLocation.msg %></div>
                         <% } %>
-                        <div class="dynamic-field-container">
-                            <input type="text" id="newLocation" placeholder="New Location">
-                            <button type="button" class="btn add-btn" onclick="addLocation()">Add Location</button>
-                        </div>
-
+                        
                         <label for="policeDepartment">Police Department:</label>
                         <input type="text" id="policeDepartment" name="policeDepartment" value="<%= claim.policeDepartment %>">
                         <% if (errors && errors.policeDepartment) { %>
