@@ -154,14 +154,14 @@
                 <label for="damageType">Damage Type:</label> <!-- Label for damage type selection -->
                 <select id="damageType" name="damageType" multiple> <!-- Multiple select for damage types -->
                     <% damageTypes.forEach(type => { %>
-                        <option value="<%= type %>" <%= filter && filter.damageType && filter.damageType.$in.includes(type) ? 'selected' : '' %>><%= type %></option>
+                        <option value="<%= type.name %>" <%= filter && filter.damageType && filter.damageType.$in.includes(type.name) ? 'selected' : '' %>><%= type.name %></option>
                     <% }) %>
                 </select>
 
                 <label for="status">Status:</label> <!-- Label for status selection -->
                 <select id="status" name="status" multiple> <!-- Multiple select for statuses -->
                     <% statuses.forEach(status => { %>
-                        <option value="<%= status %>" <%= filter && filter.status && filter.status.$in.includes(status) ? 'selected' : '' %>><%= status %></option>
+                        <option value="<%= status.name %>" <%= filter && filter.status && filter.status.$in.includes(status.name) ? 'selected' : '' %>><%= status.name %></option>
                     <% }) %>
                 </select>
                 <label for="resultsPerPage">Results per page:</label>
@@ -244,7 +244,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ status })
+                    body: JSON.stringify({ name: status })
                 });
 
                 if (response.ok) {
@@ -265,7 +265,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ damageType })
+                    body: JSON.stringify({ name: damageType })
                 });
 
                 if (response.ok) {
