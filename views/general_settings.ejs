@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
+    <title>General Settings - Budget Claims System</title> <!-- Title of the document -->
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
+    <style>
+        /* Inline styles for better button appearance */
+        .button {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .button.red {
+            background-color: #dc3545;
+        }
+
+        .button.red:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <!-- Logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li class="Claims">
+                    <a href="javascript:void(0)" class="dropbtn">Claims</a> <!-- Dropdown trigger -->
+                    <div class="dropdown-content">
+                        <a href="/claims/search">Search Claims</a> <!-- Link to Search Claims -->
+                        <a href="/claims/add">Add Claim</a> <!-- Link to Add Claim -->
+                    </div>
+                </li>
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li class="Settings">
+                    <a href="javascript:void(0)" class="dropbtn">Settings</a> <!-- Dropdown trigger -->
+                    <div class="dropdown-content">
+                        <a href="/general-settings">General Settings</a> <!-- Link to General Settings -->
+                        <a href="/user-management">User Management</a> <!-- Link to User Management -->
+                        <a href="/email-templates">Email Templates</a> <!-- Link to Email Templates -->
+                    </div>
+                </li>
+                <li><a href="/help">Help</a></li> <!-- Link to Help -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>General Settings</h2> <!-- Section heading -->
+
+        <!-- Section for adding new status -->
+        <section>
+            <h3>Add New Status</h3>
+            <form id="addStatusForm">
+                <label for="newStatus">New Status:</label>
+                <input type="text" id="newStatus" name="newStatus" required>
+                <button type="submit" class="button">Add Status</button>
+            </form>
+            <div id="statusMessage"></div>
+        </section>
+
+        <!-- Section for listing current statuses -->
+        <section>
+            <h3>Current Statuses</h3>
+            <ul id="statusList">
+                <% statuses.forEach(status => { %>
+                    <li><%= status.name %></li>
+                <% }); %>
+            </ul>
+        </section>
+
+        <script>
+            // Function to handle form submission for adding new status
+            document.getElementById('addStatusForm').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const newStatus = document.getElementById('newStatus').value;
+                try {
+                    const response = await fetch('/claims/status/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name: newStatus })
+                    });
+                    const result = await response.json();
+                    document.getElementById('statusMessage').textContent = result.message;
+                    location.reload(); // Refresh the page to show the new status
+                } catch (error) {
+                    console.error('Error adding status:', error);
+                }
+            });
+        </script>
+    </main>
+</body>
+</html>
