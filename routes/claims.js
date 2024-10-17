@@ -802,4 +802,17 @@ router.post('/location/add', ensureAuthenticated, ensureRoles(['admin', 'manager
     }
 })
 
+// Fetch all statuses
+router.get('/statuses', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    logRequest(req, 'Statuses route accessed'); // Log route access
+    try {
+        const statuses = await Status.find(); // Fetch all statuses from the database
+        logRequest(req, 'Statuses fetched', { statuses }); // Log fetched statuses
+        res.json(statuses); // Return statuses as JSON
+    } catch (err) {
+        logRequest(req, 'Error fetching statuses', { error: err.message }); // Log error
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
+});
+
 module.exports = router; // Export the router

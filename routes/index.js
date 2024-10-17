@@ -135,6 +135,7 @@ const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
 const User = require('../models/User'); // Import the User model to interact with the users collection in MongoDB
 const AuditLog = require('../models/AuditLog'); // Import the AuditLog model to interact with audit logs
+const Status = require('../models/Status'); // Import the Status model to interact with statuses collection in MongoDB
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const pinoLogger = require('../logger'); // Import Pino logger
 const router = express.Router(); // Create a new router
@@ -181,7 +182,7 @@ const logRequest = (req, message, extra = {}) => {
 // Home page route
 router.get('/', (req, res) => {
     logRequest(req, 'Home route accessed');
-    res.render('home', { title: 'Welcome to Budget Claims System' }); // Render the home page with the title 'Welcome to Budget Claims System'
+    res.render('index', { title: 'Welcome to Budget Claims System' }); // Render the home page with the title 'Welcome to Budget Claims System'
 });
 
 // Login page route
@@ -295,6 +296,20 @@ router.get('/audit-logs', ensureAuthenticated, ensureRoles(['admin']), async (re
 router.get('/import', (req, res) => {
     logRequest(req, 'Import data route accessed'); // Log route access
     res.render('import', { title: 'Import Data - Budget Claims System' }); // Render the import data page with the title 'Import Data - Budget Claims System'
+});
+
+// General settings route
+// Only accessible to authenticated users with 'admin' role
+router.get('/general-settings', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    logRequest(req, 'General Settings route accessed'); // Log route access
+    try {
+        const statuses = await Status.find(); // Fetch all statuses from the database
+        logRequest(req, 'Statuses fetched', { statuses }); // Log fetched statuses
+        res.render('general_settings', { title: 'General Settings', statuses }); // Render the general settings page with fetched statuses
+    } catch (err) {
+        logRequest(req, 'Error fetching statuses', { error: err.message }); // Log error
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
 });
 
 module.exports = router; // Export the router
