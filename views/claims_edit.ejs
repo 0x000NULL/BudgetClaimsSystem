@@ -173,14 +173,12 @@
                                 <%= damageType.name %>
                             </label>
                             <% }) %>
-                        <span class="error-message" id="errorDamageType"></span>
                         <label for="status">Status:</label>
                         <select id="status" name="status">
                             <% statuses.forEach(status => { %>
                             <option value="<%= status._id %>" <%= claim.status && claim.status.toString() === status._id.toString() ? 'selected' : '' %>><%= status.name %></option>
                             <% }) %>
-                        <span class="error-message" id="errorStatus"></span>
-
+                        </select>
                         <div>
                             <label for="invoice">Invoice:</label>
                             <input type="text" id="invoice" name="invoice" value="<%= claim.invoice %>">

@@ -137,29 +137,19 @@
                         <span class="error-message" id="errorIsRenterAtFault"></span>
 
                         <label for="damageType">Damage Type:</label>
-                        <div>
-                            <% damageTypes.forEach(type => { %>
-                            <input type="checkbox" id="damageType_<%= type %>" name="damageType" value="<%= type %>">
-                            <label for="damageType_<%= type %>"><%= type %></label><br>
+                        <div id="damageTypeContainer">
+                            <% damageTypes.forEach(damageType => { %>
+                            <label>
+                                <input type="checkbox" name="damageType" value="<%= damageType._id %>" <%= claim.damageType && claim.damageType.includes(damageType._id.toString()) ? 'checked' : '' %>>
+                                <%= damageType.name %>
+                            </label>
                             <% }) %>
-                        </div>
-                        <span class="error-message" id="errorDamageType"></span>
-                        <div class="dynamic-field-container">
-                            <input type="text" id="newDamageType" placeholder="New Damage Type">
-                            <button type="button" class="btn add-btn" onclick="addDamageType()">Add Damage Type</button>
-                        </div>
-
                         <label for="status">Status:</label>
                         <select id="status" name="status">
                             <% statuses.forEach(status => { %>
-                            <option value="<%= status %>"><%= status %></option>
+                            <option value="<%= status._id %>" <%= claim.status && claim.status.toString() === status._id.toString() ? 'selected' : '' %>><%= status.name %></option>
                             <% }) %>
                         </select>
-                        <span class="error-message" id="errorStatus"></span>
-                        <div class="dynamic-field-container">
-                            <input type="text" id="newStatus" placeholder="New Status">
-                            <button type="button" class="btn add-btn" onclick="addStatus()">Add Status</button>
-                        </div>
                         <div>
                             <label for="invoice">Invoice:</label>
                             <input type="text" id="invoice" name="invoice" value="<%= claim.invoice %>" required>
