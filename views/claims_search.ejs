@@ -157,10 +157,6 @@
                         <option value="<%= type %>" <%= filter && filter.damageType && filter.damageType.$in.includes(type) ? 'selected' : '' %>><%= type %></option>
                     <% }) %>
                 </select>
-                <div class="dynamic-field-container">
-                    <input type="text" id="newDamageType" placeholder="New Damage Type">
-                    <button type="button" class="btn add-btn" onclick="addDamageType()">Add Damage Type</button>
-                </div>
 
                 <label for="status">Status:</label> <!-- Label for status selection -->
                 <select id="status" name="status" multiple> <!-- Multiple select for statuses -->
@@ -168,11 +164,6 @@
                         <option value="<%= status %>" <%= filter && filter.status && filter.status.$in.includes(status) ? 'selected' : '' %>><%= status %></option>
                     <% }) %>
                 </select>
-                <div class="dynamic-field-container">
-                    <input type="text" id="newStatus" placeholder="New Status">
-                    <button type="button" class="btn add-btn" onclick="addStatus()">Add Status</button>
-                </div>
-
                 <label for="resultsPerPage">Results per page:</label>
                 <select id="resultsPerPage" name="resultsPerPage">
                     <option value="5" <%= resultsPerPage == 5 ? 'selected' : '' %>>5</option>

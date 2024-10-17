@@ -79,7 +79,38 @@
             <h3>Current Statuses</h3>
             <ul id="statusList">
                 <% statuses.forEach(status => { %>
-                    <li><%= status.name %></li>
+                    <li>
+                        <%= status.name %>
+                        <form class="removeStatusForm" data-status-id="<%= status._id %>">
+                            <button type="submit" class="button red">Remove</button>
+                        </form>
+                    </li>
+                <% }); %>
+            </ul>
+        </section>
+
+        <!-- Section for adding new damage type -->
+        <section>
+            <h3>Add New Damage Type</h3>
+            <form id="addDamageTypeForm">
+                <label for="newDamageType">New Damage Type:</label>
+                <input type="text" id="newDamageType" name="newDamageType" required>
+                <button type="submit" class="button">Add Damage Type</button>
+            </form>
+            <div id="damageTypeMessage"></div>
+        </section>
+
+        <!-- Section for listing current damage types -->
+        <section>
+            <h3>Current Damage Types</h3>
+            <ul id="damageTypeList">
+                <% damageTypes.forEach(damageType => { %>
+                    <li>
+                        <%= damageType.name %>
+                        <form class="removeDamageTypeForm" data-damage-type-id="<%= damageType._id %>">
+                            <button type="submit" class="button red">Remove</button>
+                        </form>
+                    </li>
                 <% }); %>
             </ul>
         </section>
@@ -103,6 +134,62 @@
                 } catch (error) {
                     console.error('Error adding status:', error);
                 }
+            });
+
+            // Function to handle form submission for removing a status
+            document.querySelectorAll('.removeStatusForm').forEach(form => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const statusId = form.getAttribute('data-status-id');
+                    try {
+                        const response = await fetch(`/claims/status/remove/${statusId}`, {
+                            method: 'DELETE'
+                        });
+                        const result = await response.json();
+                        document.getElementById('statusMessage').textContent = result.message;
+                        location.reload(); // Refresh the page to show the updated status list
+                    } catch (error) {
+                        console.error('Error removing status:', error);
+                    }
+                });
+            });
+
+            // Function to handle form submission for adding new damage type
+            document.getElementById('addDamageTypeForm').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const newDamageType = document.getElementById('newDamageType').value;
+                try {
+                    const response = await fetch('/claims/damage-type/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name: newDamageType })
+                    });
+                    const result = await response.json();
+                    document.getElementById('damageTypeMessage').textContent = result.message;
+                    location.reload(); // Refresh the page to show the new damage type
+                } catch (error) {
+                    console.error('Error adding damage type:', error);
+                }
+            });
+
+            // Function to handle form submission for removing a damage type
+            document.querySelectorAll('.removeDamageTypeForm').forEach(form => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const damageTypeId = form.getAttribute('data-damage-type-id');
+                    try {
+                        const response = await fetch(`/claims/damage-type/remove/${damageTypeId}`, {
+                            method: 'DELETE'
+                        });
+                        const result = await response.json();
+                        document.getElementById('damageTypeMessage').textContent = result.message;
+                        location.reload(); // Refresh the page to show the updated damage type list
+                    } catch (error) {
+                        console.error('Error removing damage type:', error);
+                    }
+                });
             });
         </script>
     </main>
