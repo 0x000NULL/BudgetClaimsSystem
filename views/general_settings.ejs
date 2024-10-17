@@ -8,27 +8,12 @@
     <style>
         /* Inline styles for better button appearance */
         .button {
-            display: inline-block;
-            padding: 8px 12px;
-            margin: 5px 0;
-            background-color: #007bff;
-            color: white;
-            text-align: center;
-            text-decoration: none;
-            border-radius: 4px;
+            /* Add your button styles here */
         }
 
-        .button:hover {
-            background-color: #0056b3;
-        }
-
-        .button.red {
-            background-color: #dc3545;
-        }
-
-        .button.red:hover {
-            background-color: #c82333;
-        }
+        .button:hover { /* Add hover styles here */ }
+        .button.red { /* Add red button styles here */ }
+        .button.red:hover { /* Add red button hover styles here */ }
     </style>
 </head>
 <body>
@@ -115,6 +100,32 @@
             </ul>
         </section>
 
+        <!-- Section for adding new renting location -->
+        <section>
+            <h3>Add New Renting Location</h3>
+            <form id="addRentingLocationForm">
+                <label for="newRentingLocation">New Renting Location:</label>
+                <input type="text" id="newRentingLocation" name="newRentingLocation" required>
+                <button type="submit" class="button">Add Renting Location</button>
+            </form>
+            <div id="rentingLocationMessage"></div>
+        </section>
+
+        <!-- Section for listing current renting locations -->
+        <section>
+            <h3>Current Renting Locations</h3>
+            <ul id="rentingLocationList">
+                <% rentingLocations.forEach(location => { %>
+                    <li>
+                        <%= location.name %>
+                        <form class="removeRentingLocationForm" data-location-id="<%= location._id %>">
+                            <button type="submit" class="button red">Remove</button>
+                        </form>
+                    </li>
+                <% }); %>
+            </ul>
+        </section>
+
         <script>
             // Function to handle form submission for adding new status
             document.getElementById('addStatusForm').addEventListener('submit', async (event) => {
@@ -188,6 +199,44 @@
                         location.reload(); // Refresh the page to show the updated damage type list
                     } catch (error) {
                         console.error('Error removing damage type:', error);
+                    }
+                });
+            });
+
+            // Function to handle form submission for adding new renting location
+            document.getElementById('addRentingLocationForm').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const newRentingLocation = document.getElementById('newRentingLocation').value;
+                try {
+                    const response = await fetch('/claims/location/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name: newRentingLocation })
+                    });
+                    const result = await response.json();
+                    document.getElementById('rentingLocationMessage').textContent = result.message;
+                    location.reload(); // Refresh the page to show the new renting location
+                } catch (error) {
+                    console.error('Error adding renting location:', error);
+                }
+            });
+
+            // Function to handle form submission for removing a renting location
+            document.querySelectorAll('.removeRentingLocationForm').forEach(form => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const locationId = form.getAttribute('data-location-id');
+                    try {
+                        const response = await fetch(`/claims/location/remove/${locationId}`, {
+                            method: 'DELETE'
+                        });
+                        const result = await response.json();
+                        document.getElementById('rentingLocationMessage').textContent = result.message;
+                        location.reload(); // Refresh the page to show the updated renting location list
+                    } catch (error) {
+                        console.error('Error removing renting location:', error);
                     }
                 });
             });
