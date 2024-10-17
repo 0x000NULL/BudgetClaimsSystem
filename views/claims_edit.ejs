@@ -180,14 +180,6 @@
                             <option value="<%= status._id %>" <%= claim.status && claim.status.toString() === status._id.toString() ? 'selected' : '' %>><%= status.name %></option>
                             <% }) %>
                         </select>
-                        <div>
-                            <label for="invoice">Invoice:</label>
-                            <input type="text" id="invoice" name="invoice" value="<%= claim.invoice %>">
-                        </div>
-                        <div>
-                            <label for="amount">Amount:</label>
-                            <input type="number" id="amount" name="amount" value="<%= claim.amount %>">
-                        </div>
                     </div>
                 </div>
 
@@ -347,7 +339,7 @@
                     </div>
                 </div>
 
-                <!-- Tab content for File Uploads -->
+                <!-- File Uploads Section -->
                 <div id="FileUploads" class="tabcontent">
                     <div class="file-section">
                         <h3>Incident Reports</h3>
@@ -383,6 +375,18 @@
                         <% if (errors && errors.invoices) { %>
                         <div class="error-message"><%= errors.invoices.msg %></div>
                         <% } %>
+                        <!-- Add input fields for invoice totals -->
+                        <div id="invoiceTotalsContainer">
+                            <% if (claim.invoiceTotals && claim.invoiceTotals.length > 0) { %>
+                                <% claim.invoiceTotals.forEach(function(invoice, index) { %>
+                                    <div class="invoice-total">
+                                        <label for="invoiceTotal<%= index %>">Invoice Total for <%= invoice.fileName %>:</label>
+                                        <input type="number" id="invoiceTotal<%= index %>" name="invoiceTotals[<%= index %>][total]" value="<%= invoice.total %>">
+                                        <input type="hidden" name="invoiceTotals[<%= index %>][fileName]" value="<%= invoice.fileName %>">
+                                    </div>
+                                <% }); %>
+                            <% } %>
+                        </div>
                     </div>
                     <div class="file-section">
                         <h3>Photos</h3>
