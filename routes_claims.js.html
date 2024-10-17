@@ -516,14 +516,16 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
     }
 });
 
-
+        
 // Route to update a claim by ID, accessible by admin and manager
 router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), async (req, res) => {
     const claimId = req.params.id;
     logRequest(req, `Updating claim with ID: ${claimId}`);
 
     try {
-        const claim = await Claim.findById(claimId).exec();
+        // Fetch the claim from the database
+        const claim = await Claim.findById(claimId);
+        
         if (!claim) {
             logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).json({ error: 'Claim not found' });
@@ -564,109 +566,55 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             updatedAt: claim.updatedAt
         });
 
-        // Update the claim with new data from req.body
-        Object.assign(claim, req.body);
+        const {
+            mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
+            ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
+            customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
+            carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
+            damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
+            insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
+            thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
+            rentersLiabilityInsurance, lossDamageWaiver // Remove invoiceTotals from destructuring
+        } = req.body;
 
-        // Update the claim with new data
-        claim.mva = req.body.mva || claim.mva;
-        claim.customerName = req.body.customerName || claim.customerName;
-        claim.description = req.body.description || claim.description;
-        claim.status = req.body.status || claim.status;
-        claim.damageType = req.body.damageType || claim.damageType; // Added damageType
-        claim.dateOfLoss = req.body.dateOfLoss || claim.dateOfLoss;
-        claim.raNumber = req.body.raNumber || claim.raNumber;
-        claim.rentingLocation = req.body.rentingLocation || claim.rentingLocation;
-        claim.ldwAccepted = req.body.ldwAccepted || claim.ldwAccepted;
-        claim.policeDepartment = req.body.policeDepartment || claim.policeDepartment;
-        claim.policeReportNumber = req.body.policeReportNumber || claim.policeReportNumber;
-        claim.claimCloseDate = req.body.claimCloseDate || claim.claimCloseDate;
-        claim.vehicleOdometer = req.body.vehicleOdometer || claim.vehicleOdometer;
-        claim.customerNumber = req.body.customerNumber || claim.customerNumber;
-        claim.customerEmail = req.body.customerEmail || claim.customerEmail;
-        claim.customerAddress = req.body.customerAddress || claim.customerAddress;
-        claim.customerDriversLicense = req.body.customerDriversLicense || claim.customerDriversLicense;
-        claim.carMake = req.body.carMake || claim.carMake;
-        claim.carModel = req.body.carModel || claim.carModel;
-        claim.carYear = req.body.carYear || claim.carYear;
-        claim.carColor = req.body.carColor || claim.carColor;
-        claim.carVIN = req.body.carVIN || claim.carVIN;
-        claim.accidentDate = req.body.accidentDate || claim.accidentDate;
-        claim.billable = req.body.billable || claim.billable;
-        claim.isRenterAtFault = req.body.isRenterAtFault || claim.isRenterAtFault;
-        claim.damagesTotal = req.body.damagesTotal || claim.damagesTotal;
-        claim.bodyShopName = req.body.bodyShopName || claim.bodyShopName;
-        claim.insuranceCarrier = req.body.insuranceCarrier || claim.insuranceCarrier;
-        claim.insuranceAgent = req.body.insuranceAgent || claim.insuranceAgent;
-        claim.insurancePhoneNumber = req.body.insurancePhoneNumber || claim.insurancePhoneNumber;
-        claim.insuranceFaxNumber = req.body.insuranceFaxNumber || claim.insuranceFaxNumber;
-        claim.insuranceAddress = req.body.insuranceAddress || claim.insuranceAddress;
-        claim.insuranceClaimNumber = req.body.insuranceClaimNumber || claim.insuranceClaimNumber;
-        claim.thirdPartyName = req.body.thirdPartyName || claim.thirdPartyName;
-        claim.thirdPartyPhoneNumber = req.body.thirdPartyPhoneNumber || claim.thirdPartyPhoneNumber;
-        claim.thirdPartyInsuranceName = req.body.thirdPartyInsuranceName || claim.thirdPartyInsuranceName;
-        claim.thirdPartyPolicyNumber = req.body.thirdPartyPolicyNumber || claim.thirdPartyPolicyNumber;
-        claim.rentersLiabilityInsurance = req.body.rentersLiabilityInsurance || claim.rentersLiabilityInsurance; // Added rentersLiabilityInsurance
-        claim.lossDamageWaiver = req.body.lossDamageWaiver || claim.lossDamageWaiver; // Added lossDamageWaiver
-        claim.invoice = req.body.invoice || claim.invoice; // Added invoice
-        claim.amount = req.body.amount || claim.amount; // Added amount
-
-        let existingFiles = claim.files || {};
-        let invoiceTotals = claim.invoiceTotals || [];
-
+        let files = initializeFileCategories({});
         if (req.files) {
             try {
-                await Promise.all(Object.keys(req.files).map(async (category) => {
-                    if (Array.isArray(req.files[category])) {
-                        await Promise.all(req.files[category].map(async (file) => {
-                            const filePath = path.join(__dirname, '../public/uploads', file.name);
-                            await file.mv(filePath);
-                            logRequest(req, 'File uploaded successfully:', { fileName: file.name });
-                            if (!existingFiles[category]) {
-                                existingFiles[category] = [];
-                            }
-                            existingFiles[category].push(file.name);
-
-                            if (category === 'invoices') {
-                                const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
-                                invoiceTotals.push({ fileName: file.name, total });
-                            }
-                        }));
-                    } else {
-                        const file = req.files[category];
-                        const filePath = path.join(__dirname, '../public/uploads', file.name);
-                        await file.mv(filePath);
-                        logRequest(req, 'File uploaded successfully:', { fileName: file.name });
-                        if (!existingFiles[category]) {
-                            existingFiles[category] = [];
-                        }
-                        existingFiles[category].push(file.name);
-
-                        if (category === 'invoices') {
-                            const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
-                            invoiceTotals.push({ fileName: file.name, total });
-                        }
-                    }
-                }));
+                // Process uploaded files
             } catch (err) {
-                logRequest(req, 'Error uploading files:', { error: err });
+                logRequest(req, 'Error processing uploaded files:', { error: err });
                 return res.status(500).json({ error: err.message });
             }
         }
 
-        claim.files = existingFiles;
-        claim.invoiceTotals = invoiceTotals;
+        // Ensure invoiceTotals is correctly processed
+        const invoiceTotals = req.body.invoiceTotals || [];
+        const updatedInvoiceTotals = Array.isArray(invoiceTotals) ? invoiceTotals.map(invoice => ({
+            fileName: invoice.fileName,
+            total: parseFloat(invoice.total) || 0 // Ensure total is a number
+        })) : [];
 
-        const updatedClaim = await claim.save();
-        logRequest(req, 'Claim updated:', { updatedClaim });
-        notifyClaimStatusUpdate(req.user.email, updatedClaim);
-        //cache.del(`claim_${claimId}`);
-        //cache.del('/claims');
-        res.redirect(`/claims/${claimId}`); // Redirect to the updated claim's detail page
+        const updatedClaimData = {
+            mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
+            ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
+            customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
+            carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
+            damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
+            insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
+            thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
+            rentersLiabilityInsurance, lossDamageWaiver, files,
+            invoiceTotals: updatedInvoiceTotals // Use updated invoice totals
+        };
+
+        const updatedClaim = await Claim.findByIdAndUpdate(claimId, updatedClaimData, { new: true });
+        logRequest(req, 'Claim updated:', { claim: updatedClaim });
+        res.json(updatedClaim);
     } catch (err) {
-        logRequest(req, `Error updating claim: ${err}`, { error: err });
+        logRequest(req, 'Error updating claim:', { error: err });
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // Route to delete a claim by ID, accessible only by admin
 router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), async (req, res) => {
@@ -910,7 +858,7 @@ module.exports = router; // Export the router</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 17:33:17 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 21:19:35 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
