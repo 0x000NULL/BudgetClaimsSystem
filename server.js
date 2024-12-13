@@ -89,6 +89,13 @@ const crypto = require('crypto'); // Module for generating cryptographic hash va
 
 // Load environment variables from a .env file
 require('dotenv').config();
+console.log('Environment variables:', {
+    EMAIL_USER: process.env.EMAIL_USER,
+    EMAIL_PASS: process.env.EMAIL_PASS,
+    MONGO_URI: process.env.MONGO_URI,
+    SESSION_SECRET: process.env.SESSION_SECRET,
+    JWT_SECRET: process.env.JWT_SECRET
+});
 // Initialize reminder scheduler for notifications
 require('./notifications/reminderScheduler');
 
@@ -96,7 +103,7 @@ require('./notifications/reminderScheduler');
 const app = express();
 
 // Initialize Pino logger middleware
-app.use(expressPino({ logger: pinoLogger }));
+app.use(pinoHttp({ logger: pinoLogger }));
 
 // Set EJS as the view engine for rendering HTML views
 app.set('view engine', 'ejs');
@@ -124,12 +131,12 @@ app.use(helmet({ // Security middleware configuration
             defaultSrc: ["'self'"],
             scriptSrc: [
                 "'self'",
-                'https://cdn.jsdelivr.net',
-                (req, res) => `'nonce-${res.locals.nonce}'`
+                'https://cdn.jsdelivr.net'
             ],
             styleSrc: [
                 "'self'",
-                'https://cdn.jsdelivr.net'
+                'https://cdn.jsdelivr.net',
+                "'unsafe-inline'"
             ],
             imgSrc: ["'self'", 'data:', 'https:'],
             connectSrc: ["'self'"],
@@ -137,10 +144,8 @@ app.use(helmet({ // Security middleware configuration
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             frameSrc: ["'none'"],
-            sandbox: ['allow-forms', 'allow-scripts', 'allow-same-origin'],
-            reportUri: '/csp-violation-report'
-        },
-        reportOnly: false
+            sandbox: ['allow-forms', 'allow-scripts', 'allow-same-origin']
+        }
     }
 }));
 
@@ -192,9 +197,12 @@ app.use((err, req, res, next) => {
     res.status(500).render('500', { message: 'Internal Server Error' }); // Render a 500 error page
 });
 
-// Generate a nonce for each request
+// Simplified nonce middleware that only generates and sets the nonce
 app.use((req, res, next) => {
-    res.locals.nonce = crypto.randomBytes(16).toString('base64');
+    // Generate a new nonce for each request
+    const nonce = crypto.randomBytes(16).toString('base64');
+    // Set it in res.locals
+    res.locals.nonce = nonce;
     next();
 });
 

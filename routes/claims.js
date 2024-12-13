@@ -267,7 +267,8 @@ router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
             statuses,
             locations,
             damageTypes,
-            claim
+            claim,
+            nonce: res.locals.nonce
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
