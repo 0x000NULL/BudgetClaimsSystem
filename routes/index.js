@@ -138,7 +138,8 @@ const AuditLog = require('../models/AuditLog'); // Import the AuditLog model to 
 const DamageType = require('../models/DamageType'); // Import the DamageType model to interact with damage types collection in MongoDB
 const Location = require('../models/Location'); // Import the Location model to interact with locations collection in MongoDB
 const Status = require('../models/Status'); // Import the Status model to interact with statuses collection in MongoDB
-const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
+const Settings = require('../models/Settings'); // Import the Settings model to interact with settings collection in MongoDB
+const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const pinoLogger = require('../logger'); // Import Pino logger
 const router = express.Router(); // Create a new router
 
@@ -303,16 +304,42 @@ router.get('/import', (req, res) => {
 // General settings route
 // Only accessible to authenticated users with 'admin' role
 router.get('/general-settings', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
-    logRequest(req, 'General Settings route accessed'); // Log route access
     try {
-        const statuses = await Status.find(); // Fetch all statuses from the database
-        const damageTypes = await DamageType.find(); // Fetch all damage types from the database
-        const rentingLocations = await Location.find(); // Fetch all renting locations from the database
-        logRequest(req, 'Statuses, Damage Types, and Renting Locations fetched', { statuses, damageTypes, rentingLocations }); // Log fetched data
-        res.render('general_settings', { title: 'General Settings', statuses, damageTypes, rentingLocations }); // Render the general settings page with fetched data
-    } catch (err) {
-        logRequest(req, 'Error fetching statuses, damage types, or renting locations', { error: err.message }); // Log error
-        res.status(500).json({ error: err.message }); // Handle errors
+        // Fetch settings for each type
+        const [fileSize, fileCount, fileType] = await Promise.all([
+            Settings.findOne({ type: 'fileSize' }),
+            Settings.findOne({ type: 'fileCount' }),
+            Settings.findOne({ type: 'fileType' })
+        ]);
+
+        console.log('Raw database results:', { fileSize, fileCount, fileType });
+
+        const dbSettings = {
+            fileSize: fileSize || { settings: {} },
+            fileCount: fileCount || { settings: {} },
+            fileType: fileType || { settings: {} }
+        };
+
+        // Fetch other required data
+        const [statuses, damageTypes] = await Promise.all([
+            Status.find({}),
+            DamageType.find({})
+        ]);
+
+        console.log('Structured settings:', dbSettings);
+
+        // Get unique renting locations from Claims collection
+        const rentingLocations = await Claim.distinct('rentingLocation');
+
+        res.render('general_settings', {
+            dbSettings,
+            statuses,
+            damageTypes,
+            rentingLocations
+        });
+    } catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).send('Error loading settings');
     }
 });
 

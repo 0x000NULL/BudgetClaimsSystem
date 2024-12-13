@@ -172,6 +172,7 @@ const Claim = require('../models/Claim'); // Import the Claim model to interact 
 const Customer = require('../models/Customer'); // Import the Customer model to interact with the customers collection in MongoDB
 const { ensureAuthenticated, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const pinoLogger = require('../logger'); // Import Pino logger
+const Settings = require('../models/Settings');
 
 const router = express.Router(); // Create a new router
 
@@ -385,6 +386,123 @@ router.delete('/customers/:id', ensureAuthenticated, ensureRole('admin'), async 
     } catch (err) {
         logRequest(req, 'Error deleting customer by ID', { error: err });
         res.status(500).json({ error: err.message }); // Handle errors
+    }
+});
+
+// API route to update max files per category
+router.post('/settings/file-count', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    try {
+        const newSettings = {
+            photos: parseInt(req.body.photos),
+            documents: parseInt(req.body.documents),
+            invoices: parseInt(req.body.invoices)
+        };
+
+        const settings = await Settings.updateSettings('fileCount', newSettings);
+        
+        // Update the global constant
+        global.MAX_FILES_PER_CATEGORY = newSettings;
+        
+        res.json({ 
+            success: true,
+            message: 'File count settings updated successfully',
+            settings: settings
+        });
+    } catch (error) {
+        console.error('Error updating file count settings:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to update file count settings',
+            details: error.message 
+        });
+    }
+});
+
+// API route to update max file sizes
+router.post('/settings/file-sizes', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    try {
+        const newSettings = {
+            photos: parseInt(req.body.photos) * 1024 * 1024,
+            documents: parseInt(req.body.documents) * 1024 * 1024,
+            invoices: parseInt(req.body.invoices) * 1024 * 1024
+        };
+
+        const settings = await Settings.updateSettings('fileSize', newSettings);
+        
+        // Update the global constant
+        global.MAX_FILE_SIZES = newSettings;
+        
+        res.json({ 
+            success: true,
+            message: 'File size settings updated successfully',
+            settings: settings
+        });
+    } catch (error) {
+        console.error('Error updating file size settings:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to update file size settings',
+            details: error.message
+        });
+    }
+});
+
+// API route to update allowed file types
+router.post('/settings/file-types', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    logRequest(req, 'Updating allowed file types', { settings: req.body });
+    try {
+        const settings = await Settings.findOneAndUpdate(
+            { type: 'fileType' },
+            { 
+                type: 'fileType',
+                settings: req.body 
+            },
+            { upsert: true, new: true }
+        );
+        
+        // Update the in-memory constant
+        Object.assign(ALLOWED_FILE_TYPES, req.body);
+        
+        logRequest(req, 'File type settings updated successfully', { newSettings: settings });
+        res.json({ 
+            message: 'Allowed file types updated successfully',
+            settings: settings.settings 
+        });
+    } catch (error) {
+        logRequest(req, 'Error updating file type settings', { error });
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add this route to handle the general settings page
+router.get('/general-settings', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    try {
+        // Fetch settings for each type
+        const [fileSize, fileCount, fileType] = await Promise.all([
+            Settings.findOne({ type: 'fileSize' }),
+            Settings.findOne({ type: 'fileCount' }),
+            Settings.findOne({ type: 'fileType' })
+        ]);
+
+        console.log('Raw database results:', { fileSize, fileCount, fileType });
+
+        const dbSettings = {
+            fileSize: fileSize || { settings: {} },
+            fileCount: fileCount || { settings: {} },
+            fileType: fileType || { settings: {} }
+        };
+
+        console.log('Structured settings:', dbSettings);
+
+        res.render('general_settings', {
+            dbSettings,
+            statuses,
+            damageTypes,
+            rentingLocations
+        });
+    } catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).send('Error loading settings');
     }
 });
 

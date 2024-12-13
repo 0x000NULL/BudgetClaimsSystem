@@ -32,6 +32,7 @@
  * @requires ./routes/reports
  * @requires ./routes/emailTemplates
  * @requires ./routes/import
+ * @requires ./models/Settings
  * 
  * @constant {object} app - The Express application instance.
  * @constant {object} pinoLogger - The Pino logger instance.
@@ -86,6 +87,7 @@ const auditLogRoutes = require('./routes/auditLogs'); // Custom routes for audit
 const pinoHttp = require('pino-http'); // HTTP logging middleware for Pino
 const pinoLogger = require('./logger'); // Custom Pino logger initialization
 const crypto = require('crypto'); // Module for generating cryptographic hash values
+const Settings = require('./models/Settings');
 
 // Load environment variables from a .env file
 require('dotenv').config();
@@ -98,6 +100,25 @@ console.log('Environment variables:', {
 });
 // Initialize reminder scheduler for notifications
 require('./notifications/reminderScheduler');
+
+// Define global settings variables
+global.MAX_FILE_SIZES = {
+    photos: 5 * 1024 * 1024,    // Default 5MB
+    documents: 10 * 1024 * 1024, // Default 10MB
+    invoices: 10 * 1024 * 1024   // Default 10MB
+};
+
+global.MAX_FILES_PER_CATEGORY = {
+    photos: 10,    // Default 10 files
+    documents: 5,  // Default 5 files
+    invoices: 5    // Default 5 files
+};
+
+global.ALLOWED_FILE_TYPES = {
+    photos: ['.jpg', '.jpeg', '.png'],
+    documents: ['.pdf', '.doc', '.docx'],
+    invoices: ['.pdf', '.jpg', '.jpeg', '.png']
+};
 
 // Initialize the Express application
 const app = express();
@@ -113,11 +134,12 @@ pinoLogger.info('MONGO_URI:', process.env.MONGO_URI);
 pinoLogger.info('SESSION_SECRET:', process.env.SESSION_SECRET);
 
 // Connect to MongoDB using Mongoose
-mongoose.connect(process.env.MONGO_URI, {
-
-})
-    .then(() => pinoLogger.info('MongoDB connected')) // Log successful connection
-    .catch(err => pinoLogger.error('MongoDB connection error:', err)); // Log connection errors
+mongoose.connect(process.env.MONGO_URI, {})
+    .then(() => {
+        pinoLogger.info('MongoDB connected');
+        return loadSettings(); // Load settings after successful connection
+    })
+    .catch(err => pinoLogger.error('MongoDB connection error:', err));
 
 // Middleware setup
 app.use(express.json()); // Parse incoming JSON requests
@@ -275,3 +297,29 @@ const PORT = process.env.PORT || 5000; // Use the port from environment variable
 app.listen(PORT, () => {
     pinoLogger.info(`Server running on port ${PORT}`); // Log the port the server is running on
 });
+
+async function loadSettings() {
+    try {
+        pinoLogger.info('Loading file settings from database');
+        
+        const fileSizeSettings = await Settings.findOne({ type: 'fileSize' });
+        if (fileSizeSettings) {
+            Object.assign(MAX_FILE_SIZES, fileSizeSettings.settings);
+            pinoLogger.info('Loaded file size settings:', fileSizeSettings.settings);
+        }
+
+        const fileCountSettings = await Settings.findOne({ type: 'fileCount' });
+        if (fileCountSettings) {
+            Object.assign(MAX_FILES_PER_CATEGORY, fileCountSettings.settings);
+            pinoLogger.info('Loaded file count settings:', fileCountSettings.settings);
+        }
+
+        const fileTypeSettings = await Settings.findOne({ type: 'fileType' });
+        if (fileTypeSettings) {
+            Object.assign(ALLOWED_FILE_TYPES, fileTypeSettings.settings);
+            pinoLogger.info('Loaded file type settings:', fileTypeSettings.settings);
+        }
+    } catch (error) {
+        pinoLogger.error('Error loading settings:', error);
+    }
+}
