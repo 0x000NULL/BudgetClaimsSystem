@@ -75,6 +75,58 @@ const cache = cacheManager.caching({
     ttl: 600 // Time-to-live for cached data (in seconds)
 });
 
+// Helper function to validate file
+const validateFile = (file, category) => {
+    // Get the file extension
+    const ext = path.extname(file.name).toLowerCase();
+    
+    // Determine allowed types based on category
+    const allowedTypes = category === 'photos' ? global.ALLOWED_FILE_TYPES.photos :
+                        category === 'invoices' ? global.ALLOWED_FILE_TYPES.invoices :
+                        global.ALLOWED_FILE_TYPES.documents;
+
+    // Get size limit based on category
+    const sizeLimit = category === 'photos' ? global.MAX_FILE_SIZES.photos :
+                     category === 'invoices' ? global.MAX_FILE_SIZES.invoices :
+                     global.MAX_FILE_SIZES.documents;
+
+    const errors = [];
+
+    // Check file type
+    if (!allowedTypes.includes(ext)) {
+        errors.push(`Invalid file type. Allowed types for ${category}: ${allowedTypes.join(', ')}`);
+    }
+
+    // Check file size
+    if (file.size > sizeLimit) {
+        errors.push(`File size exceeds limit of ${sizeLimit / (1024 * 1024)}MB`);
+    }
+
+    // Check file name length and characters
+    if (file.name.length > 100) {
+        errors.push('File name is too long (max 100 characters)');
+    }
+
+    // Check for special characters in filename (except - and _)
+    if (/[^a-zA-Z0-9-_.]/.test(file.name)) {
+        errors.push('File name contains invalid characters');
+    }
+
+    return errors;
+};
+
+// Helper function to sanitize filename
+const sanitizeFilename = (filename) => {
+    // Remove special characters and spaces
+    const sanitized = filename
+        .replace(/[^a-zA-Z0-9-_.]/g, '_')
+        .replace(/_{2,}/g, '_');
+    
+    // Add timestamp to ensure uniqueness
+    const ext = path.extname(sanitized);
+    const name = path.basename(sanitized, ext);
+    return `${name}_${Date.now()}${ext}`;
+};
 
 const router = express.Router(); // Create a new router
 
@@ -421,33 +473,78 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
 
     if (req.files) {
         try {
-            await Promise.all(Object.keys(req.files).map(async (category) => {
-                if (Array.isArray(req.files[category])) {
-                    await Promise.all(req.files[category].map(async (file) => {
-                        const filePath = path.join(__dirname, '../public/uploads', file.name);
-                        await file.mv(filePath);
-                        logRequest(req, 'File uploaded successfully:', { fileName: file.name });
-                        files[category].push(file.name);
-                        if (category === 'invoices') {
-                            const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
-                            invoiceTotals.push({ fileName: file.name, total });
-                        }
-                    }));
-                } else {
-                    const file = req.files[category];
-                    const filePath = path.join(__dirname, '../public/uploads', file.name);
-                    await file.mv(filePath);
-                    logRequest(req, 'File uploaded successfully:', { fileName: file.name });
-                    files[category].push(file.name);
-                    if (category === 'invoices') {
-                        const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
-                        invoiceTotals.push({ fileName: file.name, total });
+            const fileErrors = [];
+            const processedFiles = {};
+
+            // First, validate all files
+            for (const category of Object.keys(req.files)) {
+                const categoryFiles = Array.isArray(req.files[category]) 
+                    ? req.files[category] 
+                    : [req.files[category]];
+
+                // Check number of files in category
+                if (categoryFiles.length > global.MAX_FILES_PER_CATEGORY[category]) {
+                    fileErrors.push(`Too many files in ${category}. Maximum allowed: ${global.MAX_FILES_PER_CATEGORY[category]}`);
+                    continue;
+                }
+
+                processedFiles[category] = [];
+
+                for (const file of categoryFiles) {
+                    const validationErrors = validateFile(file, category);
+                    if (validationErrors.length > 0) {
+                        fileErrors.push(...validationErrors.map(err => `${file.name}: ${err}`));
+                    } else {
+                        processedFiles[category].push(file);
                     }
                 }
-            }));
+            }
+
+            // If there are any validation errors, return them
+            if (fileErrors.length > 0) {
+                return res.status(400).json({ 
+                    error: 'File validation failed', 
+                    details: fileErrors 
+                });
+            }
+
+            // Process valid files
+            for (const [category, categoryFiles] of Object.entries(processedFiles)) {
+                for (const file of categoryFiles) {
+                    const sanitizedFilename = sanitizeFilename(file.name);
+                    const filePath = path.join(__dirname, '../public/uploads', sanitizedFilename);
+
+                    // Create upload directory if it doesn't exist
+                    const uploadDir = path.dirname(filePath);
+                    if (!fs.existsSync(uploadDir)) {
+                        fs.mkdirSync(uploadDir, { recursive: true });
+                    }
+
+                    // Move file with sanitized name
+                    await file.mv(filePath);
+                    logRequest(req, 'File uploaded successfully:', { 
+                        originalName: file.name,
+                        sanitizedName: sanitizedFilename 
+                    });
+
+                    files[category].push(sanitizedFilename);
+                    
+                    if (category === 'invoices') {
+                        const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
+                        invoiceTotals.push({ 
+                            fileName: sanitizedFilename, 
+                            originalName: file.name,
+                            total 
+                        });
+                    }
+                }
+            }
         } catch (err) {
             logRequest(req, 'Error uploading files:', { error: err });
-            return res.status(500).json({ error: err.message });
+            return res.status(500).json({ 
+                error: 'File upload failed',
+                details: err.message 
+            });
         }
     }
 
@@ -843,6 +940,39 @@ router.delete('/location/remove/:id', ensureAuthenticated, ensureRoles(['admin',
     }
 });
 
+// Route to update max file sizes
+router.post('/api/settings/file-sizes', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    try {
+        // Update the MAX_FILE_SIZES constant
+        Object.assign(global.MAX_FILE_SIZES, req.body);
+        res.json({ message: 'File size limits updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Route to update max files per category
+router.post('/api/settings/file-counts', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    try {
+        // Update the MAX_FILES_PER_CATEGORY constant
+        Object.assign(global.MAX_FILES_PER_CATEGORY, req.body);
+        res.json({ message: 'File count limits updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Route to update allowed file types
+router.post('/api/settings/file-types', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    try {
+        // Update the ALLOWED_FILE_TYPES constant
+        Object.assign(global.ALLOWED_FILE_TYPES, req.body);
+        res.json({ message: 'Allowed file types updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router; // Export the router</code></pre>
         </article>
     </section>
@@ -859,7 +989,7 @@ module.exports = router; // Export the router</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Dec 13 2024 19:59:58 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Dec 13 2024 22:09:10 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
