@@ -83,7 +83,7 @@ const helmet = require('helmet'); // Security middleware
 const methodOverride = require('method-override'); // Middleware to support PUT and DELETE methods via POST
 const exportRoutes = require('./routes/export'); // Custom routes for export functionality
 const auditLogRoutes = require('./routes/auditLogs'); // Custom routes for audit logs
-const expressPino = require('express-pino-logger'); // Express logging middleware for Pino
+const pinoHttp = require('pino-http'); // HTTP logging middleware for Pino
 const pinoLogger = require('./logger'); // Custom Pino logger initialization
 
 // Load environment variables from a .env file
