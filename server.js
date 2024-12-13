@@ -85,6 +85,7 @@ const exportRoutes = require('./routes/export'); // Custom routes for export fun
 const auditLogRoutes = require('./routes/auditLogs'); // Custom routes for audit logs
 const pinoHttp = require('pino-http'); // HTTP logging middleware for Pino
 const pinoLogger = require('./logger'); // Custom Pino logger initialization
+const crypto = require('crypto'); // Module for generating cryptographic hash values
 
 // Load environment variables from a .env file
 require('dotenv').config();
@@ -120,11 +121,26 @@ app.use(methodOverride('_method')); // Allow PUT and DELETE methods via POST
 app.use(helmet({ // Security middleware configuration
     contentSecurityPolicy: {
         directives: {
-            defaultSrc: ["'self'", "data:", "http://localhost"], // Allow self and data URLs for default source
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"], // Allow inline scripts and scripts from jsdelivr CDN
-            styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
-            scriptSrcAttr: ["'unsafe-inline'"], // Allow unsafe inline event handlers
-        }
+            defaultSrc: ["'self'"],
+            scriptSrc: [
+                "'self'",
+                'https://cdn.jsdelivr.net',
+                (req, res) => `'nonce-${res.locals.nonce}'`
+            ],
+            styleSrc: [
+                "'self'",
+                'https://cdn.jsdelivr.net'
+            ],
+            imgSrc: ["'self'", 'data:', 'https:'],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+            sandbox: ['allow-forms', 'allow-scripts', 'allow-same-origin'],
+            reportUri: '/csp-violation-report'
+        },
+        reportOnly: false
     }
 }));
 
@@ -174,6 +190,18 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
     pinoLogger.error(err.stack); // Log the error stack trace
     res.status(500).render('500', { message: 'Internal Server Error' }); // Render a 500 error page
+});
+
+// Generate a nonce for each request
+app.use((req, res, next) => {
+    res.locals.nonce = crypto.randomBytes(16).toString('base64');
+    next();
+});
+
+// Add CSP violation reporting endpoint
+app.post('/csp-violation-report', (req, res) => {
+    pinoLogger.warn('CSP Violation:', req.body);
+    res.status(204).send();
 });
 
 // Route handlers
