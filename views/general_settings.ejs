@@ -1,246 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
-    <title>General Settings - Budget Claims System</title> <!-- Title of the document -->
-    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
-    <style>
-        /* Inline styles for better button appearance */
-        .button {
-            /* Add your button styles here */
-        }
-
-        .button:hover { /* Add hover styles here */ }
-        .button.red { /* Add red button styles here */ }
-        .button.red:hover { /* Add red button hover styles here */ }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>General Settings - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <header>
-        <!-- Logo and navigation -->
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
-        <h1>Budget Claims System</h1> <!-- Main heading -->
+        <h1>Budget Claims System</h1>
         <nav>
-            <ul>
-                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
-                <li class="Claims">
-                    <a href="javascript:void(0)" class="dropbtn">Claims</a> <!-- Dropdown trigger -->
-                    <div class="dropdown-content">
-                        <a href="/claims/search">Search Claims</a> <!-- Link to Search Claims -->
-                        <a href="/claims/add">Add Claim</a> <!-- Link to Add Claim -->
-                    </div>
-                </li>
-                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
-                <li class="Settings">
-                    <a href="javascript:void(0)" class="dropbtn">Settings</a> <!-- Dropdown trigger -->
-                    <div class="dropdown-content">
-                        <a href="/general-settings">General Settings</a> <!-- Link to General Settings -->
-                        <a href="/user-management">User Management</a> <!-- Link to User Management -->
-                        <a href="/email-templates">Email Templates</a> <!-- Link to Email Templates -->
-                    </div>
-                </li>
-                <li><a href="/help">Help</a></li> <!-- Link to Help -->
-                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
-            </ul>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/claims">Claims</a>
+            <a href="/reports">Reports</a>
+            <a href="/help">Help</a>
         </nav>
     </header>
+    
     <main>
-        <h2>General Settings</h2> <!-- Section heading -->
+        <h2>General Settings</h2>
 
-        <!-- Section for adding new status -->
+        <!-- Debug output -->
+        <% if (typeof dbSettings !== 'undefined') { %>
+            <pre style="display: none;">
+                <%= JSON.stringify(dbSettings, null, 2) %>
+            </pre>
+        <% } %>
+
+        <!-- File Upload Settings -->
         <section>
-            <h3>Add New Status</h3>
-            <form id="addStatusForm">
-                <label for="newStatus">New Status:</label>
-                <input type="text" id="newStatus" name="newStatus" required>
-                <button type="submit" class="button">Add Status</button>
-            </form>
-            <div id="statusMessage"></div>
+            <h3>File Upload Settings</h3>
+            
+            <!-- Max File Sizes -->
+            <div class="settings-group">
+                <h4>Maximum File Sizes (MB)</h4>
+                <form id="maxFileSizesForm">
+                    <div class="form-group">
+                        <label for="photoSize">Photos:</label>
+                        <input type="number" id="photoSize" name="photos" min="1" max="50" 
+                            value="<%= Math.floor((dbSettings?.fileSize?.settings?.photos || 5 * 1024 * 1024) / (1024 * 1024)) %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="documentSize">Documents:</label>
+                        <input type="number" id="documentSize" name="documents" min="1" max="50" 
+                            value="<%= Math.floor((dbSettings?.fileSize?.settings?.documents || 10 * 1024 * 1024) / (1024 * 1024)) %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="invoiceSize">Invoices:</label>
+                        <input type="number" id="invoiceSize" name="invoices" min="1" max="50" 
+                            value="<%= Math.floor((dbSettings?.fileSize?.settings?.invoices || 10 * 1024 * 1024) / (1024 * 1024)) %>">
+                    </div>
+                    <button type="submit" class="button">Update File Sizes</button>
+                </form>
+            </div>
+
+            <!-- Max Files Per Category -->
+            <div class="settings-group">
+                <h4>Maximum Files Per Category</h4>
+                <form id="maxFilesForm">
+                    <div class="form-group">
+                        <label for="photoCount">Photos:</label>
+                        <input type="number" id="photoCount" name="photos" min="1" max="50" 
+                            value="<%= dbSettings?.fileCount?.settings?.photos || 10 %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="documentCount">Documents:</label>
+                        <input type="number" id="documentCount" name="documents" min="1" max="20" 
+                            value="<%= dbSettings?.fileCount?.settings?.documents || 5 %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="invoiceCount">Invoices:</label>
+                        <input type="number" id="invoiceCount" name="invoices" min="1" max="20" 
+                            value="<%= dbSettings?.fileCount?.settings?.invoices || 5 %>">
+                    </div>
+                    <button type="submit" class="button">Update File Counts</button>
+                </form>
+            </div>
         </section>
-
-        <!-- Section for listing current statuses -->
-        <section>
-            <h3>Current Statuses</h3>
-            <ul id="statusList">
-                <% statuses.forEach(status => { %>
-                    <li>
-                        <%= status.name %>
-                        <form class="removeStatusForm" data-status-id="<%= status._id %>">
-                            <button type="submit" class="button red">Remove</button>
-                        </form>
-                    </li>
-                <% }); %>
-            </ul>
-        </section>
-
-        <!-- Section for adding new damage type -->
-        <section>
-            <h3>Add New Damage Type</h3>
-            <form id="addDamageTypeForm">
-                <label for="newDamageType">New Damage Type:</label>
-                <input type="text" id="newDamageType" name="newDamageType" required>
-                <button type="submit" class="button">Add Damage Type</button>
-            </form>
-            <div id="damageTypeMessage"></div>
-        </section>
-
-        <!-- Section for listing current damage types -->
-        <section>
-            <h3>Current Damage Types</h3>
-            <ul id="damageTypeList">
-                <% damageTypes.forEach(damageType => { %>
-                    <li>
-                        <%= damageType.name %>
-                        <form class="removeDamageTypeForm" data-damage-type-id="<%= damageType._id %>">
-                            <button type="submit" class="button red">Remove</button>
-                        </form>
-                    </li>
-                <% }); %>
-            </ul>
-        </section>
-
-        <!-- Section for adding new renting location -->
-        <section>
-            <h3>Add New Renting Location</h3>
-            <form id="addRentingLocationForm">
-                <label for="newRentingLocation">New Renting Location:</label>
-                <input type="text" id="newRentingLocation" name="newRentingLocation" required>
-                <button type="submit" class="button">Add Renting Location</button>
-            </form>
-            <div id="rentingLocationMessage"></div>
-        </section>
-
-        <!-- Section for listing current renting locations -->
-        <section>
-            <h3>Current Renting Locations</h3>
-            <ul id="rentingLocationList">
-                <% rentingLocations.forEach(location => { %>
-                    <li>
-                        <%= location.name %>
-                        <form class="removeRentingLocationForm" data-location-id="<%= location._id %>">
-                            <button type="submit" class="button red">Remove</button>
-                        </form>
-                    </li>
-                <% }); %>
-            </ul>
-        </section>
-
-        <script>
-            // Function to handle form submission for adding new status
-            document.getElementById('addStatusForm').addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const newStatus = document.getElementById('newStatus').value;
-                try {
-                    const response = await fetch('/claims/status/add', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ name: newStatus })
-                    });
-                    const result = await response.json();
-                    document.getElementById('statusMessage').textContent = result.message;
-                    location.reload(); // Refresh the page to show the new status
-                } catch (error) {
-                    console.error('Error adding status:', error);
-                }
-            });
-
-            // Function to handle form submission for removing a status
-            document.querySelectorAll('.removeStatusForm').forEach(form => {
-                form.addEventListener('submit', async (event) => {
-                    event.preventDefault();
-                    const statusId = form.getAttribute('data-status-id');
-                    try {
-                        const response = await fetch(`/claims/status/remove/${statusId}`, {
-                            method: 'DELETE'
-                        });
-                        const result = await response.json();
-                        document.getElementById('statusMessage').textContent = result.message;
-                        location.reload(); // Refresh the page to show the updated status list
-                    } catch (error) {
-                        console.error('Error removing status:', error);
-                    }
-                });
-            });
-
-            // Function to handle form submission for adding new damage type
-            document.getElementById('addDamageTypeForm').addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const newDamageType = document.getElementById('newDamageType').value;
-                try {
-                    const response = await fetch('/claims/damage-type/add', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ name: newDamageType })
-                    });
-                    const result = await response.json();
-                    document.getElementById('damageTypeMessage').textContent = result.message;
-                    location.reload(); // Refresh the page to show the new damage type
-                } catch (error) {
-                    console.error('Error adding damage type:', error);
-                }
-            });
-
-            // Function to handle form submission for removing a damage type
-            document.querySelectorAll('.removeDamageTypeForm').forEach(form => {
-                form.addEventListener('submit', async (event) => {
-                    event.preventDefault();
-                    const damageTypeId = form.getAttribute('data-damage-type-id');
-                    try {
-                        const response = await fetch(`/claims/damage-type/remove/${damageTypeId}`, {
-                            method: 'DELETE'
-                        });
-                        const result = await response.json();
-                        document.getElementById('damageTypeMessage').textContent = result.message;
-                        location.reload(); // Refresh the page to show the updated damage type list
-                    } catch (error) {
-                        console.error('Error removing damage type:', error);
-                    }
-                });
-            });
-
-            // Function to handle form submission for adding new renting location
-            document.getElementById('addRentingLocationForm').addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const newRentingLocation = document.getElementById('newRentingLocation').value;
-                try {
-                    const response = await fetch('/claims/location/add', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ name: newRentingLocation })
-                    });
-                    const result = await response.json();
-                    document.getElementById('rentingLocationMessage').textContent = result.message;
-                    location.reload(); // Refresh the page to show the new renting location
-                } catch (error) {
-                    console.error('Error adding renting location:', error);
-                }
-            });
-
-            // Function to handle form submission for removing a renting location
-            document.querySelectorAll('.removeRentingLocationForm').forEach(form => {
-                form.addEventListener('submit', async (event) => {
-                    event.preventDefault();
-                    const locationId = form.getAttribute('data-location-id');
-                    try {
-                        const response = await fetch(`/claims/location/remove/${locationId}`, {
-                            method: 'DELETE'
-                        });
-                        const result = await response.json();
-                        document.getElementById('rentingLocationMessage').textContent = result.message;
-                        location.reload(); // Refresh the page to show the updated renting location list
-                    } catch (error) {
-                        console.error('Error removing renting location:', error);
-                    }
-                });
-            });
-        </script>
     </main>
+
+    <script src="/js/settings.js"></script>
 </body>
 </html>
