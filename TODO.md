@@ -51,6 +51,8 @@
 ### Bulk Actions
 - Provide functionality for users to perform bulk actions on claims and users, such as bulk updating status, bulk deleting, and bulk exporting.
 
+## Codebase Improvements
+
 ### Behind the Scenes
 - Improve test coverage and add more tests for existing functionality.
 - Improve the codebase and make it more readable and maintainable.
