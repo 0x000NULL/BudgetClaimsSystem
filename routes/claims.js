@@ -678,10 +678,14 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
 
         const updatedClaim = await Claim.findByIdAndUpdate(claimId, updatedClaimData, { new: true });
         logRequest(req, 'Claim updated:', { claim: updatedClaim });
-        res.json(updatedClaim);
+        
+        // Redirect to the claim's view page
+        res.redirect(`/claims/${claimId}`);
     } catch (err) {
         logRequest(req, 'Error updating claim:', { error: err });
-        res.status(500).json({ error: err.message });
+        res.status(500).render('500', { 
+            message: 'Error updating claim: ' + err.message 
+        });
     }
 });
 

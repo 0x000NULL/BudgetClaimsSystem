@@ -44,18 +44,22 @@
 
             <form action="/claims/<%= claim._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
                 <div class="tab">
-                    <button type="button" class="tablinks" id="customerInfoTab">Customer Information</button>
-                    <button type="button" class="tablinks" id="vehicleInfoTab">Vehicle Information</button>
-                    <button type="button" class="tablinks" id="claimDetailsTab">Claim Details</button>
-                    <button type="button" class="tablinks" id="insuranceInfoTab">Insurance Information</button>
-                    <button type="button" class="tablinks" id="thirdPartyInfoTab">Third Party Information</button>
-                    <button type="button" class="tablinks" id="rentalPoliceInfoTab">Rental & Police Information</button>
-                    <button type="button" class="tablinks" id="additionalCoverageTab">Additional Coverage</button>
-                    <button type="button" class="tablinks" id="fileUploadsTab">File Uploads</button>
+                    <div class="tab-row">
+                        <button type="button" class="tablinks" id="customerInfoTab">Customer Information</button>
+                        <button type="button" class="tablinks" id="vehicleInfoTab">Vehicle Information</button>
+                        <button type="button" class="tablinks" id="claimDetailsTab">Claim Details</button>
+                        <button type="button" class="tablinks" id="insuranceInfoTab">Insurance Information</button>
+                    </div>
+                    <div class="tab-row">
+                        <button type="button" class="tablinks" id="thirdPartyInfoTab">Third Party Information</button>
+                        <button type="button" class="tablinks" id="rentalPoliceInfoTab">Rental & Police Information</button>
+                        <button type="button" class="tablinks" id="additionalCoverageTab">Additional Coverage</button>
+                        <button type="button" class="tablinks" id="fileUploadsTab">File Uploads</button>
+                    </div>
                 </div>
 
                 <!-- Tab content for Customer Information -->
-                <div id="CustomerInfo" class="tabcontent">
+                <div id="customerInfo" class="tabcontent">
                     <div class="claim-info">
                         <label for="customerName">Customer Name:</label>
                         <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
@@ -90,7 +94,7 @@
                 </div>
 
                 <!-- Tab content for Vehicle Information -->
-                <div id="VehicleInfo" class="tabcontent">
+                <div id="vehicleInfo" class="tabcontent">
                     <div class="claim-info">
                         <label for="carMake">Car Make:</label>
                         <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>">
@@ -137,7 +141,7 @@
                 </div>
 
                 <!-- Tab content for Claim Details -->
-                <div id="ClaimDetails" class="tabcontent">
+                <div id="claimDetails" class="tabcontent">
                     <div class="claim-info">
                         <label for="mva">MVA:</label>
                         <input type="text" id="mva" name="mva">
@@ -184,7 +188,7 @@
                 </div>
 
                 <!-- Tab content for Insurance Information -->
-                <div id="InsuranceInfo" class="tabcontent">
+                <div id="insuranceInfo" class="tabcontent">
                     <div class="claim-info">
                         <label for="insuranceCarrier">Insurance Carrier:</label>
                         <input type="text" id="insuranceCarrier" name="insuranceCarrier" value="<%= claim.insuranceCarrier %>">
@@ -237,7 +241,7 @@
                 </div>
 
                 <!-- Tab content for Third Party Information -->
-                <div id="ThirdPartyInfo" class="tabcontent">
+                <div id="thirdPartyInfo" class="tabcontent">
                     <div class="claim-info">
                         <label for="thirdPartyName">Third Party Name:</label>
                         <input type="text" id="thirdPartyName" name="thirdPartyName" value="<%= claim.thirdPartyName %>">
@@ -284,7 +288,7 @@
                 </div>
 
                 <!-- Tab content for Rental & Police Information -->
-                <div id="RentalPoliceInfo" class="tabcontent">
+                <div id="rentalPoliceInfo" class="tabcontent">
                     <div class="claim-info">
                         <label for="rentingLocation">Renting Location:</label>
                         <select id="rentingLocation" name="rentingLocation">
@@ -317,7 +321,7 @@
                 </div>
 
                 <!-- Tab content for Additional Coverage -->
-                <div id="AdditionalCoverage" class="tabcontent">
+                <div id="additionalCoverage" class="tabcontent">
                     <div class="claim-info">
                         <label for="rentersLiabilityInsurance">Was Renters Liability Insurance purchased?</label>
                         <select id="rentersLiabilityInsurance" name="rentersLiabilityInsurance">
@@ -340,7 +344,7 @@
                 </div>
 
                 <!-- File Uploads Section -->
-                <div id="FileUploads" class="tabcontent">
+                <div id="fileUploads" class="tabcontent">
                     <div class="file-section">
                         <h3>Incident Reports</h3>
                         <input type="file" id="incidentReports" name="incidentReports" multiple>
@@ -406,177 +410,6 @@
         </div>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Helper function to open a tab
-            function openTab(evt, tabName) {
-                var i, tabcontent, tablinks;
-                tabcontent = document.getElementsByClassName("tabcontent");
-                for (i = 0; i < tabcontent.length; i++) {
-                    tabcontent[i].style.display = "none"; // Hide all tab contents
-                }
-                tablinks = document.getElementsByClassName("tablinks");
-                for (i = 0; i < tablinks.length; i++) {
-                    tablinks[i].className = tablinks[i].className.replace(" active", ""); // Remove "active" class from all buttons
-                }
-                document.getElementById(tabName).style.display = "block"; // Show the current tab content
-                evt.currentTarget.className += " active"; // Add "active" class to the current button
-            }
-    
-            // Add event listeners to each tab button
-            document.getElementById('customerInfoTab').addEventListener('click', function (event) {
-                openTab(event, 'CustomerInfo');
-            });
-            document.getElementById('vehicleInfoTab').addEventListener('click', function (event) {
-                openTab(event, 'VehicleInfo');
-            });
-            document.getElementById('claimDetailsTab').addEventListener('click', function (event) {
-                openTab(event, 'ClaimDetails');
-            });
-            document.getElementById('insuranceInfoTab').addEventListener('click', function (event) {
-                openTab(event, 'InsuranceInfo');
-            });
-            document.getElementById('thirdPartyInfoTab').addEventListener('click', function (event) {
-                openTab(event, 'ThirdPartyInfo');
-            });
-            document.getElementById('rentalPoliceInfoTab').addEventListener('click', function (event) {
-                openTab(event, 'RentalPoliceInfo');
-            });
-            document.getElementById('additionalCoverageTab').addEventListener('click', function (event) {
-                openTab(event, 'AdditionalCoverage');
-            });
-            document.getElementById('fileUploadsTab').addEventListener('click', function (event) {
-                openTab(event, 'FileUploads');
-            });
-    
-            // Set the default tab to be open
-            document.getElementById('customerInfoTab').click(); // Open the default tab (first tab)
-        });
-    
-        async function addStatus() {
-        }
-
-        async function addLocation() {
-            const location = document.getElementById('newLocation').value;
-            if (location) {
-                const response = await fetch('/claims/locations', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ location })
-                });
-
-                if (response.ok) {
-                    const option = document.createElement('option');
-                    option.value = location;
-                    option.textContent = location;
-                    document.getElementById('rentingLocation').appendChild(option);
-                    document.getElementById('newLocation').value = '';
-                    showToast('Location added successfully!', 'success');
-                } else {
-                    showToast('Error adding location!', 'error');
-                }
-            }
-        const status = document.getElementById('newStatus').value;
-            if (status) {
-                const response = await fetch('/claims/status/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ status })
-                });
-    
-                if (response.ok) {
-                    const option = document.createElement('option');
-                    option.value = status;
-                    option.textContent = status;
-                    document.getElementById('status').appendChild(option);
-                    document.getElementById('newStatus').value = '';
-                    showToast('Status added successfully!');
-                } else {
-                    showToast('Error adding status.');
-                }
-            }
-        }
-    
-        function addInvoiceTotal() {
-            // Your logic to add the invoice total
-            console.log("Invoice total added");
-            // Example logic
-            const invoiceTotal = calculateInvoiceTotal();
-            document.getElementById('invoiceTotal').innerText = invoiceTotal;
-        }
-    
-        function calculateInvoiceTotal() {
-            // Example calculation logic
-            return 100; // Replace with actual calculation
-        }
-    
-        async function addDamageType() {
-            const damageType = document.getElementById('newDamageType').value;
-            if (damageType) {
-                const response = await fetch('/claims/damageTypes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ damageType })
-                });
-    
-                if (response.ok) {
-                    const container = document.querySelector('#damageTypeContainer');
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.name = 'damageType';
-                    checkbox.value = damageType;
-    
-                    const label = document.createElement('label');
-                    label.appendChild(checkbox);
-                    label.appendChild(document.createTextNode(' ' + damageType));
-    
-                    container.appendChild(label);
-    
-                    document.getElementById('newDamageType').value = '';
-                } else {
-                    showToast("Error adding damage type.");
-                }
-            }
-        }
-    
-        async function addLocation() {
-            const location = document.getElementById('newLocation').value;
-            if (location) {
-                const response = await fetch('/claims/locations', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ location })
-                });
-    
-                if (response.ok) {
-                    const option = document.createElement('option');
-                    option.value = location;
-                    option.textContent = location;
-                    document.getElementById('rentingLocation').appendChild(option);
-                    document.getElementById('newLocation').value = '';
-                } else {
-                    showToast("Error adding location.");
-                }
-            }
-        }
-    
-        // Function to show toast notifications
-        function showToast(message) {
-            const toast = document.getElementById("toast");
-            toast.textContent = message;
-            toast.className = "toast show";
-            setTimeout(function() {
-                toast.className = toast.className.replace("show", "");
-            }, 3000);
-        }
-    </script>
+    <script src="/js/claims-edit.js"></script>
 </body>
 </html>
