@@ -239,29 +239,44 @@ canvas {
 
 /* Styles for tabbed navigation */
 .tab {
-    overflow: hidden;
-    border: 1px solid #ccc;
-    background-color: #007bff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     margin-bottom: 20px;
 }
 
-    .tab button {
-        background-color: inherit;
-        float: left;
-        border: none;
-        outline: none;
-        cursor: pointer;
-        padding: 14px 16px;
-        transition: 0.3s;
+.tab-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tab-row .tablinks {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    background-color: #007bff; /* Blue background by default */
+    color: white; /* White text for better contrast */
+    cursor: pointer;
+    transition: 0.3s;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.tab-row .tablinks:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+.tab-row .tablinks.active {
+    background-color: #ff6b00; /* Orange background when active */
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .tab-row {
+        flex-direction: column;
     }
-
-        .tab button:hover {
-            background-color: #f88222;
-        }
-
-        .tab button.active {
-            background-color: #f88222;
-        }
+}
 
 .tabcontent {
     display: none;
