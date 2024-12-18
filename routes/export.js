@@ -105,13 +105,6 @@ router.get('/full', async (req, res) => {
         };
         await AuditLog.create(auditLog);
 
-        // Add encryption to the archive
-        const archive = archiver('zip', {
-            zlib: { level: 9 },
-            encrypt: true,
-            password: process.env.EXPORT_ENCRYPTION_KEY // Use environment variable for the key
-        });
-
         // Create a unique export ID
         const exportId = crypto.randomUUID();
         
