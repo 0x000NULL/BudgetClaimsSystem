@@ -88,6 +88,8 @@ const pinoHttp = require('pino-http'); // HTTP logging middleware for Pino
 const pinoLogger = require('./logger'); // Custom Pino logger initialization
 const crypto = require('crypto'); // Module for generating cryptographic hash values
 const Settings = require('./models/Settings');
+const https = require('https');
+const fs = require('fs');
 
 // Load environment variables from a .env file
 require('dotenv').config();
@@ -147,29 +149,54 @@ app.use(express.urlencoded({ extended: false })); // Parse URL-encoded bodies
 app.use(cors()); // Enable CORS
 app.use(fileUpload()); // Enable file uploads
 app.use(methodOverride('_method')); // Allow PUT and DELETE methods via POST
-app.use(helmet({ // Security middleware configuration
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: [
-                "'self'",
-                'https://cdn.jsdelivr.net'
-            ],
-            styleSrc: [
-                "'self'",
-                'https://cdn.jsdelivr.net',
-                "'unsafe-inline'"
-            ],
-            imgSrc: ["'self'", 'data:', 'https:'],
-            connectSrc: ["'self'"],
-            fontSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'"],
-            frameSrc: ["'none'"],
-            sandbox: ['allow-forms', 'allow-scripts', 'allow-same-origin']
+if (process.env.NODE_ENV === 'production') {
+    // Production security settings
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: [
+                    "'self'",
+                    'https://cdn.jsdelivr.net'
+                ],
+                styleSrc: [
+                    "'self'",
+                    'https://cdn.jsdelivr.net',
+                    "'unsafe-inline'"
+                ],
+                imgSrc: ["'self'", 'data:', 'https:'],
+                connectSrc: ["'self'"],
+                fontSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+                objectSrc: ["'none'"],
+                mediaSrc: ["'self'"],
+                frameSrc: ["'none'"],
+                sandbox: ['allow-forms', 'allow-scripts', 'allow-same-origin']
+            }
         }
-    }
-}));
+    }));
+} else {
+    // Development security settings - more permissive
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'", "http:", "https:"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "http:", "https:"],
+                styleSrc: ["'self'", "'unsafe-inline'", "http:", "https:"],
+                imgSrc: ["'self'", "data:", "http:", "https:"],
+                connectSrc: ["'self'", "http:", "https:"],
+                fontSrc: ["'self'", "http:", "https:", "data:"],
+                objectSrc: ["'self'", "http:", "https:"],
+                mediaSrc: ["'self'", "http:", "https:"],
+                frameSrc: ["'self'", "http:", "https:"],
+                upgradeInsecureRequests: null  // Disable automatic HTTPS upgrade
+            }
+        },
+        crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: false,
+        crossOriginOpenerPolicy: false,
+        strictTransportSecurity: false // Disable HSTS in development
+    }));
+}
 
 // Test and populate the logfile with all log levels
 pinoLogger.fatal('This is a fatal log'); // Severe error causing system shutdown
@@ -294,9 +321,23 @@ app.use('/import', (req, res, next) => {
 
 // Start the server and listen on the specified port
 const PORT = process.env.PORT || 5000; // Use the port from environment variables or default to 5000
-app.listen(PORT, () => {
-    pinoLogger.info(`Server running on port ${PORT}`); // Log the port the server is running on
-});
+if (process.env.NODE_ENV === 'production') {
+    // SSL configuration
+    const sslOptions = {
+        key: fs.readFileSync('path/to/your/private-key.pem'),
+        cert: fs.readFileSync('path/to/your/certificate.pem')
+    };
+
+    // Create HTTPS server
+    https.createServer(sslOptions, app).listen(PORT, () => {
+        pinoLogger.info(`Secure server running on port ${PORT}`);
+    });
+} else {
+    // Development environment - regular HTTP
+    app.listen(PORT, () => {
+        pinoLogger.info(`Server running on port ${PORT}`);
+    });
+}
 
 async function loadSettings() {
     try {

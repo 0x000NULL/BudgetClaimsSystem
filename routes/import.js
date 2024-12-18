@@ -49,6 +49,7 @@ const Settings = require('../models/Settings'); // Import the Settings model to 
 const EmailTemplate = require('../models/EmailTemplate'); // Import the EmailTemplate model to interact with the email_templates collection in MongoDB
 const Status = require('../models/Status'); // Import the Status model to interact with the statuses collection in MongoDB
 const Location = require('../models/Location'); // Import the Location model to interact with the locations collection in MongoDB
+const crypto = require('crypto');
 
 const router = express.Router(); // Create a new router
 
@@ -332,6 +333,13 @@ router.post('/full', upload.single('file'), async (req, res) => {
         }
 
         // Create detailed audit log entry
+        const collectionStats = await Promise.all(
+            collections.map(async ({ model }) => ({
+                name: model.modelName,
+                count: await model.countDocuments()
+            }))
+        );
+
         await AuditLog.create({
             user: req.user.email,
             action: 'full_import',
@@ -341,10 +349,7 @@ router.post('/full', upload.single('file'), async (req, res) => {
                 importId,
                 metadata,
                 duration: Date.now() - progress.startTime,
-                collections: collections.map(c => ({
-                    name: c.model.modelName,
-                    count: await c.model.countDocuments()
-                }))
+                collections: collectionStats
             }
         });
 
