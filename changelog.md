@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.4.32] - 2024-03-21
+## [1.4.32] - 2024-03-21 (Commit: cd8dc1d)
 
 ### Added
 - Implemented tabbed navigation system for claim forms
