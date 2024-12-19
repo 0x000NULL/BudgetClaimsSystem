@@ -1,20 +1,21 @@
 const mongoose = require('mongoose');
 
 const progressSchema = new mongoose.Schema({
-    id: {
+    exportId: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        index: true
     },
     type: {
         type: String,
         required: true,
-        enum: ['export'] // Add other types if needed
+        enum: ['export']
     },
     status: {
         type: String,
         required: true,
-        enum: ['started', 'completed', 'failed'],
+        enum: ['started', 'in_progress', 'completed', 'failed'],
         default: 'started'
     },
     total: {
@@ -35,4 +36,17 @@ const progressSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('Progress', progressSchema); 
+progressSchema.pre('save', async function(next) {
+    try {
+        await this.collection.dropIndexes();
+    } catch (error) {
+        console.log('Error dropping indexes:', error);
+    }
+    next();
+});
+
+const Progress = mongoose.model('Progress', progressSchema);
+
+Progress.createIndexes().catch(console.error);
+
+module.exports = Progress; 
