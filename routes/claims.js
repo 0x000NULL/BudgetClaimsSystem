@@ -39,6 +39,7 @@ const Status = require('../models/Status'); // Import Status model
 const Location = require('../models/Location'); // Import Location model
 const DamageType = require('../models/DamageType'); // Import DamageType model
 const fileUpload = require('express-fileupload');
+const Settings = require('../models/Settings'); // Import Settings model
 
 // Setup cache manager with Redis
 const cache = cacheManager.caching({
@@ -1001,6 +1002,112 @@ router.post('/api/settings/file-types', ensureAuthenticated, ensureRole('admin')
         res.json({ message: 'Allowed file types updated successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Add this route to handle the general settings page
+router.get('/settings', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    try {
+        // Fetch all locations, statuses, and damage types
+        const [locations, statuses, damageTypes, dbSettings] = await Promise.all([
+            Location.find().sort('name'),
+            Status.find().sort('name'),
+            DamageType.find().sort('name'),
+            Settings.find()
+        ]);
+
+        // Convert settings array to object by type
+        const settingsObj = dbSettings.reduce((acc, setting) => {
+            acc[setting.type] = setting;
+            return acc;
+        }, {});
+
+        res.render('general_settings', {
+            locations,
+            statuses,
+            damageTypes,
+            dbSettings: settingsObj
+        });
+    } catch (error) {
+        console.error('Error fetching settings data:', error);
+        res.status(500).render('500', { 
+            message: 'Error loading settings page'
+        });
+    }
+});
+
+// Add these API routes for managing settings
+router.post('/api/settings/:type', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    const { type } = req.params;
+    const { name } = req.body;
+
+    try {
+        let result;
+        switch (type.toLowerCase()) {
+            case 'location':
+                result = await Location.create({ name });
+                break;
+            case 'status':
+                result = await Status.create({ name });
+                break;
+            case 'damagetype':
+                result = await DamageType.create({ name });
+                break;
+            default:
+                return res.status(400).json({ success: false, message: 'Invalid type' });
+        }
+        res.json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+router.put('/api/settings/:type/:id', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    const { type, id } = req.params;
+    const { name } = req.body;
+
+    try {
+        let result;
+        switch (type.toLowerCase()) {
+            case 'location':
+                result = await Location.findByIdAndUpdate(id, { name }, { new: true });
+                break;
+            case 'status':
+                result = await Status.findByIdAndUpdate(id, { name }, { new: true });
+                break;
+            case 'damagetype':
+                result = await DamageType.findByIdAndUpdate(id, { name }, { new: true });
+                break;
+            default:
+                return res.status(400).json({ success: false, message: 'Invalid type' });
+        }
+        res.json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+router.delete('/api/settings/:type/:id', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    const { type, id } = req.params;
+
+    try {
+        let result;
+        switch (type.toLowerCase()) {
+            case 'location':
+                result = await Location.findByIdAndDelete(id);
+                break;
+            case 'status':
+                result = await Status.findByIdAndDelete(id);
+                break;
+            case 'damagetype':
+                result = await DamageType.findByIdAndDelete(id);
+                break;
+            default:
+                return res.status(400).json({ success: false, message: 'Invalid type' });
+        }
+        res.json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 

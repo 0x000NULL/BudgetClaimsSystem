@@ -343,4 +343,39 @@ router.get('/general-settings', ensureAuthenticated, ensureRoles(['admin']), asy
     }
 });
 
+// Add this route to handle the general settings page
+router.get('/settings', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    try {
+        // Fetch all locations, statuses, and damage types
+        const [locations, statuses, damageTypes, dbSettings] = await Promise.all([
+            Location.find().sort('name'),
+            Status.find().sort('name'),
+            DamageType.find().sort('name'),
+            Settings.find()
+        ]);
+
+        // Convert settings array to object by type
+        const settingsObj = dbSettings.reduce((acc, setting) => {
+            acc[setting.type] = setting;
+            return acc;
+        }, {});
+
+        // Render the template with all required data
+        res.render('general_settings', {
+            title: 'General Settings',
+            locations: locations || [], // Provide empty array as fallback
+            statuses: statuses || [],
+            damageTypes: damageTypes || [],
+            dbSettings: settingsObj,
+            user: req.user // Pass user info if needed
+        });
+    } catch (error) {
+        console.error('Error fetching settings data:', error);
+        res.status(500).render('500', { 
+            message: 'Error loading settings page',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router; // Export the router

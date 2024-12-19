@@ -8,12 +8,31 @@
 </head>
 <body>
     <header>
+        <!-- Logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
         <h1>Budget Claims System</h1>
         <nav>
-            <a href="/dashboard">Dashboard</a>
-            <a href="/claims">Claims</a>
-            <a href="/reports">Reports</a>
-            <a href="/help">Help</a>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li class="Claims">
+                    <a href="javascript:void(0)" class="dropbtn">Claims</a>
+                    <div class="dropdown-content">
+                        <a href="/claims/search">Search Claims</a>
+                        <a href="/claims/add">Add Claim</a>
+                    </div>
+                </li>
+                <li><a href="/reports">Reports</a></li>
+                <li class="Settings">
+                    <a href="javascript:void(0)" class="dropbtn">Settings</a>
+                    <div class="dropdown-content">
+                        <a href="/general-settings">General Settings</a>
+                        <a href="/user-management">User Management</a>
+                        <a href="/email-templates">Email Templates</a>
+                    </div>
+                </li>
+                <li><a href="/help">Help</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
         </nav>
     </header>
     
@@ -77,6 +96,288 @@
                 </form>
             </div>
         </section>
+
+        <!-- Renting Locations Management -->
+        <section class="settings-group">
+            <h3>Renting Locations</h3>
+            <div class="current-items">
+                <h4>Current Locations</h4>
+                <ul id="locationsList">
+                    <% if (locals.locations && locations.length > 0) { %>
+                        <% locations.forEach(location => { %>
+                            <li>
+                                <%= location.name %>
+                                <button onclick="editLocation('<%= location._id %>', '<%= location.name %>')" class="btn-edit">Edit</button>
+                                <button onclick="deleteLocation('<%= location._id %>')" class="btn-delete">Delete</button>
+                            </li>
+                        <% }); %>
+                    <% } else { %>
+                        <li>No locations found</li>
+                    <% } %>
+                </ul>
+            </div>
+            <form id="addLocationForm" class="add-item-form">
+                <div class="form-group">
+                    <label for="newLocation">Add New Location:</label>
+                    <input type="text" id="newLocation" name="name" required>
+                    <button type="submit" class="btn-add">Add Location</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Claim Statuses Management -->
+        <section class="settings-group">
+            <h3>Claim Statuses</h3>
+            <div class="current-items">
+                <h4>Current Statuses</h4>
+                <ul id="statusesList">
+                    <% if (locals.statuses && statuses.length > 0) { %>
+                        <% statuses.forEach(status => { %>
+                            <li>
+                                <%= status.name %>
+                                <button onclick="editStatus('<%= status._id %>', '<%= status.name %>')" class="btn-edit">Edit</button>
+                                <button onclick="deleteStatus('<%= status._id %>')" class="btn-delete">Delete</button>
+                            </li>
+                        <% }); %>
+                    <% } else { %>
+                        <li>No statuses found</li>
+                    <% } %>
+                </ul>
+            </div>
+            <form id="addStatusForm" class="add-item-form">
+                <div class="form-group">
+                    <label for="newStatus">Add New Status:</label>
+                    <input type="text" id="newStatus" name="name" required>
+                    <button type="submit" class="btn-add">Add Status</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Damage Types Management -->
+        <section class="settings-group">
+            <h3>Damage Types</h3>
+            <div class="current-items">
+                <h4>Current Damage Types</h4>
+                <ul id="damageTypesList">
+                    <% if (locals.damageTypes && damageTypes.length > 0) { %>
+                        <% damageTypes.forEach(damageType => { %>
+                            <li>
+                                <%= damageType.name %>
+                                <button onclick="editDamageType('<%= damageType._id %>', '<%= damageType.name %>')" class="btn-edit">Edit</button>
+                                <button onclick="deleteDamageType('<%= damageType._id %>')" class="btn-delete">Delete</button>
+                            </li>
+                        <% }); %>
+                    <% } else { %>
+                        <li>No damage types found</li>
+                    <% } %>
+                </ul>
+            </div>
+            <form id="addDamageTypeForm" class="add-item-form">
+                <div class="form-group">
+                    <label for="newDamageType">Add New Damage Type:</label>
+                    <input type="text" id="newDamageType" name="name" required>
+                    <button type="submit" class="btn-add">Add Damage Type</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Edit Modal -->
+        <div id="editModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Edit Item</h3>
+                <form id="editForm">
+                    <input type="hidden" id="editItemId">
+                    <input type="hidden" id="editItemType">
+                    <div class="form-group">
+                        <label for="editItemName">Name:</label>
+                        <input type="text" id="editItemName" name="name" required>
+                    </div>
+                    <button type="submit" class="btn-save">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+        <style>
+            .settings-group {
+                margin: 2rem 0;
+                padding: 1rem;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+
+            .current-items {
+                margin: 1rem 0;
+            }
+
+            .current-items ul {
+                list-style: none;
+                padding: 0;
+            }
+
+            .current-items li {
+                display: flex;
+                align-items: center;
+                padding: 0.5rem;
+                margin: 0.5rem 0;
+                background: #f5f5f5;
+                border-radius: 4px;
+            }
+
+            .btn-edit, .btn-delete, .btn-add {
+                margin-left: 0.5rem;
+                padding: 0.25rem 0.5rem;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+            }
+
+            .btn-edit {
+                background: #4CAF50;
+                color: white;
+            }
+
+            .btn-delete {
+                background: #f44336;
+                color: white;
+            }
+
+            .btn-add {
+                background: #2196F3;
+                color: white;
+            }
+
+            .modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+            }
+
+            .modal-content {
+                background: white;
+                margin: 15% auto;
+                padding: 20px;
+                width: 80%;
+                max-width: 500px;
+                border-radius: 4px;
+            }
+
+            .close {
+                float: right;
+                cursor: pointer;
+                font-size: 1.5rem;
+            }
+        </style>
+
+        <script>
+            // Add to existing settings.js or include here
+            document.addEventListener('DOMContentLoaded', function() {
+                const modal = document.getElementById('editModal');
+                const closeBtn = document.getElementsByClassName('close')[0];
+                
+                closeBtn.onclick = function() {
+                    modal.style.display = 'none';
+                }
+
+                window.onclick = function(event) {
+                    if (event.target == modal) {
+                        modal.style.display = 'none';
+                    }
+                }
+
+                // Form submission handlers
+                document.getElementById('addLocationForm').addEventListener('submit', handleAdd);
+                document.getElementById('addStatusForm').addEventListener('submit', handleAdd);
+                document.getElementById('addDamageTypeForm').addEventListener('submit', handleAdd);
+                document.getElementById('editForm').addEventListener('submit', handleEdit);
+            });
+
+            function handleAdd(e) {
+                e.preventDefault();
+                const form = e.target;
+                const type = form.id.replace('add', '').replace('Form', '').toLowerCase();
+                const data = new FormData(form);
+
+                fetch(`/api/settings/${type}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(Object.fromEntries(data))
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+
+            function handleEdit(e) {
+                e.preventDefault();
+                const id = document.getElementById('editItemId').value;
+                const type = document.getElementById('editItemType').value;
+                const name = document.getElementById('editItemName').value;
+
+                fetch(`/api/settings/${type}/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+
+            function editItem(id, name, type) {
+                const modal = document.getElementById('editModal');
+                document.getElementById('editItemId').value = id;
+                document.getElementById('editItemType').value = type;
+                document.getElementById('editItemName').value = name;
+                modal.style.display = 'block';
+            }
+
+            function deleteItem(id, type) {
+                if (confirm('Are you sure you want to delete this item?')) {
+                    fetch(`/api/settings/${type}/${id}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            }
+
+            // Helper functions for each type
+            function editLocation(id, name) { editItem(id, name, 'location'); }
+            function editStatus(id, name) { editItem(id, name, 'status'); }
+            function editDamageType(id, name) { editItem(id, name, 'damagetype'); }
+            
+            function deleteLocation(id) { deleteItem(id, 'location'); }
+            function deleteStatus(id) { deleteItem(id, 'status'); }
+            function deleteDamageType(id) { deleteItem(id, 'damagetype'); }
+        </script>
     </main>
 
     <script src="/js/settings.js"></script>
