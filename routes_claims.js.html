@@ -117,16 +117,25 @@ const validateFile = (file, category) => {
 };
 
 // Helper function to sanitize filename
-const sanitizeFilename = (filename) => {
-    // Remove special characters and spaces
+const sanitizeFilename = async (filename, uploadDir) => {
+    // Remove special characters except - and _
     const sanitized = filename
-        .replace(/[^a-zA-Z0-9-_.]/g, '_')
+        .replace(/[^a-zA-Z0-9-_.]/, '_')
         .replace(/_{2,}/g, '_');
     
-    // Add timestamp to ensure uniqueness
+    // Check if file already exists
     const ext = path.extname(sanitized);
     const name = path.basename(sanitized, ext);
-    return `${name}_${Date.now()}${ext}`;
+    let finalName = sanitized;
+    let counter = 1;
+
+    // If file exists, add timestamp only then
+    while (fs.existsSync(path.join(uploadDir, finalName))) {
+        finalName = `${name}_${Date.now()}${ext}`;
+        if (counter++ > 100) break; // Prevent infinite loop
+    }
+
+    return finalName;
 };
 
 const router = express.Router(); // Create a new router
@@ -659,10 +668,85 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             });
         }
 
+        // Initialize files with existing files from the claim
+        let files = {
+            incidentReports: [...(claim.files?.incidentReports || [])],
+            correspondence: [...(claim.files?.correspondence || [])],
+            rentalAgreement: [...(claim.files?.rentalAgreement || [])],
+            policeReport: [...(claim.files?.policeReport || [])],
+            invoices: [...(claim.files?.invoices || [])],
+            photos: [...(claim.files?.photos || [])]
+        };
+
+        // Process new file uploads
+        if (req.files) {
+            try {
+                for (const category in req.files) {
+                    const categoryFiles = Array.isArray(req.files[category]) 
+                        ? req.files[category] 
+                        : [req.files[category]];
+
+                    for (const file of categoryFiles) {
+                        // Validate file
+                        const validationErrors = validateFile(file, category);
+                        if (validationErrors.length > 0) {
+                            return res.status(400).json({ 
+                                error: 'File validation failed', 
+                                details: validationErrors 
+                            });
+                        }
+
+                        const uploadDir = path.join(__dirname, '../public/uploads');
+                        
+                        // Create upload directory if it doesn't exist
+                        if (!fs.existsSync(uploadDir)) {
+                            fs.mkdirSync(uploadDir, { recursive: true });
+                        }
+
+                        // Sanitize filename and handle duplicates
+                        const sanitizedFilename = await sanitizeFilename(file.name, uploadDir);
+                        const filePath = path.join(uploadDir, sanitizedFilename);
+
+                        // Move file
+                        await file.mv(filePath);
+                        
+                        // Add file to appropriate category
+                        files[category].push(sanitizedFilename);
+                        
+                        logRequest(req, 'File uploaded successfully:', { 
+                            originalName: file.name,
+                            sanitizedName: sanitizedFilename,
+                            category 
+                        });
+                    }
+                }
+            } catch (err) {
+                logRequest(req, 'Error processing uploaded files:', { error: err });
+                return res.status(500).json({ 
+                    error: 'File upload failed',
+                    details: err.message 
+                });
+            }
+        }
+
+        // Process invoice totals
+        const invoiceTotals = req.body.invoiceTotals || [];
+        const updatedInvoiceTotals = Array.isArray(invoiceTotals) ? invoiceTotals.map(invoice => ({
+            fileName: invoice.fileName,
+            total: parseFloat(invoice.total) || 0 // Ensure total is a number
+        })) : [];
+
+        // Update claim data
+        const updatedClaimData = {
+            ...req.body, // Spread all form fields
+            files, // Add processed files
+            invoiceTotals: updatedInvoiceTotals
+        };
+
+        // Save version history
         if (!claim.versions) {
             claim.versions = [];
         }
-
         claim.versions.push({
             description: claim.description,
             status: claim.status,
@@ -670,47 +754,12 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             updatedAt: claim.updatedAt
         });
 
-        const {
-            mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
-            ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
-            customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
-            carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
-            damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
-            insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
-            thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
-            rentersLiabilityInsurance, lossDamageWaiver // Remove invoiceTotals from destructuring
-        } = req.body;
+        const updatedClaim = await Claim.findByIdAndUpdate(
+            claimId, 
+            updatedClaimData, 
+            { new: true, runValidators: true }
+        );
 
-        let files = initializeFileCategories({});
-        if (req.files) {
-            try {
-                // Process uploaded files
-            } catch (err) {
-                logRequest(req, 'Error processing uploaded files:', { error: err });
-                return res.status(500).json({ error: err.message });
-            }
-        }
-
-        // Ensure invoiceTotals is correctly processed
-        const invoiceTotals = req.body.invoiceTotals || [];
-        const updatedInvoiceTotals = Array.isArray(invoiceTotals) ? invoiceTotals.map(invoice => ({
-            fileName: invoice.fileName,
-            total: parseFloat(invoice.total) || 0 // Ensure total is a number
-        })) : [];
-
-        const updatedClaimData = {
-            mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
-            ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
-            customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
-            carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
-            damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
-            insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
-            thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
-            rentersLiabilityInsurance, lossDamageWaiver, files,
-            invoiceTotals: updatedInvoiceTotals // Use updated invoice totals
-        };
-
-        const updatedClaim = await Claim.findByIdAndUpdate(claimId, updatedClaimData, { new: true });
         logRequest(req, 'Claim updated:', { claim: updatedClaim });
         
         // Redirect to the claim's view page
@@ -999,7 +1048,7 @@ module.exports = router; // Export the router</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Dec 19 2024 16:51:04 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Dec 19 2024 17:22:23 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
