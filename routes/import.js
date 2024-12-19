@@ -417,23 +417,4 @@ router.post('/full', upload.single('file'), async (req, res) => {
     }
 });
 
-/**
- * Helper function to extract an encrypted archive
- * @param {string} archivePath - Path to the encrypted archive
- * @param {string} extractPath - Path where files should be extracted
- * @param {string} password - Password for decryption
- */
-async function extractArchive(archivePath, extractPath, password) {
-    return new Promise((resolve, reject) => {
-        const unzipper = require('unzipper');
-        fs.createReadStream(archivePath)
-            .pipe(unzipper.Extract({ 
-                path: extractPath,
-                password: password 
-            }))
-            .on('close', resolve)
-            .on('error', reject);
-    });
-}
-
 module.exports = router; // Export the router
