@@ -67,8 +67,8 @@
         </div>
 
         <div class="quick-actions">
-            <button class="btn" onclick="location.href='/claims/add'">Add New Claim</button> <!-- Button to add new claim -->
-            <button class="btn" onclick="location.href='/reports'">Generate Reports</button> <!-- Button to generate reports -->
+            <button id="newClaimButton" class="btn btn-primary">Add New Claim</button>
+            <button id="generateReportsButton" class="btn btn-secondary">Generate Reports</button>
         </div>
     </main>
 
@@ -93,5 +93,6 @@
             }
         });
     </script>
+    <script src="/js/dashboard.js"></script>
 </body>
 </html>

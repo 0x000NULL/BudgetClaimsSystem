@@ -410,6 +410,22 @@
         </div>
     </main>
 
-    <script src="/js/claims-edit.js"></script>
+    <script src="/js/claims-edit.js">
+        document.querySelector('form').addEventListener('submit', function(e) {
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    let hasFiles = false;
+    
+    fileInputs.forEach(input => {
+        if (input.files.length > 0) {
+            hasFiles = true;
+            console.log(`Files selected for ${input.name}:`, input.files);
+        }
+    });
+    
+    if (hasFiles) {
+        console.log('Form submitted with files');
+    }
+});
+    </script>
 </body>
 </html>

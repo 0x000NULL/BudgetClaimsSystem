@@ -325,6 +325,22 @@
     <!-- Toast notifications for success and error messages -->
     <div id="toast" class="toast"></div>
 
-    <script src="/js/add_claim.js"></script>
+    <script src="/js/add_claim.js">
+        document.querySelector('form').addEventListener('submit', function(e) {
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    let hasFiles = false;
+    
+    fileInputs.forEach(input => {
+        if (input.files.length > 0) {
+            hasFiles = true;
+            console.log(`Files selected for ${input.name}:`, input.files);
+        }
+    });
+    
+    if (hasFiles) {
+        console.log('Form submitted with files');
+    }
+});
+    </script>
 </body>
 </html>

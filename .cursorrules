@@ -1,0 +1,136 @@
+# Project: Budget Claims System
+
+## Technology Stack
+- Backend: Node.js with Express
+- Frontend: EJS templates
+- Database: MongoDB with Mongoose
+- Cache: Redis with cache-manager
+- Testing: Jest, Cypress
+- Logging: Pino with pino-http
+- Security: Helmet, JWT, Passport, bcryptjs
+- File Handling: Multer, Express-fileupload
+- Documentation: JSDoc
+- Email: Nodemailer
+- PDF Generation: PDFKit, PDFMake
+- Export Formats: CSV-express, ExcelJS
+
+## Coding Standards
+- **JavaScript Version**: Use ECMAScript 6+ features
+- **Indentation**: 4 spaces
+- **Quotes**: Single quotes for strings
+- **Semicolons**: Required
+- **Variables**: Use `const` for constants and `let` for variables that will be reassigned
+- **Comments**: JSDoc style documentation required for functions and modules
+- **File Names**: Kebab-case for views (e.g., `email_templates.ejs`), camelCase for JavaScript files
+
+## Project Structure
+- **Entry Point**: `server.js`
+- **Configuration Files**: 
+  - `.env` for environment variables
+  - `jsdoc.conf.json` for documentation configuration
+  - `jest.config.js` for testing configuration
+  - `cypress.json` for E2E testing configuration
+- **Directories**:
+  - `routes/`: Express route handlers
+  - `models/`: Mongoose schemas
+  - `views/`: EJS templates
+    - `customer/`: Customer-specific views
+  - `public/`: Static assets
+    - `css/`: Stylesheets
+    - `js/`: Client-side JavaScript
+    - `images/`: Image assets
+  - `middleware/`: Custom middleware
+  - `__tests__/`: Jest test files
+  - `cypress/`: Cypress test files
+  - `notifications/`: Email and notification handlers
+  - `docs/`: Generated documentation
+
+## Security Practices
+- **Headers**: Helmet middleware with environment-specific configurations
+- **Authentication**: 
+  - Passport.js with local strategy
+  - JWT for API authentication
+  - Two-factor authentication support
+- **Session Management**: 
+  - Express-session with MongoDB store
+  - Redis cache for performance
+- **Password Security**: 
+  - bcryptjs for hashing
+  - Password complexity requirements
+- **CORS**: Environment-specific configuration
+- **File Upload Security**:
+  - Size limits by file type
+  - Allowed file type restrictions
+  - Virus scanning (TODO)
+
+## File Management
+- **Upload Categories**:
+  - Photos: 50MB limit, `.jpg`, `.jpeg`, `.png`
+  - Documents: 20MB limit, `.pdf`, `.doc`, `.docx`
+  - Invoices: 20MB limit, `.pdf`, `.jpg`, `.jpeg`, `.png`
+- **Storage**: Local file system
+- **Processing**: Image optimization and PDF generation
+
+## Documentation
+- **API Documentation**: JSDoc comments required for all routes and controllers
+- **Code Comments**: Descriptive comments for complex logic
+- **View Comments**: HTML comments explaining template structure
+- **Generated Docs**: Automated JSDoc generation in CI/CD pipeline
+
+## Testing
+- **Unit Tests**: 
+  - Jest with MongoDB memory server
+  - Coverage reporting
+- **E2E Tests**: 
+  - Cypress for user flow testing
+  - Browser compatibility testing
+- **CI/CD**: 
+  - GitHub Actions workflow
+  - Automated testing on push/PR
+  - Documentation generation
+
+## Logging
+- **Framework**: Pino with pino-http
+- **Levels**: 
+  - Development: Debug and above
+  - Production: Info and above
+- **Sensitive Data**: 
+  - Filtering of passwords, tokens, and SSNs
+  - Request body sanitization
+- **Audit Logs**: 
+  - User actions tracking
+  - System changes recording
+
+## Error Handling
+- **HTTP Errors**: 
+  - Appropriate status codes
+  - User-friendly messages
+- **Validation**: 
+  - Input validation middleware
+  - MongoDB schema validation
+- **Client Feedback**: 
+  - Flash messages
+  - Error page templates
+
+## Data Export
+- **Formats**:
+  - CSV via csv-express
+  - Excel via ExcelJS
+  - PDF via PDFKit/PDFMake
+- **Templates**: Customizable export templates
+- **Scheduling**: Automated report generation
+
+## Environment Configuration
+- **Development**:
+  - Nodemon for auto-restart
+  - Debug logging
+  - Relaxed security
+- **Production**:
+  - PM2 process management
+  - Strict security
+  - Performance optimization
+
+## License
+- **Type**: All Rights Reserved
+- **Copyright**: BudgetClaimsSystem (2024), Ethan Aldrich
+- **Usage**: Private, commercial use only
