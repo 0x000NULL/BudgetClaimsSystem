@@ -38,6 +38,7 @@ const pinoLogger = require('../logger'); // Import Pino logger
 const Status = require('../models/Status'); // Import Status model
 const Location = require('../models/Location'); // Import Location model
 const DamageType = require('../models/DamageType'); // Import DamageType model
+const fileUpload = require('express-fileupload');
 
 // Setup cache manager with Redis
 const cache = cacheManager.caching({
@@ -428,7 +429,12 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee'
 
 // Route to add a new claim, accessible by admin and manager
 router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), async (req, res) => {
-    logRequest(req, 'Adding new claim with data:', { data: req.body });
+    logRequest(req, 'Adding new claim with data:', { 
+        body: req.body,
+        files: req.files,
+        headers: req.headers
+    });
+    
     const {
         mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
         ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
