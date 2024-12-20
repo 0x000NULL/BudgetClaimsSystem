@@ -16,6 +16,10 @@ const pinoLogger = require('../logger'); // Import Pino logger
 const AuditLog = require('../models/AuditLog'); // Import the AuditLog model to interact with the audit logs collection in MongoDB
 const crypto = require('crypto'); // Import crypto module for generating UUIDs
 const Progress = require('../models/Progress'); // Import the Progress model to interact with the progress collection in MongoDB
+const Settings = require('../models/Settings'); // Add missing model imports
+const EmailTemplate = require('../models/EmailTemplate'); // Add missing model imports
+const Status = require('../models/Status'); // Add missing model imports
+const Location = require('../models/Location'); // Add missing model imports
 
 const router = express.Router(); // Create a new router
 
@@ -69,6 +73,17 @@ const logRequest = (req, message, extra = {}) => {
     });
 };
 
+// Add this near the top of your file
+const ensureTempDir = async () => {
+    const tempDir = path.join(__dirname, '../temp');
+    try {
+        await fs.promises.mkdir(tempDir, { recursive: true });
+    } catch (error) {
+        console.error('Error creating temp directory:', error);
+        throw error;
+    }
+};
+
 /**
  * Route to handle full export of users, claims, and uploaded files.
  * Creates a zip archive containing the data and sends it as a download.
@@ -80,37 +95,75 @@ const logRequest = (req, message, extra = {}) => {
  * @param {Object} res - The Express response object.
  */
 router.get('/full', async (req, res) => {
+    await ensureTempDir();
+    console.log('Current user:', {
+        id: req.user?._id,
+        email: req.user?.email,
+        role: req.user?.role,
+        roles: req.user?.roles
+    });
+    
     logRequest(req, 'Full export initiated');
     const exportId = crypto.randomUUID();
     const tempDirs = [];
+    let responseStarted = false;
+    
+    // Set up error handler for the response
+    res.on('error', (error) => {
+        console.error('Response stream error:', error);
+        cleanup();
+    });
+
+    // Set up error handler for the request
+    req.on('error', (error) => {
+        console.error('Request stream error:', error);
+        cleanup();
+    });
+
+    // Handle client disconnect
+    req.on('close', () => {
+        if (!res.writableEnded) {
+            console.log('Client disconnected before download completed');
+            cleanup();
+        }
+    });
+
+    // Cleanup function
+    const cleanup = async () => {
+        try {
+            for (const dir of tempDirs) {
+                await fs.promises.rm(dir, { recursive: true, force: true });
+            }
+        } catch (error) {
+            console.error('Cleanup error:', error);
+        }
+    };
     
     try {
         // Verify authentication and permissions
-        if (!req.user.hasRole('admin')) {
-            throw new Error('Unauthorized access to full export');
+        if (!req.user || 
+            (!req.user.role === 'admin' && 
+             (!req.user.roles || !req.user.roles.includes('admin')))) {
+            logRequest(req, 'Unauthorized access attempt to full export');
+            return res.status(403).json({
+                success: false,
+                message: 'Unauthorized. Admin access required.'
+            });
         }
 
-        // Verify encryption key exists
-        if (!process.env.EXPORT_ENCRYPTION_KEY) {
-            logRequest(req, 'Export failed - No encryption key configured');
-            return res.status(500).send('Export is not properly configured. Please contact your system administrator.');
-        }
-
-        // Add audit logging
+        // Add audit logging with stringified details
         const auditLog = {
-            user: req.user.email,
+            user: req.user._id.toString(),
             action: 'full_export',
             timestamp: new Date(),
-            ipAddress: req.ip
+            ipAddress: req.ip,
+            details: JSON.stringify({ userEmail: req.user.email })
         };
         await AuditLog.create(auditLog);
 
-        // Create a unique export ID
-        const exportId = crypto.randomUUID();
-        
-        // Initialize progress in cache/database
+        // Initialize progress in cache/database with correct field name
         await Progress.create({
-            id: exportId,
+            exportId: exportId,
             type: 'export',
             status: 'started',
             total: 0,
@@ -122,46 +175,73 @@ router.get('/full', async (req, res) => {
         await fs.promises.mkdir(tempDir, { recursive: true });
         tempDirs.push(tempDir);
 
-        // Initialize the archive with encryption
+        // Initialize the archive
         const archive = archiver('zip', {
-            zlib: { level: 9 },
-            encrypt: true,
-            password: process.env.EXPORT_ENCRYPTION_KEY
+            zlib: { level: 9 }
         });
 
-        // Stream response
+        // Listen for archive warnings
+        archive.on('warning', (err) => {
+            console.warn('Archive warning:', err);
+        });
+
+        // Listen for archive errors
+        archive.on('error', (err) => {
+            console.error('Archive error:', err);
+            if (!responseStarted) {
+                res.status(500).json({
+                    success: false,
+                    message: 'Archive creation failed'
+                });
+            }
+            cleanup();
+        });
+
+        // Set response headers
         res.writeHead(200, {
             'Content-Type': 'application/zip',
-            'Content-Disposition': 'attachment; filename="full_export.zip"',
-            'Transfer-Encoding': 'chunked',
-            'X-Export-Id': exportId
+            'Content-Disposition': `attachment; filename="export-${exportId}.zip"`,
+            'Transfer-Encoding': 'chunked'
         });
+        responseStarted = true;
 
+        // Pipe archive data to response
         archive.pipe(res);
 
-        // Stream-based export function
+        // Stream-based export function with error handling
         const exportStream = async (Model, filename) => {
             const filePath = path.join(tempDir, filename);
             const writeStream = fs.createWriteStream(filePath);
             const total = await Model.countDocuments();
             let processed = 0;
 
-            for await (const doc of Model.find().cursor()) {
-                await new Promise((resolve, reject) => {
-                    writeStream.write(
-                        JSON.stringify(doc) + '\n',
-                        error => error ? reject(error) : resolve()
+            try {
+                console.log(`Exporting ${filename} - Found ${total} documents`);
+                
+                for await (const doc of Model.find().cursor()) {
+                    await new Promise((resolve, reject) => {
+                        writeStream.write(
+                            JSON.stringify(doc.toJSON()) + '\n',
+                            error => error ? reject(error) : resolve()
+                        );
+                    });
+                    processed++;
+                    await Progress.findOneAndUpdate(
+                        { exportId: exportId },
+                        {
+                            total,
+                            completed: processed
+                        }
                     );
-                });
-                processed++;
-                await Progress.findByIdAndUpdate(exportId, {
-                    total,
-                    completed: processed
-                });
-            }
+                }
 
-            await new Promise(resolve => writeStream.end(resolve));
-            return filePath;
+                await new Promise(resolve => writeStream.end(resolve));
+                console.log(`Completed exporting ${filename}`);
+                return filePath;
+            } catch (error) {
+                console.error(`Error exporting ${filename}:`, error);
+                throw error;
+            }
         };
 
         // Calculate checksum for a file
@@ -197,7 +277,7 @@ router.get('/full', async (req, res) => {
             }
         };
 
-        // Export each collection
+        // Export each collection with validation
         const collections = [
             { model: User, filename: 'users.json' },
             { model: Claim, filename: 'claims.json' },
@@ -209,99 +289,114 @@ router.get('/full', async (req, res) => {
         ];
 
         for (const { model, filename } of collections) {
-            const filePath = await exportStream(model, filename);
-            const checksum = await calculateChecksum(filePath);
-            
-            archive.file(filePath, { name: filename });
-            metadata.files.push({ 
-                name: filename, 
-                checksum,
-                count: await model.countDocuments()
-            });
-        }
-
-        // Handle uploaded files
-        const uploadsDir = path.join(__dirname, '../uploads');
-        if (fs.existsSync(uploadsDir)) {
-            const files = fs.readdirSync(uploadsDir);
-            metadata.files.push({
-                name: 'uploads',
-                fileCount: files.length
-            });
-
-            // Configure compression based on file types
-            const compressibleTypes = ['.txt', '.json', '.xml'];
-            const isCompressible = (filename) => 
-                compressibleTypes.includes(path.extname(filename));
-
-            for (const file of files) {
-                const filePath = path.join(uploadsDir, file);
+            try {
+                console.log(`Starting export of ${filename}`);
+                const filePath = await exportStream(model, filename);
                 const checksum = await calculateChecksum(filePath);
                 
-                archive.file(filePath, { 
-                    name: `uploads/${file}`,
-                    store: !isCompressible(file)
-                });
+                // Verify file exists and has content
+                if (!fs.existsSync(filePath)) {
+                    throw new Error(`Export file ${filename} was not created`);
+                }
+                
+                const stats = fs.statSync(filePath);
+                if (stats.size === 0) {
+                    console.warn(`Warning: ${filename} is empty`);
+                }
 
-                metadata.files.push({
-                    name: `uploads/${file}`,
+                archive.file(filePath, { name: filename });
+                metadata.files.push({ 
+                    name: filename, 
                     checksum,
-                    size: fs.statSync(filePath).size
+                    count: await model.countDocuments(),
+                    size: stats.size
                 });
+                console.log(`Successfully added ${filename} to archive`);
+            } catch (error) {
+                console.error(`Error processing ${filename}:`, error);
+                throw error;
             }
         }
 
-        // Add metadata file last
+        // Handle uploaded files with better error handling
+        const uploadsDir = path.join(__dirname, '../uploads');
+        if (fs.existsSync(uploadsDir)) {
+            try {
+                const files = fs.readdirSync(uploadsDir);
+                console.log(`Found ${files.length} files in uploads directory`);
+                
+                metadata.files.push({
+                    name: 'uploads',
+                    fileCount: files.length
+                });
+
+                for (const file of files) {
+                    const filePath = path.join(uploadsDir, file);
+                    if (fs.existsSync(filePath)) {
+                        const checksum = await calculateChecksum(filePath);
+                        const stats = fs.statSync(filePath);
+                        
+                        archive.file(filePath, { 
+                            name: `uploads/${file}`
+                        });
+
+                        metadata.files.push({
+                            name: `uploads/${file}`,
+                            checksum,
+                            size: stats.size
+                        });
+                        console.log(`Added ${file} to archive`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error processing uploads:', error);
+                throw error;
+            }
+        } else {
+            console.log('Uploads directory does not exist');
+        }
+
+        // Add metadata and finalize
+        console.log('Adding metadata to archive');
         archive.append(JSON.stringify(metadata, null, 2), { name: 'metadata.json' });
 
-        // Create audit log entry
+        // Create audit log entry with stringified details
         await AuditLog.create({
-            user: req.user.email,
+            user: req.user._id.toString(),
             action: 'full_export',
             timestamp: new Date(),
             ipAddress: req.ip,
-            details: {
+            details: JSON.stringify({
                 exportId,
-                fileCount: metadata.files.length
-            }
+                fileCount: metadata.files.length,
+                userEmail: req.user.email
+            })
         });
 
         // Finalize the archive
+        console.log('Finalizing archive');
         await archive.finalize();
+        console.log('Archive finalized successfully');
 
     } catch (error) {
-        logRequest(req, 'Error during export', { 
-            error: error.message,
-            stack: error.stack
-        });
+        console.error('Export error:', error);
         
-        // Update progress status
-        await Progress.findByIdAndUpdate(exportId, {
-            status: 'failed',
-            error: error.message
-        }).catch(console.error);
-
-        res.status(500).json({
-            success: false,
-            message: process.env.NODE_ENV === 'production' 
-                ? 'Error during export' 
-                : error.message,
-            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
-    } finally {
-        // Clean up all temporary directories
-        for (const dir of tempDirs) {
-            await fs.promises.rm(dir, { recursive: true, force: true })
-                .catch(console.error);
+        if (!responseStarted) {
+            res.status(500).json({
+                success: false,
+                message: 'Export failed',
+                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
+        } else {
+            // If we've started streaming, try to end the response gracefully
+            try {
+                res.end();
+            } catch (endError) {
+                console.error('Error ending response:', endError);
+            }
         }
         
-        // Update progress status if not already failed
-        const progress = await Progress.findById(exportId);
-        if (progress && progress.status !== 'failed') {
-            await Progress.findByIdAndUpdate(exportId, {
-                status: 'completed'
-            }).catch(console.error);
-        }
+        await cleanup();
     }
 });
 

@@ -18,11 +18,11 @@ const userSchema = new mongoose.Schema({
         trim: true, // Automatically trim whitespace from the value
         lowercase: true // Convert the value to lowercase
     },
-    // Define the 'role' field
+    // Define the 'role' field - single source of truth for user role
     role: {
-        type: String, // Data type is String
-        enum: ['admin', 'manager', 'employee'], // The value must be one of these
-        default: 'employee' // Default value is 'employee'
+        type: String,
+        enum: ['admin', 'manager', 'employee'],
+        default: 'employee'
     },
     // Define the 'password' field
     password: {

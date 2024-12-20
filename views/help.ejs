@@ -1,10 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
-    <title>Help - Budget Claims System</title> <!-- Title of the document -->
-    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help Center - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <!-- Add search functionality styles -->
+    <style>
+        #searchHelp {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .help-section {
+            background: #fff;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .help-section h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .quick-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .quick-link {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        .quick-link:hover {
+            background: #2980b9;
+        }
+
+        .variable-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .variable-table th, .variable-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .variable-table th {
+            background-color: #f5f6fa;
+        }
+
+        .video-tutorial {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .troubleshooting {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #e74c3c;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -35,22 +108,58 @@
             </ul>
         </nav>
     </header>
-    <main>
-        <h2>Help and Support</h2> <!-- Section heading -->
 
-        <!-- Getting Started Section -->
-        <section>
+    <main>
+        <!-- New Quick Search Feature -->
+        <div class="help-section">
+            <input type="text" id="searchHelp" placeholder="Search help topics...">
+            
+            <div class="quick-links">
+                <a href="#getting-started" class="quick-link">Getting Started</a>
+                <a href="#claims-management" class="quick-link">Claims Management</a>
+                <a href="#security" class="quick-link">Security</a>
+                <a href="#reports" class="quick-link">Reports</a>
+                <a href="#troubleshooting" class="quick-link">Troubleshooting</a>
+            </div>
+        </div>
+
+        <!-- Enhanced Getting Started Section -->
+        <section id="getting-started" class="help-section">
             <h3>Getting Started</h3>
+            <div class="video-tutorial">
+                <iframe width="560" height="315" src="about:blank" data-src="[Your Tutorial Video URL]" 
+                    title="System Overview Tutorial" frameborder="0" allowfullscreen></iframe>
+            </div>
             <p>Welcome to the Budget Claims System. This guide will help you navigate through the system and make the most of its features.</p>
             <ul>
                 <li><strong>Login:</strong> Use your credentials to log in to the system. If you don't have an account, contact your administrator.</li>
                 <li><strong>Dashboard:</strong> After logging in, you will be redirected to your dashboard, where you can see an overview of your activities and tasks.</li>
             </ul>
         </section>
-        
-        <!-- Customer Functions Section -->
-        <section>
-            <h3>Customer Functions</h3>
+
+        <!-- Enhanced Claims Management Section -->
+        <section id="claims-management" class="help-section">
+            <h3>Claims Management</h3>
+            <h4>Step-by-Step Claim Submission</h4>
+            <ol>
+                <li>Navigate to "Add Claim" from the Claims menu</li>
+                <li>Fill in required information:
+                    <ul>
+                        <li>Customer Details</li>
+                        <li>Vehicle Information</li>
+                        <li>Accident Details</li>
+                        <li>Insurance Information</li>
+                    </ul>
+                </li>
+                <li>Upload supporting documents:
+                    <ul>
+                        <li>Photos (up to 50MB per file)</li>
+                        <li>Documents (up to 20MB per file)</li>
+                        <li>Invoices (up to 20MB per file)</li>
+                    </ul>
+                </li>
+                <li>Review and submit the claim</li>
+            </ol>
             <p>Customers can submit and view their claims through the customer portal.</p>
             <ul>
                 <li><strong>Submit a Claim:</strong> Navigate to "Submit Claim" from the dashboard. Fill out the form with the required details including the MVA number and a description of the claim.</li>
@@ -58,52 +167,27 @@
                 <li><strong>Settings:</strong> Customers can update their account settings, change passwords, and manage 2FA from the "Settings" page.</li>
             </ul>
         </section>
-        
-        <!-- Employee Functions Section -->
-        <section>
-            <h3>Employee Functions</h3>
-            <p>Employees can manage claims and perform administrative tasks through the employee portal.</p>
-            <ul>
-                <li><strong>Manage Claims:</strong> Employees can view, edit, and update claims. Go to "Manage Claims" to access the list of all claims.</li>
-                <li><strong>Search Claims:</strong> Use the "Search Claims" feature to filter and find specific claims based on various criteria such as MVA, customer name, status, and date range.</li>
-                <li><strong>Reports:</strong> Generate reports from the "Reports" page. You can export data in CSV, Excel, and PDF formats.</li>
-                <li><strong>User Management:</strong> Admins and managers can manage user accounts by navigating to "User Management." Here, you can create, delete, and update user roles and permissions.</li>
-                <li><strong>Settings:</strong> Employees can update their account settings, change passwords, and manage 2FA from the "Settings" page.</li>
-            </ul>
-        </section>
-        
-        <!-- Two-Factor Authentication Section -->
-        <section>
-            <h3>Two-Factor Authentication (2FA)</h3>
-            <p>For added security, the Budget Claims System supports two-factor authentication.</p>
-            <ul>
-                <li><strong>Enable 2FA:</strong> Go to "Settings" and click "Enable 2FA." Follow the instructions to scan the QR code with your authenticator app and verify the token.</li>
-                <li><strong>Disable 2FA:</strong> If you no longer want to use 2FA, go to "Settings" and click "Disable 2FA."</li>
-            </ul>
-        </section>
-        
-        <!-- Notifications Section -->
-        <section>
-            <h3>Notifications</h3>
-            <p>The system provides notifications for various events.</p>
-            <ul>
-                <li><strong>Email Notifications:</strong> You will receive email notifications for important events such as new claims, status updates, and reminders for pending tasks.</li>
-                <li><strong>In-App Notifications:</strong> Notifications will also be displayed within the system for real-time updates.</li>
-            </ul>
-        </section>
-        
-        <!-- Activity Logs Section -->
-        <section>
-            <h3>Activity Logs</h3>
-            <p>All user activities are logged for auditing purposes.</p>
-            <ul>
-                <li><strong>View Logs:</strong> Admins can view activity logs to monitor user actions such as logins, claim submissions, edits, and deletions.</li>
-            </ul>
-        </section>
 
-        <!-- Email Templates Section -->
-        <section>
+        <!-- Enhanced Email Templates Section -->
+        <section class="help-section">
             <h3>Email Templates</h3>
+            <table class="variable-table">
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{MVA}</td>
+                        <td>Motor Vehicle Accident number</td>
+                        <td>MVA123456</td>
+                    </tr>
+                    <!-- Add more rows for each variable -->
+                </tbody>
+            </table>
             <p>When creating email templates, you can use the following variables to automatically fill in information from the claims:</p>
             <ul>
                 <li>{MVA}: The Motor Vehicle Accident number.</li>
@@ -171,6 +255,19 @@ The Budget Claims System Team
             </pre>
         </section>
 
+        <!-- New Troubleshooting Section -->
+        <section id="troubleshooting" class="help-section">
+            <h3>Troubleshooting</h3>
+            <div class="troubleshooting">
+                <h4>Common Issues</h4>
+                <ul>
+                    <li><strong>Cannot Upload Files:</strong> Ensure file size and type meet requirements</li>
+                    <li><strong>Login Issues:</strong> Reset password or check 2FA settings</li>
+                    <li><strong>Report Generation Fails:</strong> Clear browser cache or try a different browser</li>
+                </ul>
+            </div>
+        </section>
+
         <!-- Reports Section -->
         <section>
             <h3>Reports</h3>
@@ -187,9 +284,7 @@ The Budget Claims System Team
             <h3>Audit Logs</h3>
             <p>The system maintains comprehensive logs of all activities for auditing purposes.</p>
             <ul>
-                <li><strong>View Audit Logs:</strong> Admins can access the audit logs from the "Audit Logs" section. Logs include details of actions performed by users such as logins, updates, and deletions.</li>
-                <li><strong>Search Logs:</strong> Use the search functionality to filter logs based on user, action type, date range, etc.</li>
-                <li><strong>Export Logs:</strong> Audit logs can be exported for external review or compliance purposes.</li>
+                <li><strong>View Audit Logs:</strong> Admins can view activity logs to monitor user actions such as logins, claim submissions, edits, and deletions.</li>
             </ul>
         </section>
 
@@ -233,15 +328,40 @@ The Budget Claims System Team
             </ul>
         </section>
 
-        <!-- Additional Support Section -->
-        <section>
-            <h3>Additional Support</h3>
-            <p>If you need further assistance or encounter any issues, please contact our support team at:</p>
-            <p><strong>Email:</strong> support@budgetclaims.com</p>
-            <p><strong>Phone:</strong> +1-800-123-4567</p>
-            <p>Our support team is available Monday to Friday, from 9 AM to 5 PM PST.</p>
+        <!-- Enhanced Support Section -->
+        <section class="help-section">
+            <h3>Support Options</h3>
+            <div class="support-channels">
+                <div>
+                    <h4>Technical Support</h4>
+                    <p>Available 24/7....maybe</p>
+                    <p>Email: support@budgetlasvegas.com</p>
+                    <p>Phone: +1-725-772-9167</p>
+                </div>
+            </div>
         </section>
     </main>
-    <script src="/js/jquery-3.6.0.min.js"></script> <!-- jQuery for easier DOM manipulation -->
+
+    <script src="/js/jquery-3.6.0.min.js"></script>
+    <!-- Add search functionality -->
+    <script>
+        $(document).ready(function() {
+            $('#searchHelp').on('keyup', function() {
+                const searchText = $(this).val().toLowerCase();
+                $('.help-section').each(function() {
+                    const content = $(this).text().toLowerCase();
+                    $(this).toggle(content.includes(searchText));
+                });
+            });
+
+            // Lazy load iframes
+            $('iframe[data-src]').each(function() {
+                const iframe = $(this);
+                if (iframe.isInViewport()) {
+                    iframe.attr('src', iframe.data('src'));
+                }
+            });
+        });
+    </script>
 </body>
 </html>
