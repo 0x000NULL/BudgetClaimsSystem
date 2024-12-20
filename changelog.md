@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.4.37] - 2024-12-20 (Commit: 7683344)
+
+### Added
+- Added new damage type management functionality
+- Added location management system
+- Implemented status management system
+- N/a and Unknown options for billable, RLI, LDW, and isRenterAtFault fields
+
+### Changed
+- Updated claim form layout with improved tab organization
+- Enhanced file upload handling with better error management
+- Improved error message display system
+- Updated styling for form elements and tabs
+- Enhanced validation for claim updates
+- Improved notification system with more detailed messages
+
+### Fixed
+- File upload directory creation issues
+- Form validation error handling
+- Status update notification bugs
+- File path sanitization issues
+- Invoice total calculation errors
+
+### Security
+- Enhanced file upload security with improved validation
+- Added sanitization for file paths and names
+- Improved role-based access control checks
+- Enhanced input validation for claim updates
+
+### Technical
+- Updated Node.js dependencies
+- Updated JSDoc documentation generation
+- Extended error logging
+- Enhanced MongoDB integration
+
+### Documentation
+- Extended API documentation
+- Updated installation guide
+- Updated help documentation for users
+- Added audit logging documentation
+
+
+### Dependencies
+- Updated dependencies to latest versions
+
+### Testing
+- No changes of note
+
+
 ## [1.4.32] - 2024-03-21 (Commit: cd8dc1d)
 
 ### Added
