@@ -65,12 +65,12 @@ const ClaimSchema = new Schema({
     },
     // Field for whether the claim is billable
     billable: {
-        type: Boolean, // Data type is Boolean
+        type: String, // Data type is Boolean
         required: false // This field is not required
     },
     // Field for whether the renter is at fault
     isRenterAtFault: {
-        type: Boolean, // Data type is Boolean
+        type: String, // Data type is Boolean
         required: false // This field is not required
     },
     // Field for the total damages
@@ -170,7 +170,7 @@ const ClaimSchema = new Schema({
     },
     // Field for whether LDW was accepted
     ldwAccepted: {
-        type: Boolean, // Data type is Boolean
+        type: String, // Data type is Boolean
         required: false // This field is not required
     },
     // Field for the police department
@@ -239,13 +239,11 @@ const ClaimSchema = new Schema({
     // New field: Was Renters Liability Insurance purchased?
     rentersLiabilityInsurance: {
         type: String, // Data type is String
-        enum: ['yes', 'no'], // Possible values for Renters Liability Insurance
         required: false // This field is not required
     },
     // New field: Was Loss Damage Waiver purchased?
     lossDamageWaiver: {
         type: String, // Data type is String
-        enum: ['yes', 'no'], // Possible values for Loss Damage Waiver
         required: false // This field is not required
     }
 });
