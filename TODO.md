@@ -64,10 +64,7 @@
 
 ### Options for Users
 - File upload size and count settings.
-- Renting Locations.
-- Damage Types.
 - Claim Types.
-- Claim Statuses.
 - Claim Categories.
 - Claim Subcategories.
 
