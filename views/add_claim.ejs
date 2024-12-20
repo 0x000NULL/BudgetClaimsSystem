@@ -130,6 +130,8 @@
                         <select id="billable" name="billable">
                             <option value="true">Yes</option>
                             <option value="false">No</option>
+                            <option value="n/a">N/A</option>
+                            <option value="unknown">Unknown</option>
                         </select>
                         <span class="error-message" id="errorBillable"></span>
 
@@ -137,6 +139,8 @@
                         <select id="isRenterAtFault" name="isRenterAtFault">
                             <option value="true">Yes</option>
                             <option value="false">No</option>
+                            <option value="n/a">N/A</option>
+                            <option value="unknown">Unknown</option>
                         </select>
                         <span class="error-message" id="errorIsRenterAtFault"></span>
 
@@ -261,21 +265,29 @@
                 </div>
 
                 <!-- Tab content for Additional Coverage -->
-                <div id="AdditionalCoverage" class="tabcontent">
+                <div id="additionalCoverage" class="tabcontent">
                     <div class="claim-info">
                         <label for="rentersLiabilityInsurance">Was Renters Liability Insurance purchased?</label>
                         <select id="rentersLiabilityInsurance" name="rentersLiabilityInsurance">
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                            <option value="n/a">N/A</option>
+                            <option value="unknown">Unknown</option>
                         </select>
-                        <span class="error-message" id="errorRentersLiabilityInsurance"></span>
+                        <% if (errors && errors.rentersLiabilityInsurance) { %>
+                        <div class="error-message"><%= errors.rentersLiabilityInsurance.msg %></div>
+                        <% } %>
 
                         <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label>
                         <select id="lossDamageWaiver" name="lossDamageWaiver">
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                            <option value="n/a">N/A</option>
+                            <option value="unknown">Unknown</option>
                         </select>
-                        <span class="error-message" id="errorLossDamageWaiver"></span>
+                        <% if (errors && errors.lossDamageWaiver) { %>
+                        <div class="error-message"><%= errors.lossDamageWaiver.msg %></div>
+                        <% } %>
                     </div>
                 </div>
 
