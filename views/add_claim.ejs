@@ -274,9 +274,7 @@
                             <option value="n/a">N/A</option>
                             <option value="unknown">Unknown</option>
                         </select>
-                        <% if (errors && errors.rentersLiabilityInsurance) { %>
-                        <div class="error-message"><%= errors.rentersLiabilityInsurance.msg %></div>
-                        <% } %>
+                        <span class="error-message" id="errorRentersLiabilityInsurance"></span>
 
                         <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label>
                         <select id="lossDamageWaiver" name="lossDamageWaiver">
@@ -285,9 +283,7 @@
                             <option value="n/a">N/A</option>
                             <option value="unknown">Unknown</option>
                         </select>
-                        <% if (errors && errors.lossDamageWaiver) { %>
-                        <div class="error-message"><%= errors.lossDamageWaiver.msg %></div>
-                        <% } %>
+                        <span class="error-message" id="errorLossDamageWaiver"></span>
                     </div>
                 </div>
 
