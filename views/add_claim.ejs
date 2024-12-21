@@ -159,15 +159,6 @@
                             <option value="<%= status._id %>" <%= claim.status && claim.status.toString() === status._id.toString() ? 'selected' : '' %>><%= status.name %></option>
                             <% }) %>
                         </select>
-                        <div>
-                            <label for="invoice">Invoice:</label>
-                            <input type="text" id="invoice" name="invoice" value="<%= claim.invoice %>">
-                        </div>
-                        <div>
-                            <label for="amount">Amount:</label>
-                            <input type="number" id="amount" name="amount" value="<%= claim.amount %>">
-                        </div>
-                    </div>
                 </div>    
 
                 <!-- Tab content for Insurance Information -->
