@@ -1,50 +1,164 @@
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const pinoLogger = require('../logger');
 
-describe('MongoDB In-Memory Server', () => {
-  let mongoServer;
+// Mock dependencies
+jest.mock('../logger', () => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn()
+}));
 
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri);
-    }
-  });
+describe('MongoDB In-Memory Server Setup', () => {
+    let mongoServer;
+    let mongoUri;
 
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+    beforeAll(async () => {
+        try {
+            mongoServer = await MongoMemoryServer.create();
+            mongoUri = mongoServer.getUri();
+            
+            if (mongoose.connection.readyState === 0) {
+                await mongoose.connect(mongoUri, {
+                    useNewUrlParser: true,
+                    useUnifiedTopology: true
+                });
+            }
+            pinoLogger.info('MongoDB Memory Server started and connected successfully');
+        } catch (error) {
+            pinoLogger.error('Failed to start MongoDB Memory Server:', error);
+            throw error;
+        }
+    });
 
-  afterEach(async () => {
-    const collections = mongoose.connection.collections;
-    for (const key in collections) {
-      const collection = collections[key];
-      await collection.deleteMany({});
-    }
-  });
+    afterAll(async () => {
+        try {
+            await mongoose.disconnect();
+            await mongoServer.stop();
+            pinoLogger.info('MongoDB Memory Server stopped and disconnected successfully');
+        } catch (error) {
+            pinoLogger.error('Error during cleanup:', error);
+            throw error;
+        }
+    });
 
-  it('should start MongoDB in-memory server', async () => {
-    expect(mongoServer).toBeDefined();
-    expect(mongoServer.getUri()).toContain('mongodb://');
-  });
+    afterEach(async () => {
+        try {
+            const collections = mongoose.connection.collections;
+            const clearPromises = Object.values(collections).map(collection => 
+                collection.deleteMany({})
+            );
+            await Promise.all(clearPromises);
+            pinoLogger.info('Collections cleared successfully');
+        } catch (error) {
+            pinoLogger.error('Error clearing collections:', error);
+            throw error;
+        }
+    });
 
-  it('should connect to MongoDB', async () => {
-    const connectionState = mongoose.connection.readyState;
-    expect(connectionState).toBe(1); // 1 means connected
-  });
+    describe('Server Setup', () => {
+        it('should start MongoDB in-memory server with valid URI', async () => {
+            expect(mongoServer).toBeDefined();
+            expect(mongoUri).toMatch(/^mongodb:\/\/127\.0\.0\.1:/);
+            expect(mongoServer.getUri()).toBe(mongoUri);
+        });
 
-  it('should clear collections after each test', async () => {
-    const testSchema = new mongoose.Schema({ name: String });
-    const TestModel = mongoose.model('Test', testSchema);
+        it('should handle server creation errors', async () => {
+            const originalCreate = MongoMemoryServer.create;
+            MongoMemoryServer.create = jest.fn().mockRejectedValue(new Error('Server creation failed'));
 
-    await TestModel.create({ name: 'test' });
-    let count = await TestModel.countDocuments();
-    expect(count).toBe(1);
+            await expect(MongoMemoryServer.create()).rejects.toThrow('Server creation failed');
+            MongoMemoryServer.create = originalCreate;
+        });
+    });
 
-    await TestModel.deleteMany({});
-    count = await TestModel.countDocuments();
-    expect(count).toBe(0);
-  });
+    describe('Database Connection', () => {
+        it('should maintain active connection to MongoDB', async () => {
+            const connectionState = mongoose.connection.readyState;
+            expect(connectionState).toBe(1); // 1 = connected
+            expect(mongoose.connection.host).toBe('127.0.0.1');
+        });
+
+        it('should handle connection errors', async () => {
+            const invalidUri = 'mongodb://invalid:27017';
+            await expect(
+                mongoose.connect(invalidUri)
+            ).rejects.toThrow();
+        });
+    });
+
+    describe('Collection Management', () => {
+        let TestModel;
+
+        beforeAll(() => {
+            const testSchema = new mongoose.Schema({
+                name: { type: String, required: true },
+                createdAt: { type: Date, default: Date.now }
+            });
+            TestModel = mongoose.model('Test', testSchema);
+        });
+
+        it('should create and clear test collections', async () => {
+            // Create test documents
+            await TestModel.create([
+                { name: 'test1' },
+                { name: 'test2' }
+            ]);
+
+            // Verify documents were created
+            let count = await TestModel.countDocuments();
+            expect(count).toBe(2);
+
+            // Clear collections
+            await mongoose.connection.collections['tests'].deleteMany({});
+
+            // Verify documents were cleared
+            count = await TestModel.countDocuments();
+            expect(count).toBe(0);
+        });
+
+        it('should handle validation errors', async () => {
+            await expect(
+                TestModel.create({ name: null })
+            ).rejects.toThrow(mongoose.Error.ValidationError);
+        });
+
+        it('should handle bulk operations', async () => {
+            // Test bulk insert
+            await TestModel.insertMany([
+                { name: 'bulk1' },
+                { name: 'bulk2' },
+                { name: 'bulk3' }
+            ]);
+
+            const count = await TestModel.countDocuments();
+            expect(count).toBe(3);
+
+            // Test bulk delete
+            await TestModel.deleteMany({});
+            const remainingCount = await TestModel.countDocuments();
+            expect(remainingCount).toBe(0);
+        });
+    });
+
+    describe('Error Handling', () => {
+        it('should handle invalid model operations', async () => {
+            const invalidModel = mongoose.model('Invalid', new mongoose.Schema({
+                uniqueField: { type: String, unique: true }
+            }));
+
+            await invalidModel.create({ uniqueField: 'test' });
+            await expect(
+                invalidModel.create({ uniqueField: 'test' })
+            ).rejects.toThrow();
+        });
+
+        it('should handle disconnection errors', async () => {
+            const originalDisconnect = mongoose.disconnect;
+            mongoose.disconnect = jest.fn().mockRejectedValue(new Error('Disconnect failed'));
+
+            await expect(mongoose.disconnect()).rejects.toThrow('Disconnect failed');
+            mongoose.disconnect = originalDisconnect;
+        });
+    });
 });

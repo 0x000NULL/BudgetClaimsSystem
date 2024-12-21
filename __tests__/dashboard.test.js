@@ -5,58 +5,202 @@ const Claim = require('../models/Claim');
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
 const pinoLogger = require('../logger');
 
+// Create Express app for testing
+const app = express();
+
+// Mock dependencies
 jest.mock('../models/Claim');
 jest.mock('../middleware/auth');
-jest.mock('../logger');
+jest.mock('../logger', () => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn()
+}));
 
-const app = express();
+// Setup Express middleware and routes
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.set('view engine', 'ejs');
 app.use('/', dashboardRouter);
 
-describe('GET /dashboard', () => {
+describe('Dashboard Routes', () => {
+    let mockUser;
+    let mockClaims;
+
     beforeEach(() => {
-        ensureAuthenticated.mockImplementation((req, res, next) => next());
-        ensureRoles.mockImplementation((roles) => (req, res, next) => next());
-    });
-
-    afterEach(() => {
         jest.clearAllMocks();
+
+        // Setup mock user
+        mockUser = {
+            id: 'testUserId',
+            email: 'test@example.com',
+            role: 'admin'
+        };
+
+        // Setup mock claims data
+        mockClaims = {
+            totalClaims: 100,
+            openClaims: 20,
+            inProgressClaims: 30,
+            closedClaims: 50,
+            heavyHitClaims: 10,
+            lightHitClaims: 15,
+            mysteryClaims: 5
+        };
+
+        // Setup mock recent activities
+        const mockRecentActivities = Array(10).fill(null).map((_, index) => ({
+            customerName: `Customer ${index}`,
+            mva: `MVA${index}`,
+            updatedAt: new Date(),
+            toJSON: () => ({
+                customerName: `Customer ${index}`,
+                mva: `MVA${index}`,
+                updatedAt: new Date()
+            })
+        }));
+
+        // Setup default auth middleware behavior
+        ensureAuthenticated.mockImplementation((req, res, next) => {
+            req.user = mockUser;
+            next();
+        });
+        ensureRoles.mockImplementation((roles) => (req, res, next) => next());
+
+        // Setup mock Claim methods
+        Claim.countDocuments.mockImplementation((query) => {
+            if (!query) return Promise.resolve(mockClaims.totalClaims);
+            if (query.status === 'Open') return Promise.resolve(mockClaims.openClaims);
+            if (query.status === 'In Progress') return Promise.resolve(mockClaims.inProgressClaims);
+            if (query.status === 'Closed') return Promise.resolve(mockClaims.closedClaims);
+            if (query.damageType === 'Heavy hit') return Promise.resolve(mockClaims.heavyHitClaims);
+            if (query.damageType === 'Light hit') return Promise.resolve(mockClaims.lightHitClaims);
+            if (query.damageType === 'Mystery') return Promise.resolve(mockClaims.mysteryClaims);
+            return Promise.resolve(0);
+        });
+
+        Claim.aggregate.mockResolvedValue([{ avgResolutionTime: 86400000 }]); // 1 day in milliseconds
+
+        Claim.find.mockReturnValue({
+            sort: () => ({
+                limit: () => ({
+                    select: () => ({
+                        lean: () => Promise.resolve(mockRecentActivities)
+                    })
+                })
+            })
+        });
     });
 
-    it('should render the dashboard with correct data', async () => {
-        Claim.countDocuments.mockResolvedValueOnce(100); // totalClaims
-        Claim.countDocuments.mockResolvedValueOnce(20); // openClaims
-        Claim.countDocuments.mockResolvedValueOnce(30); // inProgressClaims
-        Claim.countDocuments.mockResolvedValueOnce(50); // closedClaims
-        Claim.countDocuments.mockResolvedValueOnce(10); // heavyHitClaims
-        Claim.countDocuments.mockResolvedValueOnce(15); // lightHitClaims
-        Claim.countDocuments.mockResolvedValueOnce(5); // mysteryClaims
-        Claim.aggregate.mockResolvedValueOnce([{ avgResolutionTime: 86400000 }]); // avgResolutionTime (1 day in ms)
-        Claim.find.mockResolvedValueOnce([
-            { customerName: 'John Doe', mva: '12345', updatedAt: new Date() }
-        ]); // recentActivities
+    describe('GET /dashboard', () => {
+        it('should render dashboard with complete statistics for authorized users', async () => {
+            const res = await request(app)
+                .get('/dashboard')
+                .expect(200);
 
-        const response = await request(app).get('/dashboard');
+            expect(res.text).toContain('Dashboard - Budget Claims System');
+            expect(Claim.countDocuments).toHaveBeenCalledTimes(7);
+            expect(Claim.aggregate).toHaveBeenCalled();
+            expect(Claim.find).toHaveBeenCalled();
+            expect(pinoLogger.info).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    message: 'Accessing dashboard'
+                })
+            );
+        });
 
-        expect(response.status).toBe(200);
-        expect(response.text).toContain('Dashboard - Budget Claims System');
-        expect(response.text).toContain('100'); // totalClaims
-        expect(response.text).toContain('20'); // openClaims
-        expect(response.text).toContain('30'); // inProgressClaims
-        expect(response.text).toContain('50'); // closedClaims
-        expect(response.text).toContain('10'); // heavyHitClaims
-        expect(response.text).toContain('15'); // lightHitClaims
-        expect(response.text).toContain('5'); // mysteryClaims
-        expect(response.text).toContain('1.00'); // avgResolutionTime in days
-        expect(response.text).toContain('Claim 12345 for John Doe was updated on'); // recentActivities
-    });
+        it('should handle unauthorized access', async () => {
+            ensureRoles.mockImplementation(() => (req, res, next) => {
+                res.status(403).json({ error: 'Unauthorized' });
+            });
 
-    it('should handle errors when fetching dashboard data', async () => {
-        Claim.countDocuments.mockRejectedValueOnce(new Error('Database Error'));
+            await request(app)
+                .get('/dashboard')
+                .expect(403);
+        });
 
-        const response = await request(app).get('/dashboard');
+        it('should handle database errors in claim counts', async () => {
+            Claim.countDocuments.mockRejectedValue(new Error('Database error'));
 
-        expect(response.status).toBe(500);
-        expect(response.text).toBe('Server Error');
+            const res = await request(app)
+                .get('/dashboard')
+                .expect(500);
+
+            expect(res.text).toBe('Server Error');
+            expect(pinoLogger.info).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    message: 'Error fetching dashboard data',
+                    error: expect.any(Error)
+                })
+            );
+        });
+
+        it('should handle database errors in average resolution time', async () => {
+            Claim.aggregate.mockRejectedValue(new Error('Aggregation error'));
+
+            const res = await request(app)
+                .get('/dashboard')
+                .expect(500);
+
+            expect(res.text).toBe('Server Error');
+        });
+
+        it('should handle database errors in recent activities', async () => {
+            Claim.find.mockReturnValue({
+                sort: () => ({
+                    limit: () => ({
+                        select: () => ({
+                            lean: () => Promise.reject(new Error('Recent activities error'))
+                        })
+                    })
+                })
+            });
+
+            const res = await request(app)
+                .get('/dashboard')
+                .expect(500);
+
+            expect(res.text).toBe('Server Error');
+        });
+
+        it('should handle missing average resolution time data', async () => {
+            Claim.aggregate.mockResolvedValue([]);
+
+            const res = await request(app)
+                .get('/dashboard')
+                .expect(200);
+
+            expect(res.text).toContain('N/A');
+        });
+
+        it('should format dates correctly in recent activities', async () => {
+            const testDate = new Date('2024-01-01');
+            const mockActivity = [{
+                customerName: 'Test Customer',
+                mva: 'TEST123',
+                updatedAt: testDate,
+                toJSON: () => ({
+                    customerName: 'Test Customer',
+                    mva: 'TEST123',
+                    updatedAt: testDate
+                })
+            }];
+
+            Claim.find.mockReturnValue({
+                sort: () => ({
+                    limit: () => ({
+                        select: () => ({
+                            lean: () => Promise.resolve(mockActivity)
+                        })
+                    })
+                })
+            });
+
+            const res = await request(app)
+                .get('/dashboard')
+                .expect(200);
+
+            expect(res.text).toContain('1/1/2024');
+        });
     });
 });

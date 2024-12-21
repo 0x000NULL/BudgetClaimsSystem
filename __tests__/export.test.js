@@ -5,101 +5,253 @@ const path = require('path');
 const archiver = require('archiver');
 const User = require('../models/User');
 const Claim = require('../models/Claim');
+const AuditLog = require('../models/AuditLog');
+const Settings = require('../models/Settings');
+const EmailTemplate = require('../models/EmailTemplate');
+const Status = require('../models/Status');
+const Location = require('../models/Location');
+const Progress = require('../models/Progress');
 const exportRoutes = require('../routes/export');
 const pinoLogger = require('../logger');
 
+// Create Express app for testing
+const app = express();
+
+// Mock dependencies
 jest.mock('fs');
 jest.mock('path');
 jest.mock('archiver');
 jest.mock('../models/User');
 jest.mock('../models/Claim');
-jest.mock('../logger');
+jest.mock('../models/AuditLog');
+jest.mock('../models/Settings');
+jest.mock('../models/EmailTemplate');
+jest.mock('../models/Status');
+jest.mock('../models/Location');
+jest.mock('../models/Progress');
+jest.mock('../logger', () => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn()
+}));
 
-const app = express();
+// Setup Express middleware and routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use('/export', exportRoutes);
 
 describe('Export Routes', () => {
+    let mockUser;
+    let mockArchive;
+    let mockWriteStream;
+
     beforeEach(() => {
         jest.clearAllMocks();
-    });
 
-    it('should initiate full export and return a zip file', async () => {
-        const mockUsers = [{ email: 'user1@example.com' }, { email: 'user2@example.com' }];
-        const mockClaims = [{ claimId: 'claim1' }, { claimId: 'claim2' }];
-        const mockWriteStream = {
-            on: jest.fn().mockImplementation((event, callback) => {
-                if (event === 'close') {
-                    callback();
-                }
-            }),
-            end: jest.fn()
-        };
-        const mockArchive = {
-            pipe: jest.fn(),
-            append: jest.fn(),
-            file: jest.fn(),
-            finalize: jest.fn(),
-            on: jest.fn().mockImplementation((event, callback) => {
-                if (event === 'close') {
-                    callback();
-                }
-            }),
-            pointer: jest.fn().mockReturnValue(1024)
+        // Setup mock user
+        mockUser = {
+            _id: 'testUserId',
+            email: 'test@example.com',
+            role: 'admin',
+            hasRole: jest.fn().mockReturnValue(true)
         };
 
-        fs.createWriteStream.mockReturnValue(mockWriteStream);
-        archiver.mockReturnValue(mockArchive);
-        User.find.mockResolvedValue(mockUsers);
-        Claim.find.mockResolvedValue(mockClaims);
-        fs.readdirSync.mockReturnValue(['file1.txt', 'file2.txt']);
-        path.join.mockImplementation((...args) => args.join('/'));
-
-        const response = await request(app).get('/export/full');
-
-        expect(response.status).toBe(200);
-        expect(response.header['content-type']).toBe('application/zip');
-        expect(fs.createWriteStream).toHaveBeenCalledWith(expect.stringContaining('full_export.zip'));
-        expect(archiver).toHaveBeenCalledWith('zip', { zlib: { level: 9 } });
-        expect(mockArchive.pipe).toHaveBeenCalledWith(mockWriteStream);
-        expect(mockArchive.append).toHaveBeenCalledWith(JSON.stringify(mockUsers), { name: 'users.json' });
-        expect(mockArchive.append).toHaveBeenCalledWith(JSON.stringify(mockClaims), { name: 'claims.json' });
-        expect(mockArchive.file).toHaveBeenCalledWith(expect.stringContaining('uploads/file1.txt'), { name: 'uploads/file1.txt' });
-        expect(mockArchive.file).toHaveBeenCalledWith(expect.stringContaining('uploads/file2.txt'), { name: 'uploads/file2.txt' });
-        expect(mockArchive.finalize).toHaveBeenCalled();
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({ message: 'Full export initiated' }));
-    });
-
-    it('should handle errors during export', async () => {
-        const mockError = new Error('Test error');
-        const mockWriteStream = {
+        // Setup mock write stream
+        mockWriteStream = {
+            write: jest.fn().mockImplementation((data, cb) => cb()),
             on: jest.fn(),
+            once: jest.fn(),
+            emit: jest.fn(),
             end: jest.fn()
         };
-        const mockArchive = {
+
+        // Setup mock archive
+        mockArchive = {
             pipe: jest.fn(),
             append: jest.fn(),
             file: jest.fn(),
-            finalize: jest.fn(),
-            on: jest.fn().mockImplementation((event, callback) => {
-                if (event === 'error') {
-                    callback(mockError);
-                }
-            }),
+            finalize: jest.fn().mockResolvedValue(undefined),
+            on: jest.fn(),
             pointer: jest.fn().mockReturnValue(1024)
         };
 
+        // Mock file system operations
         fs.createWriteStream.mockReturnValue(mockWriteStream);
+        fs.createReadStream.mockReturnValue({
+            pipe: jest.fn().mockReturnValue(mockWriteStream),
+            on: jest.fn().mockImplementation((event, handler) => {
+                if (event === 'end') handler();
+                return this;
+            })
+        });
+        fs.promises = {
+            mkdir: jest.fn().mockResolvedValue(undefined),
+            writeFile: jest.fn().mockResolvedValue(undefined),
+            readFile: jest.fn().mockResolvedValue('test data'),
+            rm: jest.fn().mockResolvedValue(undefined)
+        };
+        fs.existsSync.mockReturnValue(true);
+        fs.statSync.mockReturnValue({ size: 1000 });
+
+        // Mock archiver
         archiver.mockReturnValue(mockArchive);
-        User.find.mockRejectedValue(mockError);
-        Claim.find.mockRejectedValue(mockError);
-        fs.readdirSync.mockReturnValue(['file1.txt', 'file2.txt']);
-        path.join.mockImplementation((...args) => args.join('/'));
 
-        const response = await request(app).get('/export/full');
+        // Mock database operations
+        const mockCursor = {
+            next: jest.fn()
+                .mockResolvedValueOnce({ toJSON: () => ({ id: 1 }) })
+                .mockResolvedValueOnce({ toJSON: () => ({ id: 2 }) })
+                .mockResolvedValue(null)
+        };
 
-        expect(response.status).toBe(500);
-        expect(response.text).toBe('Error during export');
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({ message: 'Full export initiated' }));
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({ message: 'Error during export', error: mockError.message }));
+        [User, Claim, AuditLog, Settings, EmailTemplate, Status, Location].forEach(Model => {
+            Model.find.mockReturnValue({ cursor: () => mockCursor });
+            Model.countDocuments.mockResolvedValue(2);
+        });
+
+        // Mock Progress model
+        Progress.create.mockResolvedValue({ id: 'progress-123' });
+        Progress.findOneAndUpdate.mockResolvedValue({});
+    });
+
+    describe('GET /export/full', () => {
+        it('should handle successful full export', async () => {
+            const res = await request(app)
+                .get('/export/full')
+                .set('user', mockUser)
+                .expect(200);
+
+            expect(res.header['content-type']).toBe('application/zip');
+            expect(res.header['content-disposition']).toMatch(/^attachment; filename="export-.*\.zip"$/);
+            
+            expect(Progress.create).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'export',
+                status: 'started'
+            }));
+
+            expect(AuditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+                action: 'full_export',
+                user: mockUser._id.toString()
+            }));
+
+            expect(mockArchive.finalize).toHaveBeenCalled();
+        });
+
+        it('should handle unauthorized access', async () => {
+            mockUser.role = 'user';
+            mockUser.hasRole.mockReturnValue(false);
+
+            const res = await request(app)
+                .get('/export/full')
+                .set('user', mockUser)
+                .expect(403);
+
+            expect(res.body).toEqual({
+                success: false,
+                message: 'Unauthorized. Admin access required.'
+            });
+        });
+
+        it('should handle database errors', async () => {
+            User.find.mockImplementation(() => {
+                throw new Error('Database error');
+            });
+
+            const res = await request(app)
+                .get('/export/full')
+                .set('user', mockUser)
+                .expect(500);
+
+            expect(res.body).toEqual({
+                success: false,
+                message: 'Export failed'
+            });
+        });
+
+        it('should handle archive creation errors', async () => {
+            mockArchive.finalize.mockRejectedValue(new Error('Archive error'));
+
+            const res = await request(app)
+                .get('/export/full')
+                .set('user', mockUser)
+                .expect(500);
+
+            expect(res.body).toEqual({
+                success: false,
+                message: 'Export failed'
+            });
+        });
+
+        it('should handle file system errors', async () => {
+            fs.promises.mkdir.mockRejectedValue(new Error('File system error'));
+
+            const res = await request(app)
+                .get('/export/full')
+                .set('user', mockUser)
+                .expect(500);
+
+            expect(res.body).toEqual({
+                success: false,
+                message: 'Export failed'
+            });
+        });
+
+        it('should clean up temporary files after export', async () => {
+            await request(app)
+                .get('/export/full')
+                .set('user', mockUser);
+
+            expect(fs.promises.rm).toHaveBeenCalled();
+        });
+
+        it('should update progress during export', async () => {
+            await request(app)
+                .get('/export/full')
+                .set('user', mockUser);
+
+            expect(Progress.create).toHaveBeenCalled();
+            expect(Progress.findOneAndUpdate).toHaveBeenCalled();
+        });
+
+        it('should handle client disconnect', async () => {
+            const req = request(app).get('/export/full').set('user', mockUser);
+            req.abort();
+
+            expect(fs.promises.rm).toHaveBeenCalled();
+        });
+
+        it('should include all required collections', async () => {
+            await request(app)
+                .get('/export/full')
+                .set('user', mockUser);
+
+            const collections = [
+                'users.json',
+                'claims.json',
+                'audit_logs.json',
+                'settings.json',
+                'email_templates.json',
+                'statuses.json',
+                'locations.json'
+            ];
+
+            collections.forEach(filename => {
+                expect(mockArchive.file).toHaveBeenCalledWith(
+                    expect.stringContaining(filename),
+                    expect.any(Object)
+                );
+            });
+        });
+
+        it('should include metadata file', async () => {
+            await request(app)
+                .get('/export/full')
+                .set('user', mockUser);
+
+            expect(mockArchive.append).toHaveBeenCalledWith(
+                expect.stringContaining('"version":"1.0"'),
+                { name: 'metadata.json' }
+            );
+        });
     });
 });
