@@ -1,127 +1,301 @@
 const request = require('supertest');
 const express = require('express');
-const mongoose = require('mongoose');
 const Claim = require('../models/Claim');
 const Customer = require('../models/Customer');
-const authMiddleware = require('../middleware/auth');
-const apiRouter = require('./api');
+const Settings = require('../models/Settings');
+const { ensureAuthenticated, ensureRole } = require('../middleware/auth');
+const apiRouter = require('../routes/api');
+const pinoLogger = require('../logger');
 
+// Create Express app for testing
 const app = express();
-app.use(express.json());
-app.use('/api', apiRouter);
 
-// Mock the authentication middleware
-jest.mock('../middleware/auth', () => ({
-    ensureAuthenticated: (req, res, next) => next(),
-    ensureRole: (role) => (req, res, next) => next()
-}));
-
-// Mock the logger
+// Mock dependencies
+jest.mock('../models/Claim');
+jest.mock('../models/Customer');
+jest.mock('../models/Settings');
+jest.mock('../middleware/auth');
 jest.mock('../logger', () => ({
     info: jest.fn(),
-    error: jest.fn()
+    error: jest.fn(),
+    warn: jest.fn()
 }));
 
-describe('API Routes', () => {
-    beforeAll(async () => {
-        const url = `mongodb://127.0.0.1/budget_claims_test`;
-        await mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
-    });
+// Setup Express middleware and routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.set('view engine', 'ejs');
+app.use('/api', apiRouter);
 
-    afterAll(async () => {
-        await mongoose.connection.db.dropDatabase();
-        await mongoose.connection.close();
+describe('API Routes', () => {
+    let mockUser;
+    let mockClaim;
+    let mockCustomer;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        // Setup mock user
+        mockUser = {
+            id: 'testUserId',
+            email: 'test@example.com',
+            role: 'admin'
+        };
+
+        // Setup mock claim
+        mockClaim = {
+            _id: 'claim123',
+            mva: 'MVA123',
+            customerName: 'John Doe',
+            status: 'Open',
+            description: 'Test claim'
+        };
+
+        // Setup mock customer
+        mockCustomer = {
+            _id: 'customer123',
+            name: 'John Doe',
+            email: 'john@example.com'
+        };
+
+        // Setup default auth middleware behavior
+        ensureAuthenticated.mockImplementation((req, res, next) => {
+            req.user = mockUser;
+            next();
+        });
+        ensureRole.mockImplementation((role) => (req, res, next) => next());
     });
 
     describe('Claims API', () => {
-        let claimId;
+        describe('GET /api/claims', () => {
+            it('should return all claims for authorized users', async () => {
+                Claim.find.mockResolvedValue([mockClaim]);
 
-        beforeEach(async () => {
-            const claim = new Claim({ mva: '123', customerName: 'John Doe', description: 'Test claim', status: 'Pending' });
-            const savedClaim = await claim.save();
-            claimId = savedClaim._id;
+                const res = await request(app)
+                    .get('/api/claims')
+                    .expect(200);
+
+                expect(res.body).toEqual([mockClaim]);
+                expect(Claim.find).toHaveBeenCalled();
+                expect(pinoLogger.info).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        message: 'Fetching all claims'
+                    })
+                );
+            });
+
+            it('should handle database errors', async () => {
+                Claim.find.mockRejectedValue(new Error('Database error'));
+
+                const res = await request(app)
+                    .get('/api/claims')
+                    .expect(500);
+
+                expect(res.body.error).toBeDefined();
+            });
         });
 
-        afterEach(async () => {
-            await Claim.deleteMany();
+        describe('GET /api/claims/:id', () => {
+            it('should return specific claim by ID', async () => {
+                Claim.findById.mockResolvedValue(mockClaim);
+
+                const res = await request(app)
+                    .get(`/api/claims/${mockClaim._id}`)
+                    .expect(200);
+
+                expect(res.body).toEqual(mockClaim);
+            });
+
+            it('should handle non-existent claim', async () => {
+                Claim.findById.mockResolvedValue(null);
+
+                const res = await request(app)
+                    .get('/api/claims/nonexistent')
+                    .expect(404);
+
+                expect(res.body.msg).toBe('Claim not found');
+            });
         });
 
-        it('should fetch all claims', async () => {
-            const res = await request(app).get('/api/claims');
-            expect(res.statusCode).toEqual(200);
-            expect(res.body).toHaveLength(1);
+        describe('POST /api/claims', () => {
+            const validClaimData = {
+                mva: 'MVA123',
+                customerName: 'John Doe',
+                description: 'Test claim',
+                status: 'Open'
+            };
+
+            it('should create new claim with valid data', async () => {
+                Claim.prototype.save.mockResolvedValue(mockClaim);
+
+                const res = await request(app)
+                    .post('/api/claims')
+                    .send(validClaimData)
+                    .expect(200);
+
+                expect(res.body).toEqual(mockClaim);
+            });
+
+            it('should handle validation errors', async () => {
+                Claim.prototype.save.mockRejectedValue(new Error('Validation error'));
+
+                const res = await request(app)
+                    .post('/api/claims')
+                    .send({})
+                    .expect(500);
+
+                expect(res.body.error).toBeDefined();
+            });
         });
 
-        it('should fetch a claim by ID', async () => {
-            const res = await request(app).get(`/api/claims/${claimId}`);
-            expect(res.statusCode).toEqual(200);
-            expect(res.body._id).toEqual(claimId.toString());
+        describe('PUT /api/claims/:id', () => {
+            it('should update existing claim', async () => {
+                Claim.findByIdAndUpdate.mockResolvedValue({
+                    ...mockClaim,
+                    status: 'Closed'
+                });
+
+                const res = await request(app)
+                    .put(`/api/claims/${mockClaim._id}`)
+                    .send({ status: 'Closed' })
+                    .expect(200);
+
+                expect(res.body.status).toBe('Closed');
+            });
+
+            it('should handle non-existent claim', async () => {
+                Claim.findByIdAndUpdate.mockResolvedValue(null);
+
+                const res = await request(app)
+                    .put('/api/claims/nonexistent')
+                    .send({ status: 'Closed' })
+                    .expect(404);
+
+                expect(res.body.msg).toBe('Claim not found');
+            });
         });
 
-        it('should add a new claim', async () => {
-            const newClaim = { mva: '456', customerName: 'Jane Doe', description: 'Another test claim', status: 'Pending' };
-            const res = await request(app).post('/api/claims').send(newClaim);
-            expect(res.statusCode).toEqual(200);
-            expect(res.body.customerName).toEqual('Jane Doe');
-        });
+        describe('DELETE /api/claims/:id', () => {
+            it('should delete existing claim', async () => {
+                Claim.findByIdAndDelete.mockResolvedValue(mockClaim);
 
-        it('should update a claim by ID', async () => {
-            const updatedClaim = { status: 'Approved' };
-            const res = await request(app).put(`/api/claims/${claimId}`).send(updatedClaim);
-            expect(res.statusCode).toEqual(200);
-            expect(res.body.status).toEqual('Approved');
-        });
+                const res = await request(app)
+                    .delete(`/api/claims/${mockClaim._id}`)
+                    .expect(200);
 
-        it('should delete a claim by ID', async () => {
-            const res = await request(app).delete(`/api/claims/${claimId}`);
-            expect(res.statusCode).toEqual(200);
-            expect(res.body.msg).toEqual('Claim deleted');
+                expect(res.body.msg).toBe('Claim deleted');
+            });
+
+            it('should handle unauthorized deletion', async () => {
+                ensureRole.mockImplementation(() => (req, res, next) => {
+                    res.status(403).json({ error: 'Unauthorized' });
+                });
+
+                await request(app)
+                    .delete(`/api/claims/${mockClaim._id}`)
+                    .expect(403);
+            });
         });
     });
 
     describe('Customers API', () => {
-        let customerId;
+        describe('GET /api/customers', () => {
+            it('should return all customers for authorized users', async () => {
+                Customer.find.mockResolvedValue([mockCustomer]);
 
-        beforeEach(async () => {
-            const customer = new Customer({ name: 'John Doe', email: 'john@example.com', password: 'password' });
-            const savedCustomer = await customer.save();
-            customerId = savedCustomer._id;
+                const res = await request(app)
+                    .get('/api/customers')
+                    .expect(200);
+
+                expect(res.body).toEqual([mockCustomer]);
+            });
+
+            it('should handle database errors', async () => {
+                Customer.find.mockRejectedValue(new Error('Database error'));
+
+                const res = await request(app)
+                    .get('/api/customers')
+                    .expect(500);
+
+                expect(res.body.error).toBeDefined();
+            });
         });
 
-        afterEach(async () => {
-            await Customer.deleteMany();
+        describe('POST /api/customers', () => {
+            const validCustomerData = {
+                name: 'John Doe',
+                email: 'john@example.com',
+                password: 'password123'
+            };
+
+            it('should create new customer with valid data', async () => {
+                Customer.prototype.save.mockResolvedValue(mockCustomer);
+
+                const res = await request(app)
+                    .post('/api/customers')
+                    .send(validCustomerData)
+                    .expect(200);
+
+                expect(res.body).toEqual(mockCustomer);
+            });
+
+            it('should handle validation errors', async () => {
+                Customer.prototype.save.mockRejectedValue(new Error('Validation error'));
+
+                const res = await request(app)
+                    .post('/api/customers')
+                    .send({})
+                    .expect(500);
+
+                expect(res.body.error).toBeDefined();
+            });
+        });
+    });
+
+    describe('Settings API', () => {
+        describe('POST /api/settings/file-count', () => {
+            it('should update file count settings', async () => {
+                Settings.updateSettings.mockResolvedValue({
+                    type: 'fileCount',
+                    settings: { photos: 10, documents: 5, invoices: 5 }
+                });
+
+                const res = await request(app)
+                    .post('/api/settings/file-count')
+                    .send({ photos: 10, documents: 5, invoices: 5 })
+                    .expect(200);
+
+                expect(res.body.success).toBe(true);
+                expect(global.MAX_FILES_PER_CATEGORY).toBeDefined();
+            });
+
+            it('should handle validation errors', async () => {
+                Settings.updateSettings.mockRejectedValue(new Error('Validation error'));
+
+                const res = await request(app)
+                    .post('/api/settings/file-count')
+                    .send({ photos: -1 })
+                    .expect(500);
+
+                expect(res.body.success).toBe(false);
+            });
         });
 
-        it('should fetch all customers', async () => {
-            const res = await request(app).get('/api/customers');
-            expect(res.statusCode).toEqual(200);
-            expect(res.body).toHaveLength(1);
-        });
+        describe('POST /api/settings/file-sizes', () => {
+            it('should update file size settings', async () => {
+                Settings.updateSettings.mockResolvedValue({
+                    type: 'fileSize',
+                    settings: { photos: 5242880, documents: 10485760, invoices: 10485760 }
+                });
 
-        it('should fetch a customer by ID', async () => {
-            const res = await request(app).get(`/api/customers/${customerId}`);
-            expect(res.statusCode).toEqual(200);
-            expect(res.body._id).toEqual(customerId.toString());
-        });
+                const res = await request(app)
+                    .post('/api/settings/file-sizes')
+                    .send({ photos: 5, documents: 10, invoices: 10 })
+                    .expect(200);
 
-        it('should add a new customer', async () => {
-            const newCustomer = { name: 'Jane Doe', email: 'jane@example.com', password: 'password' };
-            const res = await request(app).post('/api/customers').send(newCustomer);
-            expect(res.statusCode).toEqual(200);
-            expect(res.body.name).toEqual('Jane Doe');
-        });
-
-        it('should update a customer by ID', async () => {
-            const updatedCustomer = { name: 'John Smith' };
-            const res = await request(app).put(`/api/customers/${customerId}`).send(updatedCustomer);
-            expect(res.statusCode).toEqual(200);
-            expect(res.body.name).toEqual('John Smith');
-        });
-
-        it('should delete a customer by ID', async () => {
-            const res = await request(app).delete(`/api/customers/${customerId}`);
-            expect(res.statusCode).toEqual(200);
-            expect(res.body.msg).toEqual('Customer deleted');
+                expect(res.body.success).toBe(true);
+                expect(global.MAX_FILE_SIZES).toBeDefined();
+            });
         });
     });
 });

@@ -1,130 +1,261 @@
 const request = require('supertest');
 const express = require('express');
+const nodemailer = require('nodemailer');
 const emailRoutes = require('../routes/email');
 const EmailTemplate = require('../models/EmailTemplate');
 const Claim = require('../models/Claim');
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
+const pinoLogger = require('../logger');
 
+// Create Express app for testing
 const app = express();
-app.use(express.json());
-app.use('/email', emailRoutes);
 
-// Mock middleware
-jest.mock('../middleware/auth', () => ({
-    ensureAuthenticated: (req, res, next) => next(),
-    ensureRoles: (roles) => (req, res, next) => next(),
-}));
-
-// Mock models
+// Mock dependencies
+jest.mock('nodemailer');
 jest.mock('../models/EmailTemplate');
 jest.mock('../models/Claim');
+jest.mock('../middleware/auth');
+jest.mock('../logger', () => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn()
+}));
+
+// Setup Express middleware and routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.set('view engine', 'ejs');
+app.use('/email', emailRoutes);
 
 describe('Email Routes', () => {
+    let mockUser;
+    let mockClaim;
+    let mockTemplate;
+    let mockTransporter;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        // Setup mock user
+        mockUser = {
+            id: 'testUserId',
+            email: 'test@example.com',
+            role: 'admin'
+        };
+
+        // Setup mock claim
+        mockClaim = {
+            _id: 'claim123',
+            customerName: 'John Doe',
+            customerEmail: 'john@example.com',
+            mva: 'MVA123',
+            carMake: 'Toyota',
+            carModel: 'Camry',
+            accidentDate: new Date('2024-01-01')
+        };
+
+        // Setup mock template
+        mockTemplate = {
+            _id: 'template123',
+            name: 'Test Template',
+            subject: 'Test Subject',
+            body: 'Hello {CustomerName}, Your MVA is {MVA}'
+        };
+
+        // Setup mock transporter
+        mockTransporter = {
+            sendMail: jest.fn().mockImplementation((options, callback) => {
+                callback(null, { messageId: 'test123' });
+            })
+        };
+
+        // Setup nodemailer mock
+        nodemailer.createTransport.mockReturnValue(mockTransporter);
+
+        // Setup default auth middleware behavior
+        ensureAuthenticated.mockImplementation((req, res, next) => {
+            req.user = mockUser;
+            next();
+        });
+        ensureRoles.mockImplementation((roles) => (req, res, next) => next());
+
+        // Setup environment variables
+        process.env.EMAIL_USER = 'test@example.com';
+        process.env.EMAIL_PASS = 'testpass';
+    });
+
     describe('GET /email/form/:id', () => {
-        it('should display the email form', async () => {
-            const mockClaim = { _id: '1', customerName: 'John Doe' };
-            const mockTemplates = [{ _id: '1', subject: 'Test', body: 'Hello {CustomerName}' }];
-
+        it('should render email form with claim and templates', async () => {
             Claim.findById.mockResolvedValue(mockClaim);
-            EmailTemplate.find.mockResolvedValue(mockTemplates);
+            EmailTemplate.find.mockResolvedValue([mockTemplate]);
 
-            const res = await request(app).get('/email/form/1');
+            const res = await request(app)
+                .get(`/email/form/${mockClaim._id}`)
+                .expect(200);
 
-            expect(res.status).toBe(200);
-            expect(res.text).toContain('John Doe');
-            expect(res.text).toContain('Test');
+            expect(res.text).toContain('email_form');
+            expect(Claim.findById).toHaveBeenCalledWith(mockClaim._id);
+            expect(EmailTemplate.find).toHaveBeenCalled();
+            expect(pinoLogger.info).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    message: 'Displaying email form'
+                })
+            );
         });
 
-        it('should handle errors', async () => {
-            Claim.findById.mockRejectedValue(new Error('Error'));
+        it('should handle database errors', async () => {
+            Claim.findById.mockRejectedValue(new Error('Database error'));
 
-            const res = await request(app).get('/email/form/1');
+            const res = await request(app)
+                .get(`/email/form/${mockClaim._id}`)
+                .expect(500);
 
-            expect(res.status).toBe(500);
             expect(res.text).toBe('Server Error');
+            expect(pinoLogger.info).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    message: 'Error displaying email form',
+                    error: expect.any(Error)
+                })
+            );
         });
     });
 
     describe('GET /email/templates/:templateId', () => {
-        it('should get a specific email template and replace variables', async () => {
-            const mockTemplate = { _id: '1', subject: 'Test', body: 'Hello {CustomerName}' };
-            const mockClaim = { _id: '1', customerName: 'John Doe' };
-
+        it('should return populated template with claim variables', async () => {
             EmailTemplate.findById.mockResolvedValue(mockTemplate);
             Claim.findById.mockResolvedValue(mockClaim);
 
-            const res = await request(app).get('/email/templates/1').query({ claimId: '1' });
+            const res = await request(app)
+                .get(`/email/templates/${mockTemplate._id}`)
+                .query({ claimId: mockClaim._id })
+                .expect(200);
 
-            expect(res.status).toBe(200);
-            expect(res.body.body).toBe('Hello John Doe');
+            expect(res.body.body).toBe('Hello John Doe, Your MVA is MVA123');
+            expect(EmailTemplate.findById).toHaveBeenCalledWith(mockTemplate._id);
+            expect(Claim.findById).toHaveBeenCalledWith(mockClaim._id);
         });
 
-        it('should handle errors', async () => {
-            EmailTemplate.findById.mockRejectedValue(new Error('Error'));
+        it('should handle missing template', async () => {
+            EmailTemplate.findById.mockResolvedValue(null);
 
-            const res = await request(app).get('/email/templates/1').query({ claimId: '1' });
+            const res = await request(app)
+                .get(`/email/templates/${mockTemplate._id}`)
+                .query({ claimId: mockClaim._id })
+                .expect(500);
 
-            expect(res.status).toBe(500);
+            expect(res.text).toBe('Server Error');
+        });
+
+        it('should handle missing claim', async () => {
+            EmailTemplate.findById.mockResolvedValue(mockTemplate);
+            Claim.findById.mockResolvedValue(null);
+
+            const res = await request(app)
+                .get(`/email/templates/${mockTemplate._id}`)
+                .query({ claimId: mockClaim._id })
+                .expect(500);
+
             expect(res.text).toBe('Server Error');
         });
     });
 
     describe('GET /email/send/:claimId', () => {
-        it('should display the email sending form', async () => {
-            const mockClaim = { _id: '1', customerName: 'John Doe' };
-            const mockTemplates = [{ _id: '1', subject: 'Test', body: 'Hello {CustomerName}' }];
+        it('should render email sending form for authorized users', async () => {
+            Claim.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(mockClaim) });
+            EmailTemplate.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([mockTemplate]) });
 
-            Claim.findById.mockResolvedValue(mockClaim);
-            EmailTemplate.find.mockResolvedValue(mockTemplates);
+            const res = await request(app)
+                .get(`/email/send/${mockClaim._id}`)
+                .expect(200);
 
-            const res = await request(app).get('/email/send/1');
-
-            expect(res.status).toBe(200);
-            expect(res.text).toContain('John Doe');
-            expect(res.text).toContain('Test');
+            expect(res.text).toContain('email_form');
+            expect(Claim.findById).toHaveBeenCalledWith(mockClaim._id);
+            expect(EmailTemplate.find).toHaveBeenCalled();
         });
 
-        it('should handle errors', async () => {
-            Claim.findById.mockRejectedValue(new Error('Error'));
+        it('should handle unauthorized access', async () => {
+            ensureRoles.mockImplementation(() => (req, res, next) => {
+                res.status(403).json({ error: 'Unauthorized' });
+            });
 
-            const res = await request(app).get('/email/send/1');
+            await request(app)
+                .get(`/email/send/${mockClaim._id}`)
+                .expect(403);
+        });
 
-            expect(res.status).toBe(500);
+        it('should handle database errors', async () => {
+            Claim.findById.mockReturnValue({ exec: jest.fn().mockRejectedValue(new Error('Database error')) });
+
+            const res = await request(app)
+                .get(`/email/send/${mockClaim._id}`)
+                .expect(500);
+
             expect(res.text).toBe('Server Error');
         });
     });
 
     describe('POST /email/send', () => {
-        it('should send an email', async () => {
-            const mockTransporter = {
-                sendMail: jest.fn((mailOptions, callback) => callback(null, { messageId: '123' })),
-            };
-            jest.mock('nodemailer', () => ({
-                createTransport: () => mockTransporter,
-            }));
+        const validEmailData = {
+            email: 'recipient@example.com',
+            subject: 'Test Email',
+            body: 'Test Body'
+        };
 
+        it('should send email successfully', async () => {
             const res = await request(app)
                 .post('/email/send')
-                .send({ email: 'test@example.com', subject: 'Test', body: 'Hello' });
+                .send(validEmailData)
+                .expect(200);
 
-            expect(res.status).toBe(200);
             expect(res.body.success).toBe('Email sent successfully');
+            expect(mockTransporter.sendMail).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    to: validEmailData.email,
+                    subject: validEmailData.subject,
+                    text: validEmailData.body
+                }),
+                expect.any(Function)
+            );
         });
 
-        it('should handle errors', async () => {
-            const mockTransporter = {
-                sendMail: jest.fn((mailOptions, callback) => callback(new Error('Error'), null)),
-            };
-            jest.mock('nodemailer', () => ({
-                createTransport: () => mockTransporter,
-            }));
+        it('should handle email sending failure', async () => {
+            mockTransporter.sendMail.mockImplementation((options, callback) => {
+                callback(new Error('SMTP error'), null);
+            });
 
             const res = await request(app)
                 .post('/email/send')
-                .send({ email: 'test@example.com', subject: 'Test', body: 'Hello' });
+                .send(validEmailData)
+                .expect(500);
 
-            expect(res.status).toBe(500);
             expect(res.body.error).toBe('Failed to send email');
+        });
+
+        it('should handle missing email configuration', async () => {
+            delete process.env.EMAIL_USER;
+            delete process.env.EMAIL_PASS;
+
+            const res = await request(app)
+                .post('/email/send')
+                .send(validEmailData)
+                .expect(500);
+
+            expect(res.body.error).toBe('Failed to send email');
+        });
+
+        it('should validate email data', async () => {
+            const invalidData = {
+                email: 'invalid-email',
+                subject: '',
+                body: ''
+            };
+
+            const res = await request(app)
+                .post('/email/send')
+                .send(invalidData)
+                .expect(400);
+
+            expect(res.body.error).toBe('Invalid email data');
         });
     });
 });

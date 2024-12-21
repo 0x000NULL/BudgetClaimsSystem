@@ -7,6 +7,7 @@ const passport = require('passport');
 const flash = require('connect-flash');
 const exportRoutes = require('../routes/export');
 const auditLogRoutes = require('../routes/auditLogs');
+const auth = require('../middleware/auth');
 require('dotenv').config();
 
 const app = express();
@@ -54,15 +55,29 @@ jest.mock('../middleware/auth', () => ({
 
 // Connect to MongoDB
 beforeAll(async () => {
-    if (mongoose.connection.readyState === 0) {
-        await mongoose.connect(process.env.MONGO_URI);
+    try {
+        await mongoose.connect(process.env.MONGO_URI_TEST || process.env.MONGO_URI);
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+        throw err;
     }
 });
 
-// Close MongoDB connection
+afterEach(async () => {
+    // Clean up any test data after each test
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+        await collections[key].deleteMany();
+    }
+});
+
 afterAll(async () => {
-    await mongoose.connection.close();
-    await new Promise(resolve => setTimeout(() => resolve(), 500)); // wait for 500ms to ensure all connections are closed
+    try {
+        await mongoose.connection.close();
+    } catch (err) {
+        console.error('Error closing MongoDB connection:', err);
+        throw err;
+    }
 });
 
 describe('Server Routes', () => {
@@ -154,5 +169,114 @@ describe('Server Routes', () => {
     it('should handle DELETE requests to the users route', async () => {
         const res = await request(app).delete('/users/1');
         expect(res.statusCode).toEqual(200);
+    });
+
+    describe('Response Content', () => {
+        it('should return proper content type headers', async () => {
+            const res = await request(app).get('/');
+            expect(res.headers['content-type']).toMatch(/text\/html/);
+        });
+
+        it('should return JSON for API endpoints', async () => {
+            const res = await request(app)
+                .get('/api')
+                .set('Accept', 'application/json');
+            expect(res.headers['content-type']).toMatch(/json/);
+        });
+    });
+});
+
+describe('Error Handling', () => {
+    it('should handle server errors with 500 status code', async () => {
+        // Mock a route that throws an error
+        app.get('/error-test', () => {
+            throw new Error('Test error');
+        });
+
+        const res = await request(app).get('/error-test');
+        expect(res.statusCode).toEqual(500);
+    });
+});
+
+describe('Middleware', () => {
+    it('should properly set flash messages', async () => {
+        const agent = request.agent(app);
+        
+        await agent
+            .get('/')
+            .expect(200)
+            .expect((res) => {
+                expect(res.locals).toBeDefined();
+                expect(res.locals.success_msg).toBeDefined();
+                expect(res.locals.error_msg).toBeDefined();
+                expect(res.locals.error).toBeDefined();
+            });
+    });
+});
+
+describe('Authentication', () => {
+    it('should protect authenticated routes', async () => {
+        // Temporarily remove the mock to test real authentication
+        jest.unmock('../middleware/auth');
+        
+        const protectedRoutes = [
+            '/dashboard',
+            '/claims',
+            '/reports',
+            '/export'
+        ];
+
+        for (const route of protectedRoutes) {
+            const res = await request(app).get(route);
+            expect(res.statusCode).toEqual(302); // Should redirect to login
+        }
+
+        // Restore the mock
+        jest.mock('../middleware/auth', () => ({
+            ensureAuthenticated: jest.fn((req, res, next) => next()),
+            ensureRoles: jest.fn((roles) => (req, res, next) => next())
+        }));
+    });
+});
+
+describe('HTTP Methods', () => {
+    const testData = { name: 'Test User', email: 'test@example.com' };
+
+    it('should handle POST requests with proper data', async () => {
+        const res = await request(app)
+            .post('/feedback')
+            .send(testData)
+            .set('Accept', 'application/json');
+        
+        expect(res.statusCode).toEqual(200);
+        expect(res.headers['content-type']).toMatch(/json/);
+    });
+
+    it('should handle PUT requests with proper data', async () => {
+        const res = await request(app)
+            .put('/users/1')
+            .send(testData)
+            .set('Accept', 'application/json');
+        
+        expect(res.statusCode).toEqual(200);
+        expect(res.headers['content-type']).toMatch(/json/);
+    });
+
+    it('should handle DELETE requests properly', async () => {
+        const res = await request(app)
+            .delete('/users/1')
+            .set('Accept', 'application/json');
+        
+        expect(res.statusCode).toEqual(200);
+        expect(res.headers['content-type']).toMatch(/json/);
+    });
+
+    it('should reject invalid content types', async () => {
+        const res = await request(app)
+            .post('/feedback')
+            .send('invalid data')
+            .set('Content-Type', 'text/plain');
+        
+        expect(res.statusCode).toEqual(400);
     });
 });

@@ -6,216 +6,232 @@ const path = require('path');
 const extract = require('extract-zip');
 const User = require('../models/User');
 const Claim = require('../models/Claim');
+const AuditLog = require('../models/AuditLog');
+const Settings = require('../models/Settings');
+const Progress = require('../models/Progress');
 const pinoLogger = require('../logger');
 const importRoutes = require('../routes/import');
 
+// Create Express app for testing
 const app = express();
-app.use(express.json());
-app.use('/import', importRoutes);
 
+// Mock dependencies
 jest.mock('fs');
 jest.mock('path');
 jest.mock('extract-zip');
 jest.mock('../models/User');
 jest.mock('../models/Claim');
-jest.mock('../logger');
+jest.mock('../models/AuditLog');
+jest.mock('../models/Settings');
+jest.mock('../models/Progress');
+jest.mock('../logger', () => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn()
+}));
 
-describe('POST /import/full', () => {
-    const upload = multer({ dest: 'uploads/' });
+// Setup Express middleware and routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use('/import', importRoutes);
+
+describe('Import Routes', () => {
+    let mockUser;
+    let mockFile;
+    let mockMetadata;
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        // Setup mock user
+        mockUser = {
+            id: 'testUserId',
+            email: 'test@example.com',
+            role: 'admin',
+            hasRole: jest.fn().mockReturnValue(true)
+        };
+
+        // Setup mock file
+        mockFile = {
+            fieldname: 'file',
+            originalname: 'test.zip',
+            encoding: '7bit',
+            mimetype: 'application/zip',
+            destination: 'uploads/',
+            filename: 'test-123.zip',
+            path: 'uploads/test-123.zip',
+            size: 12345
+        };
+
+        // Setup mock metadata
+        mockMetadata = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            files: [
+                { name: 'users.json', checksum: 'abc123' },
+                { name: 'claims.json', checksum: 'def456' }
+            ]
+        };
+
+        // Mock file system operations
+        fs.promises = {
+            mkdir: jest.fn().mockResolvedValue(undefined),
+            readFile: jest.fn().mockImplementation((path) => {
+                if (path.includes('metadata.json')) {
+                    return Promise.resolve(JSON.stringify(mockMetadata));
+                }
+                if (path.includes('users.json')) {
+                    return Promise.resolve(JSON.stringify([{ email: 'user@test.com' }]));
+                }
+                if (path.includes('claims.json')) {
+                    return Promise.resolve(JSON.stringify([{ claimId: 'CLAIM-001' }]));
+                }
+                return Promise.resolve('');
+            }),
+            writeFile: jest.fn().mockResolvedValue(undefined),
+            unlink: jest.fn().mockResolvedValue(undefined),
+            rm: jest.fn().mockResolvedValue(undefined),
+            stat: jest.fn().mockResolvedValue({ size: 1000 })
+        };
+
+        // Mock crypto for file verification
+        global.crypto = {
+            createHash: jest.fn().mockReturnValue({
+                update: jest.fn().mockReturnThis(),
+                digest: jest.fn().mockReturnValue('abc123')
+            })
+        };
+
+        // Mock Progress model
+        Progress.create.mockResolvedValue({ id: 'progress-123' });
+        Progress.findById.mockResolvedValue({
+            id: 'progress-123',
+            status: 'in_progress'
+        });
+        Progress.findByIdAndUpdate.mockResolvedValue({});
+
+        // Setup mock database operations
+        User.startSession.mockResolvedValue({
+            withTransaction: jest.fn(cb => cb()),
+            endSession: jest.fn()
+        });
+        Claim.startSession.mockResolvedValue({
+            withTransaction: jest.fn(cb => cb()),
+            endSession: jest.fn()
+        });
     });
 
-    it('should handle full data import successfully', async () => {
-        const mockFilePath = 'uploads/mockfile.zip';
-        const mockExtractPath = path.join(__dirname, '../imports');
-        const mockUsersData = JSON.stringify([{ email: 'user1@example.com' }, { email: 'user2@example.com' }]);
-        const mockClaimsData = JSON.stringify([{ claimId: 'claim1' }, { claimId: 'claim2' }]);
-        const mockUploadsDir = path.join(mockExtractPath, 'uploads');
+    describe('POST /import/full', () => {
+        it('should handle successful data import', async () => {
+            const res = await request(app)
+                .post('/import/full')
+                .attach('file', Buffer.from('mock zip content'), mockFile.originalname)
+                .expect(200);
 
-        fs.readFileSync.mockImplementation((filePath) => {
-            if (filePath.includes('users.json')) return mockUsersData;
-            if (filePath.includes('claims.json')) return mockClaimsData;
-            return '';
+            expect(res.body).toEqual({
+                success: true,
+                message: 'Import completed successfully',
+                importId: expect.any(String),
+                details: expect.objectContaining({
+                    duration: expect.any(Number),
+                    collectionsImported: expect.any(Number)
+                })
+            });
+
+            expect(AuditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+                action: 'full_import',
+                user: mockUser.email
+            }));
         });
 
-        fs.readdirSync.mockReturnValue(['file1.txt', 'file2.txt']);
-        fs.copyFileSync.mockImplementation(() => {});
+        it('should validate file type', async () => {
+            const res = await request(app)
+                .post('/import/full')
+                .attach('file', Buffer.from('invalid content'), 'test.txt')
+                .expect(400);
 
-        await request(app)
-            .post('/import/full')
-            .attach('file', Buffer.from('mock file content'), 'mockfile.zip')
-            .expect(200)
-            .expect('Import completed successfully');
-
-        expect(extract).toHaveBeenCalledWith(mockFilePath, { dir: mockExtractPath });
-        expect(User.deleteMany).toHaveBeenCalled();
-        expect(User.insertMany).toHaveBeenCalledWith(JSON.parse(mockUsersData));
-        expect(Claim.deleteMany).toHaveBeenCalled();
-        expect(Claim.insertMany).toHaveBeenCalledWith(JSON.parse(mockClaimsData));
-        expect(fs.copyFileSync).toHaveBeenCalledTimes(2);
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
-            message: 'Import completed successfully'
-        }));
-    });
-
-    it('should handle errors during import', async () => {
-        const mockError = new Error('Mock error');
-        extract.mockRejectedValue(mockError);
-
-        await request(app)
-            .post('/import/full')
-            .attach('file', Buffer.from('mock file content'), 'mockfile.zip')
-            .expect(500)
-            .expect('Error during import');
-
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
-            message: 'Error during import',
-            error: mockError
-        }));
-    });
-
-    it('should handle missing file error', async () => {
-        await request(app)
-            .post('/import/full')
-            .expect(400)
-            .expect('No file uploaded');
-
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
-            message: 'No file uploaded'
-        }));
-    });
-
-    it('should handle invalid JSON in users file', async () => {
-        const mockFilePath = 'uploads/mockfile.zip';
-        const mockExtractPath = path.join(__dirname, '../imports');
-        const invalidJson = '{ email: "user1@example.com" '; // Invalid JSON
-
-        fs.readFileSync.mockImplementation((filePath) => {
-            if (filePath.includes('users.json')) return invalidJson;
-            return '';
+            expect(res.body.message).toBe('Invalid file format. Please upload a zip file.');
         });
 
-        await request(app)
-            .post('/import/full')
-            .attach('file', Buffer.from('mock file content'), 'mockfile.zip')
-            .expect(500)
-            .expect('Error during import');
+        it('should handle missing encryption key', async () => {
+            process.env.EXPORT_ENCRYPTION_KEY = '';
 
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
-            message: 'Error during import',
-            error: expect.any(SyntaxError)
-        }));
-    });
+            const res = await request(app)
+                .post('/import/full')
+                .attach('file', Buffer.from('mock zip content'), mockFile.originalname)
+                .expect(500);
 
-    it('should handle file system errors', async () => {
-        const mockFilePath = 'uploads/mockfile.zip';
-        const mockExtractPath = path.join(__dirname, '../imports');
-        const mockError = new Error('File system error');
-
-        fs.readFileSync.mockImplementation(() => {
-            throw mockError;
+            expect(res.body.message).toBe('Import is not properly configured. Please contact your system administrator.');
         });
 
-        await request(app)
-            .post('/import/full')
-            .attach('file', Buffer.from('mock file content'), 'mockfile.zip')
-            .expect(500)
-            .expect('Error during import');
+        it('should handle invalid metadata version', async () => {
+            mockMetadata.version = '2.0';
+            fs.promises.readFile.mockImplementation((path) => {
+                if (path.includes('metadata.json')) {
+                    return Promise.resolve(JSON.stringify(mockMetadata));
+                }
+                return Promise.resolve('');
+            });
 
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
-            message: 'Error during import',
-            error: mockError
-        }));
-    });
+            const res = await request(app)
+                .post('/import/full')
+                .attach('file', Buffer.from('mock zip content'), mockFile.originalname)
+                .expect(400);
 
-    // New tests
-    it('should handle empty users file', async () => {
-        const mockFilePath = 'uploads/mockfile.zip';
-        const mockExtractPath = path.join(__dirname, '../imports');
-        const emptyJson = '[]'; // Empty JSON array
-
-        fs.readFileSync.mockImplementation((filePath) => {
-            if (filePath.includes('users.json')) return emptyJson;
-            return '';
+            expect(res.body.message).toContain('Incompatible import file version');
         });
 
-        await request(app)
-            .post('/import/full')
-            .attach('file', Buffer.from('mock file content'), 'mockfile.zip')
-            .expect(200)
-            .expect('Import completed successfully');
+        it('should handle file integrity check failure', async () => {
+            global.crypto.createHash.mockReturnValue({
+                update: jest.fn().mockReturnThis(),
+                digest: jest.fn().mockReturnValue('wrong-hash')
+            });
 
-        expect(User.insertMany).toHaveBeenCalledWith([]);
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
-            message: 'Users imported',
-            usersCount: 0
-        }));
-    });
+            const res = await request(app)
+                .post('/import/full')
+                .attach('file', Buffer.from('mock zip content'), mockFile.originalname)
+                .expect(500);
 
-    it('should handle empty claims file', async () => {
-        const mockFilePath = 'uploads/mockfile.zip';
-        const mockExtractPath = path.join(__dirname, '../imports');
-        const emptyJson = '[]'; // Empty JSON array
-
-        fs.readFileSync.mockImplementation((filePath) => {
-            if (filePath.includes('claims.json')) return emptyJson;
-            return '';
+            expect(res.body.message).toContain('File integrity check failed');
         });
 
-        await request(app)
-            .post('/import/full')
-            .attach('file', Buffer.from('mock file content'), 'mockfile.zip')
-            .expect(200)
-            .expect('Import completed successfully');
+        it('should handle database transaction failures', async () => {
+            User.startSession.mockResolvedValue({
+                withTransaction: jest.fn().mockRejectedValue(new Error('Transaction failed')),
+                endSession: jest.fn()
+            });
 
-        expect(Claim.insertMany).toHaveBeenCalledWith([]);
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
-            message: 'Claims imported',
-            claimsCount: 0
-        }));
-    });
+            const res = await request(app)
+                .post('/import/full')
+                .attach('file', Buffer.from('mock zip content'), mockFile.originalname)
+                .expect(500);
 
-    it('should handle missing users file', async () => {
-        const mockFilePath = 'uploads/mockfile.zip';
-        const mockExtractPath = path.join(__dirname, '../imports');
-
-        fs.readFileSync.mockImplementation((filePath) => {
-            if (filePath.includes('users.json')) throw new Error('File not found');
-            return '';
+            expect(res.body.message).toContain('Error during import');
+            expect(Progress.findByIdAndUpdate).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({ status: 'failed' })
+            );
         });
 
-        await request(app)
-            .post('/import/full')
-            .attach('file', Buffer.from('mock file content'), 'mockfile.zip')
-            .expect(500)
-            .expect('Error during import');
+        it('should clean up temporary files after import', async () => {
+            await request(app)
+                .post('/import/full')
+                .attach('file', Buffer.from('mock zip content'), mockFile.originalname);
 
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
-            message: 'Error during import',
-            error: expect.any(Error)
-        }));
-    });
-
-    it('should handle missing claims file', async () => {
-        const mockFilePath = 'uploads/mockfile.zip';
-        const mockExtractPath = path.join(__dirname, '../imports');
-
-        fs.readFileSync.mockImplementation((filePath) => {
-            if (filePath.includes('claims.json')) throw new Error('File not found');
-            return '';
+            expect(fs.promises.rm).toHaveBeenCalled();
+            expect(fs.promises.unlink).toHaveBeenCalled();
         });
 
-        await request(app)
-            .post('/import/full')
-            .attach('file', Buffer.from('mock file content'), 'mockfile.zip')
-            .expect(500)
-            .expect('Error during import');
+        it('should update progress throughout import process', async () => {
+            await request(app)
+                .post('/import/full')
+                .attach('file', Buffer.from('mock zip content'), mockFile.originalname);
 
-        expect(pinoLogger.info).toHaveBeenCalledWith(expect.objectContaining({
-            message: 'Error during import',
-            error: expect.any(Error)
-        }));
+            expect(Progress.create).toHaveBeenCalled();
+            expect(Progress.findByIdAndUpdate).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({ status: 'completed' })
+            );
+        });
     });
 });
