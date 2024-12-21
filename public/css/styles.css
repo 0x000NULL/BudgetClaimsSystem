@@ -336,3 +336,121 @@ canvas {
     margin-top: -10px;
     margin-bottom: 10px;
 }
+
+/* File Viewer and Management Styles */
+.files-section {
+    margin: 20px 0;
+}
+
+.file-categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.file-category {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.file-category h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-radius: 4px;
+    margin: 5px 0;
+    background: #f8f9fa;
+}
+
+.file-item:hover {
+    background: #e9ecef;
+}
+
+.file-link {
+    color: #0066cc;
+    text-decoration: none;
+    flex-grow: 1;
+}
+
+.file-link:hover {
+    text-decoration: underline;
+}
+
+.file-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.btn-icon:hover {
+    background: #ddd;
+}
+
+.file-viewer {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    height: 90%;
+    background: white;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    border-radius: 8px;
+    display: none;
+    z-index: 1000;
+}
+
+.file-viewer-header {
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 8px 8px 0 0;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.file-viewer-content {
+    height: calc(100% - 50px);
+    padding: 20px;
+    overflow: auto;
+}
+
+.no-files {
+    color: #666;
+    font-style: italic;
+}
+
+/* Delete Button Styles */
+.btn-delete {
+    background-color: red;
+}
+
+.btn-delete:hover {
+    background-color: darkred;
+}
