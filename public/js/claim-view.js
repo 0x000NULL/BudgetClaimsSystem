@@ -1,57 +1,107 @@
-/**
- * Opens the email form in a new window for the specified claim
- * @param {string} claimId - The ID of the claim
- */
-function openEmailForm(claimId) {
-    const url = `/email/form/${claimId}`;
-    const windowName = 'EmailForm';
-    const windowFeatures = 'width=600,height=600';
-    window.open(url, windowName, windowFeatures);
+document.addEventListener('DOMContentLoaded', function() {
+    // Event delegation for file actions
+    document.addEventListener('click', function(event) {
+        const target = event.target;
+
+        // Handle file viewing
+        if (target.matches('.file-link')) {
+            event.preventDefault();
+            const filename = target.dataset.filename;
+            openFileViewer(filename);
+        }
+
+        // Handle file downloading
+        if (target.matches('[data-action="download"]')) {
+            event.preventDefault();
+            const filePath = target.dataset.filepath;
+            handleFileDownload(filePath);
+        }
+
+        // Handle email form
+        if (target.matches('[data-action="email"]')) {
+            event.preventDefault();
+            const claimId = target.dataset.claimid;
+            handleEmailForm(claimId);
+        }
+    });
+
+    // Setup file viewer event listeners
+    setupFileViewerEvents();
+});
+
+function setupFileViewerEvents() {
+    // Close button event
+    document.querySelector('.close-button').addEventListener('click', closeFileViewer);
+
+    // Close on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeFileViewer();
+        }
+    });
+
+    // Prevent click inside viewer from closing it
+    document.querySelector('.file-viewer-content').addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Close on click outside viewer
+    document.querySelector('.file-viewer').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeFileViewer();
+        }
+    });
 }
 
-/**
- * Displays a file inline in the file viewer
- * @param {Event} event - The click event
- * @param {string} filePath - Path to the file
- */
-function viewFileInline(event, filePath) {
-    event.preventDefault();
-    const fileExtension = filePath.split('.').pop().toLowerCase();
-    const viewer = document.getElementById('file-viewer');
-    const content = document.getElementById('file-content');
-    const fileName = event.target.getAttribute('data-filename');
+function openFileViewer(filename) {
+    const fileViewer = document.querySelector('.file-viewer');
+    const fileViewerContent = document.querySelector('.file-viewer-content');
+    const ext = filename.split('.').pop().toLowerCase();
+
+    // Clear previous content
+    fileViewerContent.innerHTML = '';
     
-    document.getElementById('current-file-name').textContent = fileName;
-    
-    content.innerHTML = '';
-    
-    if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
-        content.innerHTML = `<img src="${filePath}" style="max-width: 100%; max-height: 100%; object-fit: contain;">`;
-    } else if (['pdf'].includes(fileExtension)) {
-        content.innerHTML = `<embed src="${filePath}" width="100%" height="100%" type="application/pdf">`;
+    // Update the filename display in header
+    document.querySelector('.file-viewer-header span').textContent = filename;
+
+    if (ext === 'pdf') {
+        // Create iframe for PDF viewing
+        const iframe = document.createElement('iframe');
+        iframe.src = `/uploads/${filename}#toolbar=0`; // Disable default PDF toolbar
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.border = 'none';
+        fileViewerContent.appendChild(iframe);
+    } else if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+        // Handle images
+        const img = document.createElement('img');
+        img.src = `/uploads/${filename}`;
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        img.style.objectFit = 'contain';
+        fileViewerContent.appendChild(img);
     } else {
-        window.open(filePath, '_blank');
-        return;
+        // Handle other file types
+        fileViewerContent.innerHTML = `
+            <div class="unsupported-file">
+                <p>This file type (${ext}) cannot be previewed directly.</p>
+                <a href="/uploads/${filename}" download class="btn">Download File</a>
+            </div>
+        `;
     }
-    
-    viewer.style.display = 'block';
+
+    // Show the viewer
+    fileViewer.style.display = 'block';
 }
 
-/**
- * Closes the file viewer
- */
 function closeFileViewer() {
-    const viewer = document.getElementById('file-viewer');
-    const content = document.getElementById('file-content');
-    content.innerHTML = '';
-    viewer.style.display = 'none';
+    const fileViewer = document.querySelector('.file-viewer');
+    const fileViewerContent = document.querySelector('.file-viewer-content');
+    fileViewerContent.innerHTML = '';
+    fileViewer.style.display = 'none';
 }
 
-/**
- * Initiates file download
- * @param {string} filePath - Path to the file to download
- */
-function downloadFile(filePath) {
+function handleFileDownload(filePath) {
     const link = document.createElement('a');
     link.href = filePath;
     link.download = filePath.split('/').pop();
@@ -60,20 +110,9 @@ function downloadFile(filePath) {
     document.body.removeChild(link);
 }
 
-// Event Listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Close viewer when clicking outside
-    document.addEventListener('click', function(event) {
-        const viewer = document.getElementById('file-viewer');
-        if (event.target === viewer) {
-            closeFileViewer();
-        }
-    });
-
-    // Close viewer with escape key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeFileViewer();
-        }
-    });
-}); 
+function handleEmailForm(claimId) {
+    const url = `/email/form/${claimId}`;
+    const windowName = 'EmailForm';
+    const windowFeatures = 'width=600,height=600';
+    window.open(url, windowName, windowFeatures);
+} 

@@ -38,6 +38,17 @@
         <div class="container">
             <h2>Add Claim</h2> <!-- Section heading -->
             <form action="/claims" method="POST" enctype="multipart/form-data"> <!-- Form to add a new claim -->
+                <% if (typeof fileErrors !== 'undefined' && fileErrors.length > 0) { %>
+                    <div class="error-banner">
+                        <h3>File Upload Errors:</h3>
+                        <ul>
+                            <% fileErrors.forEach(error => { %>
+                                <li><%= error %></li>
+                            <% }); %>
+                        </ul>
+                    </div>
+                <% } %>
+
                 <div class="tab">
                     <div class="tab-row">
                         <button type="button" class="tablinks" id="defaultOpen" data-tab="CustomerInfo">Customer Information</button>

@@ -194,14 +194,16 @@
                                         <% category.files.forEach(file => { %>
                                             <div class="file-item">
                                                 <a href="#" 
-                                                   onclick="viewFileInline(event, '/uploads/<%= file %>')"
                                                    class="file-link"
+                                                   data-action="view"
+                                                   data-filepath="/uploads/<%= file %>"
                                                    data-filename="<%= file %>">
                                                     <%= file.substring(file.lastIndexOf('/') + 1) %>
                                                 </a>
                                                 <div class="file-actions">
-                                                    <button onclick="downloadFile('/uploads/<%= file %>')" 
-                                                            class="btn-icon" 
+                                                    <button class="btn-icon" 
+                                                            data-action="download"
+                                                            data-filepath="/uploads/<%= file %>"
                                                             title="Download">
                                                         ⬇️
                                                     </button>
@@ -216,14 +218,12 @@
                         <% }) %>
                     </div>
 
-                    <div id="file-viewer" class="file-viewer">
+                    <div class="file-viewer">
                         <div class="file-viewer-header">
-                            <span id="current-file-name"></span>
-                            <button onclick="closeFileViewer()" class="close-button">×</button>
+                            <span></span>
+                            <button class="close-button">&times;</button>
                         </div>
-                        <div class="file-viewer-content">
-                            <div id="file-content"></div>
-                        </div>
+                        <div class="file-viewer-content"></div>
                     </div>
                 </div>
 
@@ -257,7 +257,7 @@
             <div class="button-group">
                 <a href="/claims/<%= claim._id %>/edit" class="btn">Edit Claim</a> <!-- Button to edit claim -->
                 <a href="/claims/<%= claim._id %>/export" class="btn">Export to PDF</a> <!-- Button to export claim to PDF -->
-                <a href="#" class="btn" onclick="openEmailForm('<%= claim._id %>')">Send Email</a> <!-- Button to send email -->
+                <a href="#" class="btn" data-action="email" data-claimid="<%= claim._id %>">Send Email</a> <!-- Button to send email -->
                 <form action="/claims/<%= claim._id %>?_method=DELETE" method="post" style="display: inline;"> <!-- Form to delete claim -->
                     <button type="submit" class="btn btn-delete">Delete Claim</button> <!-- Button to delete claim -->
                 </form>

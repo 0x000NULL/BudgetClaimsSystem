@@ -42,6 +42,17 @@
             <!-- Display Toast Notifications -->
             <div id="toast" class="toast"></div>
 
+            <% if (typeof fileErrors !== 'undefined' && fileErrors.length > 0) { %>
+                <div class="error-banner">
+                    <h3>File Upload Errors:</h3>
+                    <ul>
+                        <% fileErrors.forEach(error => { %>
+                            <li><%= error %></li>
+                        <% }); %>
+                    </ul>
+                </div>
+            <% } %>
+
             <form action="/claims/<%= claim._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
                 <div class="tab">
                     <div class="tab-row">
@@ -63,32 +74,32 @@
                     <div class="claim-info">
                         <label for="customerName">Customer Name:</label>
                         <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>" required>
-                        <% if (errors && errors.customerName) { %>
-                        <div class="error-message"><%= errors.customerName.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.customerName) { %>
+                            <div class="error-message"><%= errors.customerName.msg %></div>
                         <% } %>
 
                         <label for="customerNumber">Customer Number:</label>
                         <input type="text" id="customerNumber" name="customerNumber" value="<%= claim.customerNumber %>">
-                        <% if (errors && errors.customerNumber) { %>
-                        <div class="error-message"><%= errors.customerNumber.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.customerNumber) { %>
+                            <div class="error-message"><%= errors.customerNumber.msg %></div>
                         <% } %>
 
                         <label for="customerEmail">Customer Email:</label>
                         <input type="email" id="customerEmail" name="customerEmail" value="<%= claim.customerEmail %>">
-                        <% if (errors && errors.customerEmail) { %>
-                        <div class="error-message"><%= errors.customerEmail.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.customerEmail) { %>
+                            <div class="error-message"><%= errors.customerEmail.msg %></div>
                         <% } %>
 
                         <label for="customerAddress">Customer Address:</label>
                         <input type="text" id="customerAddress" name="customerAddress" value="<%= claim.customerAddress %>">
-                        <% if (errors && errors.customerAddress) { %>
-                        <div class="error-message"><%= errors.customerAddress.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.customerAddress) { %>
+                            <div class="error-message"><%= errors.customerAddress.msg %></div>
                         <% } %>
 
                         <label for="customerDriversLicense">Customer Drivers License:</label>
                         <input type="text" id="customerDriversLicense" name="customerDriversLicense" value="<%= claim.customerDriversLicense %>">
-                        <% if (errors && errors.customerDriversLicense) { %>
-                        <div class="error-message"><%= errors.customerDriversLicense.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.customerDriversLicense) { %>
+                            <div class="error-message"><%= errors.customerDriversLicense.msg %></div>
                         <% } %>
                     </div>
                 </div>
@@ -98,44 +109,44 @@
                     <div class="claim-info">
                         <label for="carMake">Car Make:</label>
                         <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>">
-                        <% if (errors && errors.carMake) { %>
-                        <div class="error-message"><%= errors.carMake.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.carMake) { %>
+                            <div class="error-message"><%= errors.carMake.msg %></div>
                         <% } %>
 
                         <label for="carModel">Car Model:</label>
                         <input type="text" id="carModel" name="carModel" value="<%= claim.carModel %>">
-                        <% if (errors && errors.carModel) { %>
-                        <div class="error-message"><%= errors.carModel.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.carModel) { %>
+                            <div class="error-message"><%= errors.carModel.msg %></div>
                         <% } %>
 
                         <label for="carYear">Car Year:</label>
                         <input type="text" id="carYear" name="carYear" value="<%= claim.carYear %>">
-                        <% if (errors && errors.carYear) { %>
-                        <div class="error-message"><%= errors.carYear.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.carYear) { %>
+                            <div class="error-message"><%= errors.carYear.msg %></div>
                         <% } %>
 
                         <label for="carColor">Car Color:</label>
                         <input type="text" id="carColor" name="carColor" value="<%= claim.carColor %>">
-                        <% if (errors && errors.carColor) { %>
-                        <div class="error-message"><%= errors.carColor.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.carColor) { %>
+                            <div class="error-message"><%= errors.carColor.msg %></div>
                         <% } %>
 
                         <label for="carVIN">Car VIN:</label>
                         <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>">
-                        <% if (errors && errors.carVIN) { %>
-                        <div class="error-message"><%= errors.carVIN.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.carVIN) { %>
+                            <div class="error-message"><%= errors.carVIN.msg %></div>
                         <% } %>
 
                         <label for="vehicleOdometer">Vehicle Odometer:</label>
                         <input type="number" id="vehicleOdometer" name="vehicleOdometer" value="<%= claim.vehicleOdometer %>">
-                        <% if (errors && errors.vehicleOdometer) { %>
-                        <div class="error-message"><%= errors.vehicleOdometer.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.vehicleOdometer) { %>
+                            <div class="error-message"><%= errors.vehicleOdometer.msg %></div>
                         <% } %>
 
                         <label for="accidentDate">Accident Date:</label>
                         <input type="date" id="accidentDate" name="accidentDate" value="<%= claim.accidentDate ? new Date(claim.accidentDate).toISOString().split('T')[0] : '' %>">
-                        <% if (errors && errors.accidentDate) { %>
-                        <div class="error-message"><%= errors.accidentDate.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.accidentDate) { %>
+                            <div class="error-message"><%= errors.accidentDate.msg %></div>
                         <% } %>
                     </div>
                 </div>
@@ -196,50 +207,50 @@
                     <div class="claim-info">
                         <label for="insuranceCarrier">Insurance Carrier:</label>
                         <input type="text" id="insuranceCarrier" name="insuranceCarrier" value="<%= claim.insuranceCarrier %>">
-                        <% if (errors && errors.insuranceCarrier) { %>
-                        <div class="error-message"><%= errors.insuranceCarrier.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.insuranceCarrier) { %>
+                            <div class="error-message"><%= errors.insuranceCarrier.msg %></div>
                         <% } %>
 
                         <label for="insuranceAdjuster">Insurance Adjuster:</label>
                         <input type="text" id="insuranceAdjuster" name="insuranceAdjuster" value="<%= claim.insuranceAdjuster %>">
-                        <% if (errors && errors.insuranceAdjuster) { %>
-                        <div class="error-message"><%= errors.insuranceAdjuster.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.insuranceAdjuster) { %>
+                            <div class="error-message"><%= errors.insuranceAdjuster.msg %></div>
                         <% } %>
 
                         <label for="insuranceEmail">Insurance Email:</label>
                         <input type="email" id="insuranceEmail" name="insuranceEmail" value="<%= claim.insuranceEmail %>">
-                        <% if (errors && errors.insuranceEmail) { %>
-                        <div class="error-message"><%= errors.insuranceEmail.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.insuranceEmail) { %>
+                            <div class="error-message"><%= errors.insuranceEmail.msg %></div>
                         <% } %>
 
                         <label for="insurancePhoneNumber">Insurance Phone Number:</label>
                         <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber" value="<%= claim.insurancePhoneNumber %>">
-                        <% if (errors && errors.insurancePhoneNumber) { %>
-                        <div class="error-message"><%= errors.insurancePhoneNumber.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.insurancePhoneNumber) { %>
+                            <div class="error-message"><%= errors.insurancePhoneNumber.msg %></div>
                         <% } %>
 
                         <label for="insuranceFaxNumber">Insurance Fax Number:</label>
                         <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber" value="<%= claim.insuranceFaxNumber %>">
-                        <% if (errors && errors.insuranceFaxNumber) { %>
-                        <div class="error-message"><%= errors.insuranceFaxNumber.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.insuranceFaxNumber) { %>
+                            <div class="error-message"><%= errors.insuranceFaxNumber.msg %></div>
                         <% } %>
 
                         <label for="insuranceAddress">Insurance Address:</label>
                         <input type="text" id="insuranceAddress" name="insuranceAddress" value="<%= claim.insuranceAddress %>">
-                        <% if (errors && errors.insuranceAddress) { %>
-                        <div class="error-message"><%= errors.insuranceAddress.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.insuranceAddress) { %>
+                            <div class="error-message"><%= errors.insuranceAddress.msg %></div>
                         <% } %>
 
                         <label for="insurancePolicyNumber">Insurance Policy Number:</label>
                         <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber" value="<%= claim.insurancePolicyNumber %>">
-                        <% if (errors && errors.insurancePolicyNumber) { %>
-                        <div class="error-message"><%= errors.insurancePolicyNumber.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.insurancePolicyNumber) { %>
+                            <div class="error-message"><%= errors.insurancePolicyNumber.msg %></div>
                         <% } %>
 
                         <label for="insuranceClaimNumber">Insurance Claim Number:</label>
                         <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber" value="<%= claim.insuranceClaimNumber %>">
-                        <% if (errors && errors.insuranceClaimNumber) { %>
-                        <div class="error-message"><%= errors.insuranceClaimNumber.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.insuranceClaimNumber) { %>
+                            <div class="error-message"><%= errors.insuranceClaimNumber.msg %></div>
                         <% } %>
                     </div>
                 </div>
@@ -249,44 +260,44 @@
                     <div class="claim-info">
                         <label for="thirdPartyName">Third Party Name:</label>
                         <input type="text" id="thirdPartyName" name="thirdPartyName" value="<%= claim.thirdPartyName %>">
-                        <% if (errors && errors.thirdPartyName) { %>
-                        <div class="error-message"><%= errors.thirdPartyName.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.thirdPartyName) { %>
+                            <div class="error-message"><%= errors.thirdPartyName.msg %></div>
                         <% } %>
 
                         <label for="thirdPartyAddress">Third Party Address:</label>
                         <input type="text" id="thirdPartyAddress" name="thirdPartyAddress" value="<%= claim.thirdPartyAddress %>">
-                        <% if (errors && errors.thirdPartyAddress) { %>
-                        <div class="error-message"><%= errors.thirdPartyAddress.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.thirdPartyAddress) { %>
+                            <div class="error-message"><%= errors.thirdPartyAddress.msg %></div>
                         <% } %>
 
                         <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
                         <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber" value="<%= claim.thirdPartyPhoneNumber %>">
-                        <% if (errors && errors.thirdPartyPhoneNumber) { %>
-                        <div class="error-message"><%= errors.thirdPartyPhoneNumber.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.thirdPartyPhoneNumber) { %>
+                            <div class="error-message"><%= errors.thirdPartyPhoneNumber.msg %></div>
                         <% } %>
 
                         <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
                         <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName" value="<%= claim.thirdPartyInsuranceName %>">
-                        <% if (errors && errors.thirdPartyInsuranceName) { %>
-                        <div class="error-message"><%= errors.thirdPartyInsuranceName.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.thirdPartyInsuranceName) { %>
+                            <div class="error-message"><%= errors.thirdPartyInsuranceName.msg %></div>
                         <% } %>
 
                         <label for="thirdPartyAdjusterName">Third Party Adjuster Name:</label>
                         <input type="text" id="thirdPartyAdjusterName" name="thirdPartyAdjusterName" value="<%= claim.thirdPartyAdjusterName %>">
-                        <% if (errors && errors.thirdPartyAdjusterName) { %>
-                        <div class="error-message"><%= errors.thirdPartyAdjusterName.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.thirdPartyAdjusterName) { %>
+                            <div class="error-message"><%= errors.thirdPartyAdjusterName.msg %></div>
                         <% } %>
 
                         <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
                         <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber" value="<%= claim.thirdPartyPolicyNumber %>">
-                        <% if (errors && errors.thirdPartyPolicyNumber) { %>
-                        <div class="error-message"><%= errors.thirdPartyPolicyNumber.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.thirdPartyPolicyNumber) { %>
+                            <div class="error-message"><%= errors.thirdPartyPolicyNumber.msg %></div>
                         <% } %>
 
                         <label for="thirdPartyClaimNumber">Third Party Claim Number:</label>
                         <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber" value="<%= claim.thirdPartyClaimNumber %>">
-                        <% if (errors && errors                        .thirdPartyClaimNumber) { %>
-                        <div class="error-message"><%= errors.thirdPartyClaimNumber.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.thirdPartyClaimNumber) { %>
+                            <div class="error-message"><%= errors.thirdPartyClaimNumber.msg %></div>
                         <% } %>
                     </div>
                 </div>
@@ -296,30 +307,37 @@
                     <div class="claim-info">
                         <label for="rentingLocation">Renting Location:</label>
                         <select id="rentingLocation" name="rentingLocation">
-                            <% rentingLocations.forEach(location => { %>
-                                <option value="<%= location._id %>" <%= claim.rentingLocation && claim.rentingLocation.toString() === location._id.toString() ? 'selected' : '' %>><%= location.name %></option>
-                            <% }) %>
+                            <% if (typeof rentingLocations !== 'undefined' && rentingLocations.length > 0) { %>
+                                <% rentingLocations.forEach(location => { %>
+                                    <option value="<%= location._id %>" 
+                                        <%= claim.rentingLocation && claim.rentingLocation.toString() === location._id.toString() ? 'selected' : '' %>>
+                                        <%= location.name %>
+                                    </option>
+                                <% }); %>
+                            <% } else { %>
+                                <option value="">No locations available</option>
+                            <% } %>
                         </select>
-                        <% if (errors && errors.rentingLocation) { %>
+                        <% if (typeof errors !== 'undefined' && errors.rentingLocation) { %>
                             <div class="error"><%= errors.rentingLocation.msg %></div>
                         <% } %>
                         
                         <label for="policeDepartment">Police Department:</label>
                         <input type="text" id="policeDepartment" name="policeDepartment" value="<%= claim.policeDepartment %>">
-                        <% if (errors && errors.policeDepartment) { %>
-                        <div class="error-message"><%= errors.policeDepartment.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.policeDepartment) { %>
+                            <div class="error-message"><%= errors.policeDepartment.msg %></div>
                         <% } %>
 
                         <label for="policeReportNumber">Police Report Number:</label>
                         <input type="text" id="policeReportNumber" name="policeReportNumber" value="<%= claim.policeReportNumber %>">
-                        <% if (errors && errors.policeReportNumber) { %>
-                        <div class="error-message"><%= errors.policeReportNumber.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.policeReportNumber) { %>
+                            <div class="error-message"><%= errors.policeReportNumber.msg %></div>
                         <% } %>
 
                         <label for="claimCloseDate">Claim Close Date:</label>
                         <input type="date" id="claimCloseDate" name="claimCloseDate" value="<%= claim.claimCloseDate ? new Date(claim.claimCloseDate).toISOString().split('T')[0] : '' %>">
-                        <% if (errors && errors.claimCloseDate) { %>
-                        <div class="error-message"><%= errors.claimCloseDate.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.claimCloseDate) { %>
+                            <div class="error-message"><%= errors.claimCloseDate.msg %></div>
                         <% } %>
                     </div>
                 </div>
@@ -334,8 +352,8 @@
                             <option value="n/a">N/A</option>
                             <option value="unknown">Unknown</option>
                         </select>
-                        <% if (errors && errors.rentersLiabilityInsurance) { %>
-                        <div class="error-message"><%= errors.rentersLiabilityInsurance.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.rentersLiabilityInsurance) { %>
+                            <div class="error-message"><%= errors.rentersLiabilityInsurance.msg %></div>
                         <% } %>
 
                         <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label>
@@ -345,8 +363,8 @@
                             <option value="n/a">N/A</option>
                             <option value="unknown">Unknown</option>
                         </select>
-                        <% if (errors && errors.lossDamageWaiver) { %>
-                        <div class="error-message"><%= errors.lossDamageWaiver.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.lossDamageWaiver) { %>
+                            <div class="error-message"><%= errors.lossDamageWaiver.msg %></div>
                         <% } %>
                     </div>
                 </div>
@@ -356,36 +374,36 @@
                     <div class="file-section">
                         <h3>Incident Reports</h3>
                         <input type="file" id="incidentReports" name="incidentReports" multiple>
-                        <% if (errors && errors.incidentReports) { %>
-                        <div class="error-message"><%= errors.incidentReports.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.incidentReports) { %>
+                            <div class="error-message"><%= errors.incidentReports.msg %></div>
                         <% } %>
                     </div>
                     <div class="file-section">
                         <h3>Correspondence</h3>
                         <input type="file" id="correspondence" name="correspondence" multiple>
-                        <% if (errors && errors.correspondence) { %>
-                        <div class="error-message"><%= errors.correspondence.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.correspondence) { %>
+                            <div class="error-message"><%= errors.correspondence.msg %></div>
                         <% } %>
                     </div>
                     <div class="file-section">
                         <h3>Rental Agreement</h3>
                         <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
-                        <% if (errors && errors.rentalAgreement) { %>
-                        <div class="error-message"><%= errors.rentalAgreement.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.rentalAgreement) { %>
+                            <div class="error-message"><%= errors.rentalAgreement.msg %></div>
                         <% } %>
                     </div>
                     <div class="file-section">
                         <h3>Police Report</h3>
                         <input type="file" id="policeReport" name="policeReport" multiple>
-                        <% if (errors && errors.policeReport) { %>
-                        <div class="error-message"><%= errors.policeReport.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.policeReport) { %>
+                            <div class="error-message"><%= errors.policeReport.msg %></div>
                         <% } %>
                     </div>
                     <div class="file-section">
                         <h3>Invoices</h3>
                         <input type="file" id="invoices" name="invoices" multiple>
-                        <% if (errors && errors.invoices) { %>
-                        <div class="error-message"><%= errors.invoices.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.invoices) { %>
+                            <div class="error-message"><%= errors.invoices.msg %></div>
                         <% } %>
                         <!-- Add input fields for invoice totals -->
                         <div id="invoiceTotalsContainer">
@@ -403,8 +421,8 @@
                     <div class="file-section">
                         <h3>Photos</h3>
                         <input type="file" id="photos" name="photos" multiple>
-                        <% if (errors && errors.photos) { %>
-                        <div class="error-message"><%= errors.photos.msg %></div>
+                        <% if (typeof errors !== 'undefined' && errors.photos) { %>
+                            <div class="error-message"><%= errors.photos.msg %></div>
                         <% } %>
                     </div>
                 </div>
