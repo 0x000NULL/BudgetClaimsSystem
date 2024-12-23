@@ -1174,3 +1174,115 @@ input[type="file"] {
 .remove-file:hover {
     background: #c82333 !important;
 }
+
+/* File actions container */
+.file-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 340px;
+}
+
+/* File item container */
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.file-info {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+/* Common button styles */
+.file-actions button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    width: 80px;
+    height: 32px;
+    color: white;
+    margin: 0;
+}
+
+/* Add Total button */
+.add-invoice-total {
+    background-color: #28a745 !important;
+}
+
+.add-invoice-total:hover {
+    background-color: #218838 !important;
+}
+
+.invoice-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.invoice-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.invoice-name {
+    flex-grow: 1;
+}
+
+.invoice-amount {
+    text-align: right;
+    min-width: 100px; /* Ensures consistent alignment */
+    font-family: monospace; /* Makes numbers align better */
+}
+
+.invoice-amount-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.invoice-edit-input {
+    width: 100px;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: monospace;
+    text-align: right;
+}
+
+.btn-edit-invoice {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+    min-width: 60px;
+}
+
+.btn-edit-invoice:hover {
+    background-color: #0056b3;
+}
+
+.btn-edit-invoice.save {
+    background-color: #28a745;
+}
+
+.btn-edit-invoice.save:hover {
+    background-color: #218838;
+}
