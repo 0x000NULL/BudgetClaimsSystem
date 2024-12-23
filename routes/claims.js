@@ -618,108 +618,51 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
     try {
         const claim = await Claim.findById(req.params.id);
         if (!claim) {
-            return res.status(404).render('error', { message: 'Claim not found' });
+            return res.status(404).json({ success: false, message: 'Claim not found' });
         }
 
-        let files = { ...claim.files };
-        let fileErrors = [];
+        // Handle removed files
+        if (req.body.removedFiles) {
+            const removedFiles = JSON.parse(req.body.removedFiles);
+            removedFiles.forEach(fileInfo => {
+                const { type, name } = JSON.parse(fileInfo);
+                if (claim.files && claim.files[type]) {
+                    claim.files[type] = claim.files[type].filter(file => file !== name);
+                    
+                    // Optionally delete the file from storage
+                    const filePath = path.join(__dirname, '../uploads', name);
+                    fs.unlink(filePath, err => {
+                        if (err) console.error(`Error deleting file ${name}:`, err);
+                    });
+                }
+            });
+        }
 
+        // Handle file uploads if any new files were added
+        const files = claim.files || {}; // Use existing files or initialize empty object
         if (req.files) {
-            // Validate all files first
-            for (const [category, uploadedFiles] of Object.entries(req.files)) {
-                const categoryFiles = Array.isArray(uploadedFiles) ? uploadedFiles : [uploadedFiles];
-                
-                for (const file of categoryFiles) {
-                    const validationErrors = validateFile(file, category);
-                    if (validationErrors.length > 0) {
-                        fileErrors.push(...validationErrors);
-                    }
-                }
-            }
-
-            // If there are validation errors, re-render the form
-            if (fileErrors.length > 0) {
-                const [statuses, locations, damageTypes, rentingLocations] = await Promise.all([
-                    Status.find().sort({ name: 1 }),
-                    Location.find().sort({ name: 1 }),
-                    DamageType.find().sort({ name: 1 }),
-                    Location.find().sort({ name: 1 })
-                ]);
-
-                return res.render('claims_edit', {
-                    claim,
-                    statuses,
-                    locations,
-                    damageTypes,
-                    rentingLocations,
-                    fileErrors,
-                    formData: req.body,
-                    errors: {}
+            Object.keys(req.files).forEach(type => {
+                if (!files[type]) files[type] = [];
+                const uploadedFiles = Array.isArray(req.files[type]) ? req.files[type] : [req.files[type]];
+                uploadedFiles.forEach(file => {
+                    files[type].push(file.name);
                 });
-            }
-
-            // Process valid files
-            for (const [category, uploadedFiles] of Object.entries(req.files)) {
-                const categoryFiles = Array.isArray(uploadedFiles) ? uploadedFiles : [uploadedFiles];
-                
-                for (const file of categoryFiles) {
-                    try {
-                        const sanitizedFilename = sanitizeFilename(file.name);
-                        const uploadDir = path.join(__dirname, '../public/uploads');
-                        const filePath = path.join(uploadDir, sanitizedFilename);
-
-                        // Ensure upload directory exists
-                        if (!fs.existsSync(uploadDir)) {
-                            fs.mkdirSync(uploadDir, { recursive: true });
-                        }
-
-                        // Move the file
-                        await file.mv(filePath);
-                        
-                        // Add to files array
-                        if (!files[category]) {
-                            files[category] = [];
-                        }
-                        files[category].push(sanitizedFilename);
-                    } catch (err) {
-                        console.error('File upload error:', err);
-                        fileErrors.push(`Error uploading ${file.name}: ${err.message}`);
-                    }
-                }
-            }
-
-            // If there were any upload errors, re-render the form
-            if (fileErrors.length > 0) {
-                const [statuses, locations, damageTypes, rentingLocations] = await Promise.all([
-                    Status.find().sort({ name: 1 }),
-                    Location.find().sort({ name: 1 }),
-                    DamageType.find().sort({ name: 1 }),
-                    Location.find().sort({ name: 1 })
-                ]);
-
-                return res.render('claims_edit', {
-                    claim,
-                    statuses,
-                    locations,
-                    damageTypes,
-                    rentingLocations,
-                    fileErrors,
-                    formData: req.body,
-                    errors: {}
-                });
-            }
+            });
         }
 
         // Update claim with new data
-        Object.assign(claim, req.body);
-        claim.files = files;
+        Object.assign(claim, {
+            ...req.body,
+            files
+        });
+
         await claim.save();
 
         // Redirect to the updated claim
         res.redirect(`/claims/${claim._id}`);
-    } catch (err) {
-        console.error('Error updating claim:', err);
-        res.render('error', { message: 'Error updating claim' });
+    } catch (error) {
+        console.error('Error updating claim:', error);
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 

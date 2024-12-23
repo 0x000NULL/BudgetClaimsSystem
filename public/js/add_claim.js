@@ -5,7 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add click event listener to each button
     tabButtons.forEach(button => {
         button.addEventListener('click', function(e) {
-            openTab(e, this.getAttribute('data-tab'));
+            const tabName = this.getAttribute('data-tab');
+            if (tabName) {
+                openTab(e, tabName);
+            }
         });
     });
 
@@ -26,12 +29,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Show the selected tab content and mark the button as active
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
+        const selectedTab = document.getElementById(tabName);
+        if (selectedTab) {
+            selectedTab.style.display = "block";
+            evt.currentTarget.className += " active";
+        }
     }
 
-    // Open the default tab
-    document.getElementById("defaultOpen").click();
+    // Open the default tab if it exists
+    const defaultTab = document.getElementById("defaultOpen");
+    if (defaultTab) {
+        defaultTab.click();
+    }
+
+    handleInvoiceUpload();
 });
 
 // Function to display a toast message
@@ -122,4 +133,31 @@ async function addLocation() {
             showToast('Error adding location!', 'error');
         }
     }
+}
+
+// Add this function to handle invoice file uploads and totals
+function handleInvoiceUpload() {
+    const invoiceInput = document.getElementById('invoices');
+    const invoiceTotalsContainer = document.getElementById('invoiceTotalsContainer');
+
+    invoiceInput.addEventListener('change', function() {
+        invoiceTotalsContainer.innerHTML = ''; // Clear existing totals
+
+        Array.from(this.files).forEach((file, index) => {
+            const totalDiv = document.createElement('div');
+            totalDiv.className = 'invoice-total';
+            totalDiv.innerHTML = `
+                <label for="invoiceTotal_${index}">Invoice Total for ${file.name}:</label>
+                <input type="number" 
+                       id="invoiceTotal_${index}" 
+                       name="invoiceTotal_${file.name}"
+                       step="0.01" 
+                       min="0" 
+                       placeholder="Enter total amount"
+                       required>
+                <input type="hidden" name="invoiceFileName_${index}" value="${file.name}">
+            `;
+            invoiceTotalsContainer.appendChild(totalDiv);
+        });
+    });
 }

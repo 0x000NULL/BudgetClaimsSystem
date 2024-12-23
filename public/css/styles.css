@@ -1,4 +1,5 @@
 /* General styles */
+/* General styles */
 body {
     font-family: Arial, sans-serif; /* Use Arial or a sans-serif font */
     margin: 0; /* Remove default margin */
@@ -364,13 +365,28 @@ canvas {
 
 .file-item {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    padding: 8px;
-    border-radius: 4px;
+    padding: 8px 12px;
     margin: 5px 0;
-    background: #f8f9fa;
-    gap: 10px;
-    flex-wrap: wrap; /* Allow wrapping */
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.file-name {
+    flex-grow: 1;
+    margin-right: 10px;
+    word-break: break-word;
+    max-width: 70%; /* Prevent filename from pushing buttons off alignment */
+}
+
+.file-actions {
+    display: flex;
+    gap: 8px; /* Increase gap between buttons */
+    flex-shrink: 0;
+    min-width: 140px; /* Set minimum width to keep buttons aligned */
+    justify-content: flex-end; /* Align buttons to the right */
 }
 
 .file-item:hover {
@@ -542,4 +558,220 @@ canvas {
     display: flex;
     gap: 5px;
     flex-shrink: 0; /* Prevent actions from shrinking */
+}
+
+/* Styles for invoice totals */
+.invoice-totals-container {
+    margin-top: 10px;
+}
+
+.invoice-total {
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.invoice-total label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: normal;
+}
+
+.invoice-total input[type="number"] {
+    width: 200px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Add these styles for invoice summary */
+.invoice-summary {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.invoice-list {
+    margin-top: 10px;
+}
+
+.invoice-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.invoice-total {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px solid #ddd;
+}
+
+.admin-fee {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+    color: #0066cc;
+}
+
+/* Add these styles for file management */
+.current-files {
+    margin-top: 10px;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 10px;
+    margin: 5px 0;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.file-name {
+    word-break: break-word;
+    margin-right: 10px;
+}
+
+.remove-file {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 3px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.remove-file:hover {
+    background: #c82333;
+}
+
+/* Add these styles for tabs */
+.tab-container {
+    margin-bottom: 20px;
+}
+
+.tab-buttons {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.tablinks {
+    padding: 10px 15px;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.tablinks.active {
+    background: #007bff;
+    color: white;
+}
+
+.tabcontent {
+    display: none;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.tabcontent.active {
+    display: block;
+}
+
+/* Restore invoice summary styles - remove display: none */
+.invoice-summary,
+.invoice-list,
+.invoice-item,
+.invoice-total,
+.admin-fee {
+    display: block;
+}
+
+/* File management styles */
+.file-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.file-section h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.existing-files {
+    margin-bottom: 10px;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.file-name {
+    flex-grow: 1;
+    margin-right: 10px;
+    word-break: break-word;
+    max-width: 70%; /* Prevent filename from pushing buttons off alignment */
+}
+
+.file-actions {
+    display: flex;
+    gap: 8px; /* Increase gap between buttons */
+    flex-shrink: 0;
+    min-width: 140px; /* Set minimum width to keep buttons aligned */
+    justify-content: flex-end; /* Align buttons to the right */
+}
+
+.view-file,
+.remove-file {
+    padding: 4px 12px; /* Increase horizontal padding */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    min-width: 60px; /* Set minimum width for buttons */
+    text-align: center; /* Center button text */
+}
+
+.view-file {
+    background: #007bff;
+    color: white;
+}
+
+.view-file:hover {
+    background: #0056b3;
+}
+
+.remove-file {
+    background: #dc3545;
+    color: white;
+}
+
+.remove-file:hover {
+    background: #c82333;
+}
+
+input[type="file"] {
+    display: block;
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
 }
