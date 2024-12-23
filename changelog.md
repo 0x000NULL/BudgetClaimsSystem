@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.38] - 2024-12-23 (Commit: pending)
+
+### Changed
+- Improved file viewer layout and functionality
+- Enhanced handling of long filenames with proper text wrapping
+- Updated PDF viewer container height for better visibility
+- Improved file list display with better spacing and alignment
+
+### Fixed
+- Fixed PDF viewer height issue causing truncated display
+- Fixed long filename overflow issues in file list and viewer
+- Fixed file action button alignment issues
+- Fixed file viewer header text wrapping
+
 ## [1.4.37] - 2024-12-20 (Commit: 7683344)
 
 ### Added
