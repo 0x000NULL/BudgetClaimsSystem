@@ -51,63 +51,48 @@ const cache = cacheManager.caching({
 
 // Helper function to validate file
 const validateFile = (file, category) => {
-    // Get the file extension
     const ext = path.extname(file.name).toLowerCase();
-    
-    // Determine allowed types based on category
     const allowedTypes = category === 'photos' ? global.ALLOWED_FILE_TYPES.photos :
                         category === 'invoices' ? global.ALLOWED_FILE_TYPES.invoices :
                         global.ALLOWED_FILE_TYPES.documents;
 
-    // Get size limit based on category
     const sizeLimit = category === 'photos' ? global.MAX_FILE_SIZES.photos :
                      category === 'invoices' ? global.MAX_FILE_SIZES.invoices :
                      global.MAX_FILE_SIZES.documents;
 
     const errors = [];
 
-    // Check file type
+    // Check file type with more user-friendly message
     if (!allowedTypes.includes(ext)) {
-        errors.push(`Invalid file type. Allowed types for ${category}: ${allowedTypes.join(', ')}`);
+        errors.push(`${file.name}: File type not allowed. Please use ${allowedTypes.join(', ')} for ${category}`);
     }
 
-    // Check file size
+    // Check file size with more user-friendly message
     if (file.size > sizeLimit) {
-        errors.push(`File size exceeds limit of ${sizeLimit / (1024 * 1024)}MB`);
+        const sizeMB = Math.round(sizeLimit / (1024 * 1024));
+        errors.push(`${file.name}: File is too large. Maximum size allowed is ${sizeMB}MB`);
     }
 
-    // Check file name length and characters
-    if (file.name.length > 100) {
-        errors.push('File name is too long (max 100 characters)');
-    }
-
-    // Check for special characters in filename (except - and _)
-    if (/[^a-zA-Z0-9-_.]/.test(file.name)) {
-        errors.push('File name contains invalid characters');
+    // Check file name with more user-friendly message
+    if (file.name.length > 100 || /[<>:"/\\|?*]/.test(file.name)) {
+        errors.push(`${file.name}: File name is invalid. Please remove special characters and ensure name is less than 100 characters`);
     }
 
     return errors;
 };
 
 // Helper function to sanitize filename
-const sanitizeFilename = async (filename, uploadDir) => {
+const sanitizeFilename = (filename) => {
     // Remove special characters except - and _
     const sanitized = filename
         .replace(/[^a-zA-Z0-9-_.]/, '_')
         .replace(/_{2,}/g, '_');
     
-    // Check if file already exists
+    // Add timestamp to ensure uniqueness
     const ext = path.extname(sanitized);
     const name = path.basename(sanitized, ext);
-    let finalName = sanitized;
-    let counter = 1;
-
-    // If file exists, add timestamp only then
-    while (fs.existsSync(path.join(uploadDir, finalName))) {
-        finalName = `${name}_${Date.now()}${ext}`;
-        if (counter++ > 100) break; // Prevent infinite loop
-    }
-
+    const finalName = `${name}_${Date.now()}${ext}`;
+    
     return finalName;
 };
 
@@ -488,11 +473,23 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
                 }
             }
 
-            // If there are any validation errors, return them
+            // If there are any validation errors, render the form again with errors
             if (fileErrors.length > 0) {
-                return res.status(400).json({ 
-                    error: 'File validation failed', 
-                    details: fileErrors 
+                // Fetch necessary data for re-rendering the form
+                const [statuses, locations, damageTypes] = await Promise.all([
+                    Status.find().sort({ name: 1 }),
+                    Location.find().sort({ name: 1 }),
+                    DamageType.find().sort({ name: 1 })
+                ]);
+
+                return res.render('add_claim', {
+                    title: 'Add Claim',
+                    statuses,
+                    locations,
+                    damageTypes,
+                    formData: req.body, // Preserve form data
+                    fileErrors: fileErrors, // Pass file errors to the template
+                    errors: {} // Other form errors if any
                 });
             }
 
@@ -529,9 +526,22 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
             }
         } catch (err) {
             logRequest(req, 'Error uploading files:', { error: err });
-            return res.status(500).json({ 
-                error: 'File upload failed',
-                details: err.message 
+            
+            // Fetch necessary data for re-rendering the form
+            const [statuses, locations, damageTypes] = await Promise.all([
+                Status.find().sort({ name: 1 }),
+                Location.find().sort({ name: 1 }),
+                DamageType.find().sort({ name: 1 })
+            ]);
+
+            return res.render('add_claim', {
+                title: 'Add Claim',
+                statuses,
+                locations,
+                damageTypes,
+                formData: req.body, // Preserve form data
+                fileErrors: ['An error occurred while uploading files. Please try again.'],
+                errors: {}
             });
         }
     }
@@ -605,143 +615,111 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
         
 // Route to update a claim by ID, accessible by admin and manager
 router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), async (req, res) => {
-    const claimId = req.params.id;
-    logRequest(req, `Updating claim with ID: ${claimId}`);
-
     try {
-        // Fetch the claim from the database
-        const claim = await Claim.findById(claimId);
-        
+        const claim = await Claim.findById(req.params.id);
         if (!claim) {
-            logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
-            return res.status(404).json({ error: 'Claim not found' });
+            return res.status(404).render('error', { message: 'Claim not found' });
         }
 
-        // Perform validation here (e.g., using express-validator or custom logic)
-        const errors = {}; // Initialize an empty object to store error messages
+        let files = { ...claim.files };
+        let fileErrors = [];
 
-        if (!req.body.customerName) {
-            errors.customerName = { msg: 'Customer Name is required' };
-        }
-        // Perform other field validations as necessary
-
-        // If there are errors, re-render the edit view with the errors object
-        if (Object.keys(errors).length > 0) {
-            const statuses = await Status.find().sort({ name: 1 });
-            const rentingLocations = await Location.find().sort({ name: 1 });
-            const damageTypes = await DamageType.find().sort({ name: 1 });
-
-            return res.render('claims_edit', { 
-                title: 'Edit Claim', 
-                claim, 
-                statuses, 
-                rentingLocations, 
-                damageTypes, 
-                errors 
-            });
-        }
-
-        // Initialize files with existing files from the claim
-        let files = {
-            incidentReports: [...(claim.files?.incidentReports || [])],
-            correspondence: [...(claim.files?.correspondence || [])],
-            rentalAgreement: [...(claim.files?.rentalAgreement || [])],
-            policeReport: [...(claim.files?.policeReport || [])],
-            invoices: [...(claim.files?.invoices || [])],
-            photos: [...(claim.files?.photos || [])]
-        };
-
-        // Process new file uploads
         if (req.files) {
-            try {
-                for (const category in req.files) {
-                    const categoryFiles = Array.isArray(req.files[category]) 
-                        ? req.files[category] 
-                        : [req.files[category]];
+            // Validate all files first
+            for (const [category, uploadedFiles] of Object.entries(req.files)) {
+                const categoryFiles = Array.isArray(uploadedFiles) ? uploadedFiles : [uploadedFiles];
+                
+                for (const file of categoryFiles) {
+                    const validationErrors = validateFile(file, category);
+                    if (validationErrors.length > 0) {
+                        fileErrors.push(...validationErrors);
+                    }
+                }
+            }
 
-                    for (const file of categoryFiles) {
-                        // Validate file
-                        const validationErrors = validateFile(file, category);
-                        if (validationErrors.length > 0) {
-                            return res.status(400).json({ 
-                                error: 'File validation failed', 
-                                details: validationErrors 
-                            });
-                        }
+            // If there are validation errors, re-render the form
+            if (fileErrors.length > 0) {
+                const [statuses, locations, damageTypes, rentingLocations] = await Promise.all([
+                    Status.find().sort({ name: 1 }),
+                    Location.find().sort({ name: 1 }),
+                    DamageType.find().sort({ name: 1 }),
+                    Location.find().sort({ name: 1 })
+                ]);
 
+                return res.render('claims_edit', {
+                    claim,
+                    statuses,
+                    locations,
+                    damageTypes,
+                    rentingLocations,
+                    fileErrors,
+                    formData: req.body,
+                    errors: {}
+                });
+            }
+
+            // Process valid files
+            for (const [category, uploadedFiles] of Object.entries(req.files)) {
+                const categoryFiles = Array.isArray(uploadedFiles) ? uploadedFiles : [uploadedFiles];
+                
+                for (const file of categoryFiles) {
+                    try {
+                        const sanitizedFilename = sanitizeFilename(file.name);
                         const uploadDir = path.join(__dirname, '../public/uploads');
-                        
-                        // Create upload directory if it doesn't exist
+                        const filePath = path.join(uploadDir, sanitizedFilename);
+
+                        // Ensure upload directory exists
                         if (!fs.existsSync(uploadDir)) {
                             fs.mkdirSync(uploadDir, { recursive: true });
                         }
 
-                        // Sanitize filename and handle duplicates
-                        const sanitizedFilename = await sanitizeFilename(file.name, uploadDir);
-                        const filePath = path.join(uploadDir, sanitizedFilename);
-
-                        // Move file
+                        // Move the file
                         await file.mv(filePath);
                         
-                        // Add file to appropriate category
+                        // Add to files array
+                        if (!files[category]) {
+                            files[category] = [];
+                        }
                         files[category].push(sanitizedFilename);
-                        
-                        logRequest(req, 'File uploaded successfully:', { 
-                            originalName: file.name,
-                            sanitizedName: sanitizedFilename,
-                            category 
-                        });
+                    } catch (err) {
+                        console.error('File upload error:', err);
+                        fileErrors.push(`Error uploading ${file.name}: ${err.message}`);
                     }
                 }
-            } catch (err) {
-                logRequest(req, 'Error processing uploaded files:', { error: err });
-                return res.status(500).json({ 
-                    error: 'File upload failed',
-                    details: err.message 
+            }
+
+            // If there were any upload errors, re-render the form
+            if (fileErrors.length > 0) {
+                const [statuses, locations, damageTypes, rentingLocations] = await Promise.all([
+                    Status.find().sort({ name: 1 }),
+                    Location.find().sort({ name: 1 }),
+                    DamageType.find().sort({ name: 1 }),
+                    Location.find().sort({ name: 1 })
+                ]);
+
+                return res.render('claims_edit', {
+                    claim,
+                    statuses,
+                    locations,
+                    damageTypes,
+                    rentingLocations,
+                    fileErrors,
+                    formData: req.body,
+                    errors: {}
                 });
             }
         }
 
-        // Process invoice totals
-        const invoiceTotals = req.body.invoiceTotals || [];
-        const updatedInvoiceTotals = Array.isArray(invoiceTotals) ? invoiceTotals.map(invoice => ({
-            fileName: invoice.fileName,
-            total: parseFloat(invoice.total) || 0 // Ensure total is a number
-        })) : [];
+        // Update claim with new data
+        Object.assign(claim, req.body);
+        claim.files = files;
+        await claim.save();
 
-        // Update claim data
-        const updatedClaimData = {
-            ...req.body, // Spread all form fields
-            files, // Add processed files
-            invoiceTotals: updatedInvoiceTotals
-        };
-
-        // Save version history
-        if (!claim.versions) {
-            claim.versions = [];
-        }
-        claim.versions.push({
-            description: claim.description,
-            status: claim.status,
-            files: claim.files,
-            updatedAt: claim.updatedAt
-        });
-
-        const updatedClaim = await Claim.findByIdAndUpdate(
-            claimId, 
-            updatedClaimData, 
-            { new: true, runValidators: true }
-        );
-
-        logRequest(req, 'Claim updated:', { claim: updatedClaim });
-        
-        // Redirect to the claim's view page
-        res.redirect(`/claims/${claimId}`);
+        // Redirect to the updated claim
+        res.redirect(`/claims/${claim._id}`);
     } catch (err) {
-        logRequest(req, 'Error updating claim:', { error: err });
-        res.status(500).render('500', { 
-            message: 'Error updating claim: ' + err.message 
-        });
+        console.error('Error updating claim:', err);
+        res.render('error', { message: 'Error updating claim' });
     }
 });
 

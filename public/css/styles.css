@@ -364,12 +364,13 @@ canvas {
 
 .file-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     padding: 8px;
     border-radius: 4px;
     margin: 5px 0;
     background: #f8f9fa;
+    gap: 10px;
+    flex-wrap: wrap; /* Allow wrapping */
 }
 
 .file-item:hover {
@@ -379,7 +380,10 @@ canvas {
 .file-link {
     color: #0066cc;
     text-decoration: none;
-    flex-grow: 1;
+    flex: 1;
+    min-width: 200px; /* Ensure minimum width before wrapping */
+    word-break: break-word; /* Break long words */
+    overflow-wrap: break-word; /* Ensure words wrap */
 }
 
 .file-link:hover {
@@ -389,6 +393,7 @@ canvas {
 .file-actions {
     display: flex;
     gap: 5px;
+    flex-shrink: 0; /* Prevent actions from shrinking */
 }
 
 .btn-icon {
@@ -409,12 +414,13 @@ canvas {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90%;
-    height: 90%;
+    height: 90vh;
     background: white;
     box-shadow: 0 0 20px rgba(0,0,0,0.3);
     border-radius: 8px;
     display: none;
     z-index: 1000;
+    overflow: hidden;
 }
 
 .file-viewer-header {
@@ -425,6 +431,7 @@ canvas {
     justify-content: space-between;
     align-items: center;
     border-radius: 8px 8px 0 0;
+    height: 50px;
 }
 
 .close-button {
@@ -433,12 +440,42 @@ canvas {
     font-size: 24px;
     cursor: pointer;
     padding: 0 5px;
+    color: #666;
+    transition: color 0.2s;
+}
+
+.close-button:hover {
+    color: #000;
 }
 
 .file-viewer-content {
     height: calc(100% - 50px);
-    padding: 20px;
-    overflow: auto;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.file-viewer-content iframe,
+.file-viewer-content embed {
+    width: 100%;
+    height: 100%;
+    border: none;
+    margin: 0;
+    padding: 0;
+    display: block;
+}
+
+.file-viewer-content .pdf-toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(248, 249, 250, 0.9);
+    padding: 5px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    z-index: 1;
 }
 
 .no-files {
@@ -453,4 +490,56 @@ canvas {
 
 .btn-delete:hover {
     background-color: darkred;
+}
+
+.error-banner {
+    background-color: #fff3f3;
+    border: 1px solid #dc3545;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.error-banner h3 {
+    color: #dc3545;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.error-banner ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.error-banner li {
+    color: #dc3545;
+    margin-bottom: 5px;
+}
+
+.error-banner li:last-child {
+    margin-bottom: 0;
+}
+
+/* Update file viewer header styles */
+.file-viewer-header span {
+    flex: 1;
+    padding-right: 20px;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: calc(100% - 40px); /* Leave space for close button */
+}
+
+/* Update file list container */
+.file-list {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+/* Ensure file actions stay on the same line */
+.file-actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0; /* Prevent actions from shrinking */
 }
