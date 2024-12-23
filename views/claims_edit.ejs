@@ -373,57 +373,111 @@
                 <div id="fileUploads" class="tabcontent">
                     <div class="file-section">
                         <h3>Incident Reports</h3>
-                        <input type="file" id="incidentReports" name="incidentReports" multiple>
-                        <% if (typeof errors !== 'undefined' && errors.incidentReports) { %>
-                            <div class="error-message"><%= errors.incidentReports.msg %></div>
-                        <% } %>
-                    </div>
-                    <div class="file-section">
-                        <h3>Correspondence</h3>
-                        <input type="file" id="correspondence" name="correspondence" multiple>
-                        <% if (typeof errors !== 'undefined' && errors.correspondence) { %>
-                            <div class="error-message"><%= errors.correspondence.msg %></div>
-                        <% } %>
-                    </div>
-                    <div class="file-section">
-                        <h3>Rental Agreement</h3>
-                        <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
-                        <% if (typeof errors !== 'undefined' && errors.rentalAgreement) { %>
-                            <div class="error-message"><%= errors.rentalAgreement.msg %></div>
-                        <% } %>
-                    </div>
-                    <div class="file-section">
-                        <h3>Police Report</h3>
-                        <input type="file" id="policeReport" name="policeReport" multiple>
-                        <% if (typeof errors !== 'undefined' && errors.policeReport) { %>
-                            <div class="error-message"><%= errors.policeReport.msg %></div>
-                        <% } %>
-                    </div>
-                    <div class="file-section">
-                        <h3>Invoices</h3>
-                        <input type="file" id="invoices" name="invoices" multiple>
-                        <% if (typeof errors !== 'undefined' && errors.invoices) { %>
-                            <div class="error-message"><%= errors.invoices.msg %></div>
-                        <% } %>
-                        <!-- Add input fields for invoice totals -->
-                        <div id="invoiceTotalsContainer">
-                            <% if (claim.invoiceTotals && claim.invoiceTotals.length > 0) { %>
-                                <% claim.invoiceTotals.forEach(function(invoice, index) { %>
-                                    <div class="invoice-total">
-                                        <label for="invoiceTotal<%= index %>">Invoice Total for <%= invoice.fileName %>:</label>
-                                        <input type="number" id="invoiceTotal<%= index %>" name="invoiceTotals[<%= index %>][total]" value="<%= invoice.total %>">
-                                        <input type="hidden" name="invoiceTotals[<%= index %>][fileName]" value="<%= invoice.fileName %>">
+                        <div class="existing-files">
+                            <% if (claim.files && claim.files.incidentReports) { %>
+                                <% claim.files.incidentReports.forEach(file => { %>
+                                    <div class="file-item" data-filename="<%= file %>">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <button type="button" class="remove-file" data-file="<%= file %>">Remove</button>
+                                        </div>
                                     </div>
-                                <% }); %>
+                                <% }) %>
                             <% } %>
                         </div>
+                        <input type="file" id="incidentReports" name="incidentReports" multiple>
                     </div>
+
+                    <div class="file-section">
+                        <h3>Correspondence</h3>
+                        <div class="existing-files">
+                            <% if (claim.files && claim.files.correspondence) { %>
+                                <% claim.files.correspondence.forEach(file => { %>
+                                    <div class="file-item" data-filename="<%= file %>">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <button type="button" class="remove-file" data-file="<%= file %>">Remove</button>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
+                        <input type="file" id="correspondence" name="correspondence" multiple>
+                    </div>
+
+                    <!-- Repeat for other file types -->
+                    <div class="file-section">
+                        <h3>Rental Agreement</h3>
+                        <div class="existing-files">
+                            <% if (claim.files && claim.files.rentalAgreement) { %>
+                                <% claim.files.rentalAgreement.forEach(file => { %>
+                                    <div class="file-item" data-filename="<%= file %>">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <button type="button" class="remove-file" data-file="<%= file %>">Remove</button>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
+                        <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
+                    </div>
+
+                    <div class="file-section">
+                        <h3>Police Report</h3>
+                        <div class="existing-files">
+                            <% if (claim.files && claim.files.policeReport) { %>
+                                <% claim.files.policeReport.forEach(file => { %>
+                                    <div class="file-item" data-filename="<%= file %>">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <button type="button" class="remove-file" data-file="<%= file %>">Remove</button>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
+                        <input type="file" id="policeReport" name="policeReport" multiple>
+                    </div>
+
+                    <div class="file-section">
+                        <h3>Invoices</h3>
+                        <div class="existing-files">
+                            <% if (claim.files && claim.files.invoices) { %>
+                                <% claim.files.invoices.forEach(file => { %>
+                                    <div class="file-item" data-filename="<%= file %>">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <button type="button" class="remove-file" data-file="<%= file %>">Remove</button>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
+                        <input type="file" id="invoices" name="invoices" multiple>
+                    </div>
+
                     <div class="file-section">
                         <h3>Photos</h3>
+                        <div class="existing-files">
+                            <% if (claim.files && claim.files.photos) { %>
+                                <% claim.files.photos.forEach(file => { %>
+                                    <div class="file-item" data-filename="<%= file %>">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <button type="button" class="remove-file" data-file="<%= file %>">Remove</button>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
                         <input type="file" id="photos" name="photos" multiple>
-                        <% if (typeof errors !== 'undefined' && errors.photos) { %>
-                            <div class="error-message"><%= errors.photos.msg %></div>
-                        <% } %>
                     </div>
                 </div>
 
