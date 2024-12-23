@@ -449,9 +449,13 @@
                             <% if (claim.files && claim.files.invoices) { %>
                                 <% claim.files.invoices.forEach(file => { %>
                                     <div class="file-item" data-filename="<%= file %>">
-                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-info">
+                                            <span class="file-name"><%= file %></span>
+                                            <input type="text" class="rename-input" value="<%= file %>" style="display: none;">
+                                        </div>
                                         <div class="file-actions">
                                             <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <button type="button" class="add-invoice-total" data-file="<%= file %>">Add Total</button>
                                             <button type="button" class="remove-file" data-file="<%= file %>">Remove</button>
                                         </div>
                                     </div>
@@ -506,5 +510,23 @@
     }
 });
     </script>
+
+    <!-- Invoice Total Modal -->
+    <div id="invoiceTotalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Invoice Total</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="invoiceAmount">Amount ($):</label>
+                <input type="number" id="invoiceAmount" step="0.01" min="0" placeholder="Enter amount">
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn">Cancel</button>
+                <button class="save-btn">Save</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

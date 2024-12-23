@@ -202,4 +202,92 @@ document.addEventListener('DOMContentLoaded', function () {
     function openFileViewer(filename) {
         window.open(`/uploads/${filename}`, '_blank');
     }
+
+    // Add this to your existing DOMContentLoaded event listener
+    const modal = document.getElementById('invoiceTotalModal');
+    const modalClose = modal.querySelector('.modal-close');
+    const cancelBtn = modal.querySelector('.cancel-btn');
+    const saveBtn = modal.querySelector('.save-btn');
+    const amountInput = modal.querySelector('#invoiceAmount');
+    let currentInvoiceFile = null;
+
+    // Handle clicking "Add Total" button
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('add-invoice-total')) {
+            currentInvoiceFile = e.target.dataset.file;
+            modal.style.display = 'block';
+            amountInput.value = '';
+            amountInput.focus();
+        }
+    });
+
+    // Close modal handlers
+    modalClose.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Save invoice total
+    saveBtn.addEventListener('click', function() {
+        const amount = parseFloat(amountInput.value);
+        if (isNaN(amount) || amount < 0) {
+            alert('Please enter a valid amount');
+            return;
+        }
+
+        // Add hidden input to track invoice totals
+        let invoiceTotals = document.querySelector('input[name="invoiceTotals"]');
+        if (!invoiceTotals) {
+            invoiceTotals = document.createElement('input');
+            invoiceTotals.type = 'hidden';
+            invoiceTotals.name = 'invoiceTotals';
+            invoiceTotals.value = '[]';
+            document.querySelector('form').appendChild(invoiceTotals);
+        }
+
+        // Update invoice totals array
+        const totalsArray = JSON.parse(invoiceTotals.value);
+        const existingIndex = totalsArray.findIndex(item => item.fileName === currentInvoiceFile);
+        
+        if (existingIndex !== -1) {
+            totalsArray[existingIndex].total = amount;
+        } else {
+            totalsArray.push({
+                fileName: currentInvoiceFile,
+                total: amount
+            });
+        }
+        
+        invoiceTotals.value = JSON.stringify(totalsArray);
+        
+        // Visual feedback
+        const fileItem = document.querySelector(`.file-item[data-filename="${currentInvoiceFile}"]`);
+        const existingTotal = fileItem.querySelector('.invoice-total');
+        if (existingTotal) {
+            existingTotal.textContent = `$${amount.toFixed(2)}`;
+        } else {
+            const totalSpan = document.createElement('span');
+            totalSpan.className = 'invoice-total';
+            totalSpan.textContent = `$${amount.toFixed(2)}`;
+            fileItem.querySelector('.file-info').appendChild(totalSpan);
+        }
+
+        closeModal();
+    });
+
+    function closeModal() {
+        modal.style.display = 'none';
+        currentInvoiceFile = null;
+        amountInput.value = '';
+    }
+
+    // Handle Enter key in amount input
+    amountInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            saveBtn.click();
+        }
+    });
 }); 
