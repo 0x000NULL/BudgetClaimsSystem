@@ -1,6 +1,7 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const { createClient } = require('redis');
+const path = require('path');
 
 let mongoServer;
 let redisClient;
@@ -57,6 +58,9 @@ jest.setTimeout(30000);
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.SESSION_SECRET = 'test-session-secret';
+process.env.TEST_TIMEOUT = '30000';
+process.env.REDIS_TEST_URL = 'redis://localhost:6379';
+process.env.MONGODB_TEST_URI = 'mongodb://localhost:27017/test';
 
 // Suppress console logs during tests
 global.console = {
@@ -72,3 +76,44 @@ global.console = {
 process.on('unhandledRejection', (error) => {
   console.error('Unhandled Promise Rejection:', error);
 });
+
+// Add after the existing error handler
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
+// Add global error boundary for tests
+global.testErrorBoundary = async (fn) => {
+  try {
+    await fn();
+    throw new Error('Expected function to throw');
+  } catch (error) {
+    return error;
+  }
+};
+
+// Add after the console mocks
+global.mockUtils = {
+  mockRequest: () => {
+    return {
+      body: {},
+      params: {},
+      query: {},
+      session: {},
+      headers: {},
+      get: jest.fn()
+    };
+  },
+  mockResponse: () => {
+    const res = {};
+    res.status = jest.fn().mockReturnValue(res);
+    res.json = jest.fn().mockReturnValue(res);
+    res.send = jest.fn().mockReturnValue(res);
+    res.render = jest.fn().mockReturnValue(res);
+    return res;
+  }
+};
+
+global.loadFixture = (fixtureName) => {
+    return require(path.join(__dirname, '__fixtures__', fixtureName));
+};

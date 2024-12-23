@@ -13,7 +13,11 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "docs": "jsdoc -c jsdoc.conf.json",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test:unit": "jest --testMatch='**/*.unit.test.js'",
+    "test:integration": "jest --testMatch='**/*.integration.test.js'",
+    "test:coverage": "jest --coverage --coverageReporters='text-summary'",
+    "test:clear": "jest --clearCache"
   },
   "dependencies": {
     "archiver": "^7.0.1",
@@ -25,7 +29,6 @@
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
     "csv-express": "^1.2.2",
-    "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "exceljs": "^4.4.0",
     "express": "^4.21.2",
@@ -49,6 +52,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "cross-env": "^7.0.3",
+    "dotenv": "^16.4.7",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-jest": "^27.9.0",
