@@ -49,155 +49,277 @@
                     </div>
                 <% } %>
 
-                <div class="tab-container">
-                    <div class="tab-buttons">
+                <div class="tab">
+                    <div class="tab-row">
                         <button type="button" class="tablinks" id="defaultOpen" data-tab="CustomerInfo">Customer Information</button>
                         <button type="button" class="tablinks" data-tab="VehicleInfo">Vehicle Information</button>
                         <button type="button" class="tablinks" data-tab="ClaimDetails">Claim Details</button>
                         <button type="button" class="tablinks" data-tab="InsuranceInfo">Insurance Information</button>
                     </div>
-
-                    <!-- Tab content -->
-                    <div id="CustomerInfo" class="tabcontent">
-                        <div class="claim-info">
-                            <label for="customerName">Customer Name:</label>
-                            <input type="text" id="customerName" name="customerName">
-                            <span class="error-message" id="errorCustomerName"></span>
-
-                            <label for="customerNumber">Customer Number:</label>
-                            <input type="text" id="customerNumber" name="customerNumber">
-                            <span class="error-message" id="errorCustomerNumber"></span>
-
-                            <label for="customerEmail">Customer Email:</label>
-                            <input type="email" id="customerEmail" name="customerEmail">
-                            <span class="error-message" id="errorCustomerEmail"></span>
-
-                            <label for="customerAddress">Customer Address:</label>
-                            <input type="text" id="customerAddress" name="customerAddress">
-                            <span class="error-message" id="errorCustomerAddress"></span>
-
-                            <label for="customerDriversLicense">Customer Drivers License:</label>
-                            <input type="text" id="customerDriversLicense" name="customerDriversLicense">
-                            <span class="error-message" id="errorCustomerDriversLicense"></span>
-                        </div>
+                    <div class="tab-row">
+                        <button type="button" class="tablinks" data-tab="ThirdPartyInfo">Third Party Information</button>
+                        <button type="button" class="tablinks" data-tab="RentalPoliceInfo">Rental & Police Information</button>
+                        <button type="button" class="tablinks" data-tab="AdditionalCoverage">Additional Coverage</button>
+                        <button type="button" class="tablinks" data-tab="FileUploads">File Uploads</button>
                     </div>
+                </div>
 
-                    <div id="VehicleInfo" class="tabcontent">
-                        <div class="claim-info">
-                            <label for="carMake">Car Make:</label>
-                            <input type="text" id="carMake" name="carMake">
-                            <span class="error-message" id="errorCarMake"></span>
+                <!-- Tab content for Customer Information -->
+                <div id="CustomerInfo" class="tabcontent">
+                    <div class="claim-info">
+                        <label for="customerName">Customer Name:</label>
+                        <input type="text" id="customerName" name="customerName">
+                        <span class="error-message" id="errorCustomerName"></span>
 
-                            <label for="carModel">Car Model:</label>
-                            <input type="text" id="carModel" name="carModel">
-                            <span class="error-message" id="errorCarModel"></span>
+                        <label for="customerNumber">Customer Number:</label>
+                        <input type="text" id="customerNumber" name="customerNumber">
+                        <span class="error-message" id="errorCustomerNumber"></span>
 
-                            <label for="carYear">Car Year:</label>
-                            <input type="text" id="carYear" name="carYear">
-                            <span class="error-message" id="errorCarYear"></span>
+                        <label for="customerEmail">Customer Email:</label>
+                        <input type="email" id="customerEmail" name="customerEmail">
+                        <span class="error-message" id="errorCustomerEmail"></span>
 
-                            <label for="carColor">Car Color:</label>
-                            <input type="text" id="carColor" name="carColor">
-                            <span class="error-message" id="errorCarColor"></span>
+                        <label for="customerAddress">Customer Address:</label>
+                        <input type="text" id="customerAddress" name="customerAddress">
+                        <span class="error-message" id="errorCustomerAddress"></span>
 
-                            <label for="carVIN">Car VIN:</label>
-                            <input type="text" id="carVIN" name="carVIN">
-                            <span class="error-message" id="errorCarVIN"></span>
-
-                            <label for="vehicleOdometer">Vehicle Odometer:</label>
-                            <input type="number" id="vehicleOdometer" name="vehicleOdometer">
-                            <span class="error-message" id="errorVehicleOdometer"></span>
-
-                            <label for="accidentDate">Accident Date:</label>
-                            <input type="date" id="accidentDate" name="accidentDate">
-                            <span class="error-message" id="errorAccidentDate"></span>
-                        </div>
+                        <label for="customerDriversLicense">Customer Drivers License:</label>
+                        <input type="text" id="customerDriversLicense" name="customerDriversLicense">
+                        <span class="error-message" id="errorCustomerDriversLicense"></span>
                     </div>
+                </div>
 
-                    <div id="ClaimDetails" class="tabcontent">
-                        <div class="claim-info">
-                            <label for="mva">MVA:</label>
-                            <input type="text" id="mva" name="mva">
-                            <span class="error-message" id="errorMVA"></span>
+                <!-- Tab content for Vehicle Information -->
+                <div id="VehicleInfo" class="tabcontent">
+                    <div class="claim-info">
+                        <label for="carMake">Car Make:</label>
+                        <input type="text" id="carMake" name="carMake">
+                        <span class="error-message" id="errorCarMake"></span>
 
-                            <label for="raNumber">RA Number:</label>
-                            <input type="text" id="raNumber" name="raNumber">
-                            <span class="error-message" id="errorRANumber"></span>
+                        <label for="carModel">Car Model:</label>
+                        <input type="text" id="carModel" name="carModel">
+                        <span class="error-message" id="errorCarModel"></span>
 
-                            <label for="damagesTotal">Damages Total:</label>
-                            <input type="text" id="damagesTotal" name="damagesTotal">
-                            <span class="error-message" id="errorDamagesTotal"></span>
+                        <label for="carYear">Car Year:</label>
+                        <input type="text" id="carYear" name="carYear">
+                        <span class="error-message" id="errorCarYear"></span>
 
-                            <label for="billable">Billable:</label>
-                            <select id="billable" name="billable">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                                <option value="n/a">N/A</option>
-                                <option value="unknown">Unknown</option>
-                            </select>
-                            <span class="error-message" id="errorBillable"></span>
+                        <label for="carColor">Car Color:</label>
+                        <input type="text" id="carColor" name="carColor">
+                        <span class="error-message" id="errorCarColor"></span>
 
-                            <label for="isRenterAtFault">Is Renter At Fault:</label>
-                            <select id="isRenterAtFault" name="isRenterAtFault">
-                                <option value="true">Yes</option>
-                                <option value="false">No</option>
-                                <option value="n/a">N/A</option>
-                                <option value="unknown">Unknown</option>
-                            </select>
-                            <span class="error-message" id="errorIsRenterAtFault"></span>
+                        <label for="carVIN">Car VIN:</label>
+                        <input type="text" id="carVIN" name="carVIN">
+                        <span class="error-message" id="errorCarVIN"></span>
 
-                            <label for="damageType">Damage Type:</label>
-                            <div id="damageTypeContainer">
-                                <% damageTypes.forEach(damageType => { %>
-                                <label>
-                                    <input type="checkbox" name="damageType" value="<%= damageType._id %>" <%= claim.damageType && claim.damageType.includes(damageType._id.toString()) ? 'checked' : '' %>>
-                                    <%= damageType.name %>
-                                </label>
-                                <% }) %>
-                            </div>
-                            <label for="status">Status:</label>
-                            <select id="status" name="status">
-                                <% statuses.forEach(status => { %>
-                                <option value="<%= status._id %>" <%= claim.status && claim.status.toString() === status._id.toString() ? 'selected' : '' %>><%= status.name %></option>
-                                <% }) %>
-                            </select>
-                        </div>    
+                        <label for="vehicleOdometer">Vehicle Odometer:</label>
+                        <input type="number" id="vehicleOdometer" name="vehicleOdometer">
+                        <span class="error-message" id="errorVehicleOdometer"></span>
+
+                        <label for="accidentDate">Accident Date:</label>
+                        <input type="date" id="accidentDate" name="accidentDate">
+                        <span class="error-message" id="errorAccidentDate"></span>
                     </div>
+                </div>
 
-                    <div id="InsuranceInfo" class="tabcontent">
-                        <div class="claim-info">
-                            <label for="insuranceCarrier">Insurance Carrier:</label>
-                            <input type="text" id="insuranceCarrier" name="insuranceCarrier">
-                            <span class="error-message" id="errorInsuranceCarrier"></span>
+                <!-- Tab content for Claim Details -->
+                <div id="ClaimDetails" class="tabcontent">
+                    <div class="claim-info">
+                        <label for="mva">MVA:</label>
+                        <input type="text" id="mva" name="mva">
+                        <span class="error-message" id="errorMVA"></span>
 
-                            <label for="insuranceAdjuster">Insurance Adjuster:</label>
-                            <input type="text" id="insuranceAdjuster" name="insuranceAdjuster">
-                            <span class="error-message" id="errorInsuranceAdjuster"></span>
+                        <label for="raNumber">RA Number:</label>
+                        <input type="text" id="raNumber" name="raNumber">
+                        <span class="error-message" id="errorRANumber"></span>
 
-                            <label for="insuranceEmail">Insurance Email:</label>
-                            <input type="email" id="insuranceEmail" name="insuranceEmail">
-                            <span class="error-message" id="errorInsuranceEmail"></span>
+                        <label for="damagesTotal">Damages Total:</label>
+                        <input type="text" id="damagesTotal" name="damagesTotal">
+                        <span class="error-message" id="errorDamagesTotal"></span>
 
-                            <label for="insurancePhoneNumber">Insurance Phone Number:</label>
-                            <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber">
-                            <span class="error-message" id="errorInsurancePhoneNumber"></span>
+                        <label for="billable">Billable:</label>
+                        <select id="billable" name="billable">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                            <option value="n/a">N/A</option>
+                            <option value="unknown">Unknown</option>
+                        </select>
+                        <span class="error-message" id="errorBillable"></span>
 
-                            <label for="insuranceFaxNumber">Insurance Fax Number:</label>
-                            <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber">
-                            <span class="error-message" id="errorInsuranceFaxNumber"></span>
+                        <label for="isRenterAtFault">Is Renter At Fault:</label>
+                        <select id="isRenterAtFault" name="isRenterAtFault">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                            <option value="n/a">N/A</option>
+                            <option value="unknown">Unknown</option>
+                        </select>
+                        <span class="error-message" id="errorIsRenterAtFault"></span>
 
-                            <label for="insuranceAddress">Insurance Address:</label>
-                            <input type="text" id="insuranceAddress" name="insuranceAddress">
-                            <span class="error-message" id="errorInsuranceAddress"></span>
-
-                            <label for="insurancePolicyNumber">Insurance Policy Number:</label>
-                            <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber">
-                            <span class="error-message" id="errorInsurancePolicyNumber"></span>
-
-                            <label for="insuranceClaimNumber">Insurance Claim Number:</label>
-                            <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber">
-                            <span class="error-message" id="errorInsuranceClaimNumber"></span>
+                        <label for="damageType">Damage Type:</label>
+                        <div id="damageTypeContainer">
+                            <% damageTypes.forEach(damageType => { %>
+                            <label>
+                                <input type="checkbox" name="damageType" value="<%= damageType._id %>" <%= claim.damageType && claim.damageType.includes(damageType._id.toString()) ? 'checked' : '' %>>
+                                <%= damageType.name %>
+                            </label>
+                            <% }) %>
                         </div>
+                        <label for="status">Status:</label>
+                        <select id="status" name="status">
+                            <% statuses.forEach(status => { %>
+                            <option value="<%= status._id %>" <%= claim.status && claim.status.toString() === status._id.toString() ? 'selected' : '' %>><%= status.name %></option>
+                            <% }) %>
+                        </select>
+                </div>    
+
+                <!-- Tab content for Insurance Information -->
+                <div id="InsuranceInfo" class="tabcontent">
+                    <div class="claim-info">
+                        <label for="insuranceCarrier">Insurance Carrier:</label>
+                        <input type="text" id="insuranceCarrier" name="insuranceCarrier">
+                        <span class="error-message" id="errorInsuranceCarrier"></span>
+
+                        <label for="insuranceAdjuster">Insurance Adjuster:</label>
+                        <input type="text" id="insuranceAdjuster" name="insuranceAdjuster">
+                        <span class="error-message" id="errorInsuranceAdjuster"></span>
+
+                        <label for="insuranceEmail">Insurance Email:</label>
+                        <input type="email" id="insuranceEmail" name="insuranceEmail">
+                        <span class="error-message" id="errorInsuranceEmail"></span>
+
+                        <label for="insurancePhoneNumber">Insurance Phone Number:</label>
+                        <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber">
+                        <span class="error-message" id="errorInsurancePhoneNumber"></span>
+
+                        <label for="insuranceFaxNumber">Insurance Fax Number:</label>
+                        <input type="text" id="insuranceFaxNumber" name="insuranceFaxNumber">
+                        <span class="error-message" id="errorInsuranceFaxNumber"></span>
+
+                        <label for="insuranceAddress">Insurance Address:</label>
+                        <input type="text" id="insuranceAddress" name="insuranceAddress">
+                        <span class="error-message" id="errorInsuranceAddress"></span>
+
+                        <label for="insurancePolicyNumber">Insurance Policy Number:</label>
+                        <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber">
+                        <span class="error-message" id="errorInsurancePolicyNumber"></span>
+
+                        <label for="insuranceClaimNumber">Insurance Claim Number:</label>
+                        <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber">
+                        <span class="error-message" id="errorInsuranceClaimNumber"></span>
+                    </div>
+                </div>
+
+                <!-- Tab content for Third Party Information -->
+                <div id="ThirdPartyInfo" class="tabcontent">
+                    <div class="claim-info">
+                        <label for="thirdPartyName">Third Party Name:</label>
+                        <input type="text" id="thirdPartyName" name="thirdPartyName">
+                        <span class="error-message" id="errorThirdPartyName"></span>
+
+                        <label for="thirdPartyAddress">Third Party Address:</label>
+                        <input type="text" id="thirdPartyAddress" name="thirdPartyAddress">
+                        <span class="error-message" id="errorThirdPartyAddress"></span>
+
+                        <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
+                        <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber">
+                        <span class="error-message" id="errorThirdPartyPhoneNumber"></span>
+
+                        <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
+                        <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName">
+                        <span class="error-message" id="errorThirdPartyInsuranceName"></span>
+
+                        <label for="thirdPartyAdjusterName">Third Party Adjuster Name:</label>
+                        <input type="text" id="thirdPartyAdjusterName" name="thirdPartyAdjusterName">
+                        <span class="error-message" id="errorThirdPartyAdjusterName"></span>
+
+                        <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
+                        <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber">
+                        <span class="error-message" id="errorThirdPartyPolicyNumber"></span>
+
+                        <label for="thirdPartyClaimNumber">Third Party Claim Number:</label>
+                        <input type="text" id="thirdPartyClaimNumber" name="thirdPartyClaimNumber">
+                        <span class="error-message" id="errorThirdPartyClaimNumber"></span>
+                    </div>
+                </div>
+
+                <!-- Tab content for Rental & Police Information -->
+                <div id="RentalPoliceInfo" class="tabcontent">
+                    <div class="claim-info">
+                        <label for="rentingLocation">Renting Location:</label>
+                        <select id="rentingLocation" name="rentingLocation">
+                            <% locations.forEach(location => { %>
+                            <option value="<%= location %>"><%= location %></option>
+                            <% }) %>
+                        </select>
+
+                        <label for="policeDepartment">Police Department:</label>
+                        <input type="text" id="policeDepartment" name="policeDepartment">
+                        <span class="error-message" id="errorPoliceDepartment"></span>
+
+                        <label for="policeReportNumber">Police Report Number:</label>
+                        <input type="text" id="policeReportNumber" name="policeReportNumber">
+                        <span class="error-message" id="errorPoliceReportNumber"></span>
+
+                        <label for="claimCloseDate">Claim Close Date:</label>
+                        <input type="date" id="claimCloseDate" name="claimCloseDate">
+                        <span class="error-message" id="errorClaimCloseDate"></span>
+                    </div>
+                </div>
+
+                <!-- Tab content for Additional Coverage -->
+                <div id="additionalCoverage" class="tabcontent">
+                    <div class="claim-info">
+                        <label for="rentersLiabilityInsurance">Was Renters Liability Insurance purchased?</label>
+                        <select id="rentersLiabilityInsurance" name="rentersLiabilityInsurance">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                            <option value="n/a">N/A</option>
+                            <option value="unknown">Unknown</option>
+                        </select>
+                        <span class="error-message" id="errorRentersLiabilityInsurance"></span>
+
+                        <label for="lossDamageWaiver">Was Loss Damage Waiver purchased?</label>
+                        <select id="lossDamageWaiver" name="lossDamageWaiver">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                            <option value="n/a">N/A</option>
+                            <option value="unknown">Unknown</option>
+                        </select>
+                        <span class="error-message" id="errorLossDamageWaiver"></span>
+                    </div>
+                </div>
+
+                <!-- Tab content for File Uploads -->
+                <div id="FileUploads" class="tabcontent">
+                    <div class="file-section">
+                        <h3>Incident Reports</h3>
+                        <input type="file" id="incidentReports" name="incidentReports" multiple>
+                        <span class="error-message" id="errorIncidentReports"></span>
+                    </div>
+                    <div class="file-section">
+                        <h3>Correspondence</h3>
+                        <input type="file" id="correspondence" name="correspondence" multiple>
+                        <span class="error-message" id="errorCorrespondence"></span>
+                    </div>
+                    <div class="file-section">
+                        <h3>Rental Agreement</h3>
+                        <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
+                        <span class="error-message" id="errorRentalAgreement"></span>
+                    </div>
+                    <div class="file-section">
+                        <h3>Police Report</h3>
+                        <input type="file" id="policeReport" name="policeReport" multiple>
+                        <span class="error-message" id="errorPoliceReport"></span>
+                    </div>
+                    <div class="file-section">
+                        <h3>Invoices</h3>
+                        <input type="file" id="invoices" name="invoices" multiple>
+                        <span class="error-message" id="errorInvoices"></span>
+                    </div>
+                    <div class="file-section">
+                        <h3>Photos</h3>
+                        <input type="file" id="photos" name="photos" multiple>
+                        <span class="error-message" id="errorPhotos"></span>
                     </div>
                 </div>
 

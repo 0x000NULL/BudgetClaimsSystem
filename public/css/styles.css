@@ -724,7 +724,7 @@ canvas {
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9em;
-    min-width: 60px;
+    min-width: 40px;
     text-align: center;
 }
 
@@ -980,42 +980,11 @@ input[type="file"] {
     align-items: center;
 }
 
-.edit-mode .rename-file {
-    background: none;
-    border: none;
-    padding: 4px 8px;
-    cursor: pointer;
-    text-align: left;
-    width: 100%;
-    color: #007bff;
-    transition: background-color 0.2s;
-    border-radius: 4px;
-}
-
-.edit-mode .rename-file:hover {
-    background-color: #f8f9fa;
-}
-
-.edit-mode .rename-file .file-name {
-    display: inline-block;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.edit-mode .rename-input {
-    width: 100%;
-    padding: 4px 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    display: none;
-}
-
 .edit-mode .file-actions {
     display: flex;
     gap: 8px;
     flex-shrink: 0;
-    min-width: 140px;
+    min-width: 200px; /* Increased to accommodate three buttons */
     justify-content: flex-end;
 }
 
@@ -1025,22 +994,33 @@ input[type="file"] {
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9em;
-    min-width: 60px;
+    width: 80px; /* Fixed width for all buttons */
     text-align: center;
     background: #007bff;
     color: white;
 }
 
-.edit-mode .file-actions button:hover {
-    background: #0056b3;
+/* Add Invoice Total button style */
+.add-invoice-total {
+    background-color: #28a745 !important;
+    width: 80px !important; /* Match other buttons */
+}
+
+.add-invoice-total:hover {
+    background-color: #218838 !important;
 }
 
 .edit-mode .remove-file {
     background: #dc3545 !important;
+    width: 80px !important; /* Match other buttons */
 }
 
 .edit-mode .remove-file:hover {
     background: #c82333 !important;
+}
+
+.edit-mode .view-file {
+    width: 80px !important; /* Match other buttons */
 }
 
 /* Update the download button style */
@@ -1063,4 +1043,134 @@ input[type="file"] {
 .view-mode .view-file:hover {
     background: #0056b3;
     text-decoration: none;
+}
+
+/* Invoice total modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.modal-body {
+    margin-bottom: 15px;
+}
+
+.modal-body input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-footer button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.modal-footer .save-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-footer .cancel-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* File action buttons */
+.file-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.file-actions button,
+.file-actions a {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    width: 80px;
+    height: 32px; /* Fixed height for all buttons */
+    text-align: center;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    margin: 0;
+}
+
+/* View button */
+.view-file {
+    background: #007bff !important;
+}
+
+.view-file:hover {
+    background: #0056b3 !important;
+}
+
+/* Add Total button */
+.add-invoice-total {
+    background: #28a745 !important;
+}
+
+.add-invoice-total:hover {
+    background: #218838 !important;
+}
+
+/* Remove button */
+.remove-file {
+    background: #dc3545 !important;
+}
+
+.remove-file:hover {
+    background: #c82333 !important;
 }
