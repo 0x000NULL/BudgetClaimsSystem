@@ -377,8 +377,13 @@
                             <% if (claim.files && claim.files.incidentReports) { %>
                                 <% claim.files.incidentReports.forEach(file => { %>
                                     <div class="file-item" data-filename="<%= file %>">
+                                        <div class="file-info">
+                                            <span class="file-name"><%= file %></span>
+                                            <input type="text" class="rename-input" value="<%= file %>" style="display: none;">
+                                        </div>
                                         <div class="file-actions">
                                             <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <button type="button" class="rename-file" data-file="<%= file %>">Rename</button>
                                             <button type="button" class="remove-file" data-file="<%= file %>">Remove</button>
                                         </div>
                                     </div>
@@ -451,11 +456,11 @@
                                     <div class="file-item" data-filename="<%= file %>">
                                         <div class="file-info">
                                             <span class="file-name"><%= file %></span>
-                                            <input type="text" class="rename-input" value="<%= file %>" style="display: none;">
                                         </div>
                                         <div class="file-actions">
                                             <button type="button" class="view-file" data-file="<%= file %>">View</button>
                                             <button type="button" class="add-invoice-total" data-file="<%= file %>">Add Total</button>
+                                            <button type="button" class="rename-file" data-file="<%= file %>">Rename</button>
                                             <button type="button" class="remove-file" data-file="<%= file %>">Remove</button>
                                         </div>
                                     </div>

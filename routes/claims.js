@@ -430,141 +430,60 @@ router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActi
         files: req.files,
         headers: req.headers
     });
-    
-    const {
-        mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
-        ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
-        customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
-        carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
-        damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
-        insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
-        thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
-        rentersLiabilityInsurance, lossDamageWaiver, invoice, amount // Add these fields
-    } = req.body;
 
-    let files = initializeFileCategories({});
-    let invoiceTotals = [];
+    try {
+        // Initialize files and invoice totals
+        let files = initializeFileCategories({});
+        let invoiceTotals = [];
 
-    if (req.files) {
-        try {
-            const fileErrors = [];
-            const processedFiles = {};
-
-            // First, validate all files
-            for (const category of Object.keys(req.files)) {
+        // Handle file uploads
+        if (req.files) {
+            for (const category in req.files) {
                 const categoryFiles = Array.isArray(req.files[category]) 
                     ? req.files[category] 
                     : [req.files[category]];
 
-                // Check number of files in category
-                if (categoryFiles.length > global.MAX_FILES_PER_CATEGORY[category]) {
-                    fileErrors.push(`Too many files in ${category}. Maximum allowed: ${global.MAX_FILES_PER_CATEGORY[category]}`);
-                    continue;
-                }
-
-                processedFiles[category] = [];
-
-                for (const file of categoryFiles) {
-                    const validationErrors = validateFile(file, category);
-                    if (validationErrors.length > 0) {
-                        fileErrors.push(...validationErrors.map(err => `${file.name}: ${err}`));
-                    } else {
-                        processedFiles[category].push(file);
-                    }
-                }
-            }
-
-            // If there are any validation errors, render the form again with errors
-            if (fileErrors.length > 0) {
-                // Fetch necessary data for re-rendering the form
-                const [statuses, locations, damageTypes] = await Promise.all([
-                    Status.find().sort({ name: 1 }),
-                    Location.find().sort({ name: 1 }),
-                    DamageType.find().sort({ name: 1 })
-                ]);
-
-                return res.render('add_claim', {
-                    title: 'Add Claim',
-                    statuses,
-                    locations,
-                    damageTypes,
-                    formData: req.body, // Preserve form data
-                    fileErrors: fileErrors, // Pass file errors to the template
-                    errors: {} // Other form errors if any
-                });
-            }
-
-            // Process valid files
-            for (const [category, categoryFiles] of Object.entries(processedFiles)) {
+                // Process each file in the category
                 for (const file of categoryFiles) {
                     const sanitizedFilename = sanitizeFilename(file.name);
-                    const filePath = path.join(__dirname, '../public/uploads', sanitizedFilename);
+                    const filePath = path.join(uploadsPath, sanitizedFilename);
 
                     // Create upload directory if it doesn't exist
-                    const uploadDir = path.dirname(filePath);
-                    if (!fs.existsSync(uploadDir)) {
-                        fs.mkdirSync(uploadDir, { recursive: true });
+                    if (!fs.existsSync(uploadsPath)) {
+                        fs.mkdirSync(uploadsPath, { recursive: true });
                     }
 
                     // Move file with sanitized name
                     await file.mv(filePath);
-                    logRequest(req, 'File uploaded successfully:', { 
-                        originalName: file.name,
-                        sanitizedName: sanitizedFilename 
-                    });
-
-                    files[category].push(sanitizedFilename);
                     
+                    // Add to appropriate files array
+                    if (!files[category]) files[category] = [];
+                    files[category].push(sanitizedFilename);
+
+                    // If this is an invoice, add to invoice totals
                     if (category === 'invoices') {
                         const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
-                        invoiceTotals.push({ 
-                            fileName: sanitizedFilename, 
-                            originalName: file.name,
-                            total 
+                        invoiceTotals.push({
+                            fileName: sanitizedFilename,
+                            total: total
                         });
+                        console.log('Added invoice total:', { fileName: sanitizedFilename, total });
                     }
                 }
             }
-        } catch (err) {
-            logRequest(req, 'Error uploading files:', { error: err });
-            
-            // Fetch necessary data for re-rendering the form
-            const [statuses, locations, damageTypes] = await Promise.all([
-                Status.find().sort({ name: 1 }),
-                Location.find().sort({ name: 1 }),
-                DamageType.find().sort({ name: 1 })
-            ]);
-
-            return res.render('add_claim', {
-                title: 'Add Claim',
-                statuses,
-                locations,
-                damageTypes,
-                formData: req.body, // Preserve form data
-                fileErrors: ['An error occurred while uploading files. Please try again.'],
-                errors: {}
-            });
         }
-    }
 
-    const newClaim = new Claim({
-        mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
-        ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
-        customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
-        carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
-        damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
-        insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
-        thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
-        rentersLiabilityInsurance, lossDamageWaiver, invoice, amount, // Add these fields
-        files,
-        invoiceTotals // Add invoice totals
-    });
+        // Create new claim with files and invoice totals
+        const newClaim = new Claim({
+            ...req.body,
+            files,
+            invoiceTotals
+        });
 
-    try {
         const claim = await newClaim.save();
-        logRequest(req, 'New claim added:', { claim });
+        console.log('Saved new claim with invoice totals:', claim.invoiceTotals);
+        
         notifyNewClaim(req.user.email, claim);
-        //cache.store.del('/claims');
         res.redirect('/dashboard');
     } catch (err) {
         logRequest(req, 'Error adding new claim:', { error: err });
@@ -622,31 +541,69 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             return res.status(404).json({ success: false, message: 'Claim not found' });
         }
 
+        // Debug logging
+        console.log('Current invoice totals:', claim.invoiceTotals);
+        console.log('Request body:', req.body);
+
+        // Initialize or maintain existing invoiceTotals
+        if (!claim.invoiceTotals) {
+            claim.invoiceTotals = [];
+        }
+
+        // Handle file operations
+        if (req.files) {
+            // Handle new invoices
+            if (req.files.invoices) {
+                const invoiceFiles = Array.isArray(req.files.invoices) ? req.files.invoices : [req.files.invoices];
+                
+                for (const file of invoiceFiles) {
+                    const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
+                    claim.invoiceTotals.push({
+                        fileName: file.name,
+                        total: total
+                    });
+                    
+                    // Add to files array if it doesn't exist
+                    if (!claim.files) claim.files = {};
+                    if (!claim.files.invoices) claim.files.invoices = [];
+                    claim.files.invoices.push(file.name);
+                    
+                    console.log('Added invoice:', file.name, 'with total:', total);
+                }
+            }
+
+            // Handle other file types
+            Object.keys(req.files).forEach(type => {
+                if (type !== 'invoices') {  // Skip invoices as they're handled above
+                    if (!claim.files) claim.files = {};
+                    if (!claim.files[type]) claim.files[type] = [];
+                    const uploadedFiles = Array.isArray(req.files[type]) ? req.files[type] : [req.files[type]];
+                    uploadedFiles.forEach(file => {
+                        claim.files[type].push(file.name);
+                    });
+                }
+            });
+        }
+
         // Handle renamed files
         if (req.body.renamedFiles) {
             const renamedFiles = JSON.parse(req.body.renamedFiles);
             for (const fileInfo of renamedFiles) {
                 const { type, oldName, newName } = fileInfo;
+                
+                // Update invoice totals if renaming an invoice
+                if (type === 'invoices') {
+                    const invoiceIndex = claim.invoiceTotals.findIndex(inv => inv.fileName === oldName);
+                    if (invoiceIndex !== -1) {
+                        claim.invoiceTotals[invoiceIndex].fileName = newName;
+                    }
+                }
+
+                // Update files array
                 if (claim.files && claim.files[type]) {
                     const index = claim.files[type].indexOf(oldName);
                     if (index !== -1) {
                         claim.files[type][index] = newName;
-                        
-                        // Rename actual file
-                        const oldPath = path.join(uploadsPath, oldName);
-                        const newPath = path.join(uploadsPath, newName);
-                        try {
-                            // Check if old file exists
-                            if (fs.existsSync(oldPath)) {
-                                await fs.promises.rename(oldPath, newPath);
-                            } else {
-                                console.error(`File not found: ${oldPath}`);
-                                // Update database even if file doesn't exist physically
-                            }
-                        } catch (err) {
-                            console.error(`Error renaming file from ${oldName} to ${newName}:`, err);
-                            // Continue with other files even if one fails
-                        }
                     }
                 }
             }
@@ -657,39 +614,44 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             const removedFiles = JSON.parse(req.body.removedFiles);
             removedFiles.forEach(fileInfo => {
                 const { type, name } = JSON.parse(fileInfo);
+                
+                // Remove from invoice totals if it's an invoice
+                if (type === 'invoices') {
+                    claim.invoiceTotals = claim.invoiceTotals.filter(inv => inv.fileName !== name);
+                }
+
+                // Remove from files array
                 if (claim.files && claim.files[type]) {
                     claim.files[type] = claim.files[type].filter(file => file !== name);
-                    
-                    // Optionally delete the file from storage
-                    const filePath = path.join(__dirname, '../uploads', name);
-                    fs.unlink(filePath, err => {
-                        if (err) console.error(`Error deleting file ${name}:`, err);
+                }
+            });
+        }
+
+        // Sync invoice totals with files
+        if (claim.files && claim.files.invoices) {
+            // Keep only invoice totals that have corresponding files
+            claim.invoiceTotals = claim.invoiceTotals.filter(invoice => 
+                claim.files.invoices.includes(invoice.fileName)
+            );
+
+            // Add missing invoice totals for files
+            claim.files.invoices.forEach(fileName => {
+                if (!claim.invoiceTotals.some(invoice => invoice.fileName === fileName)) {
+                    // Try to get total from request body or default to 0
+                    const total = parseFloat(req.body[`invoiceTotal_${fileName}`]) || 0;
+                    claim.invoiceTotals.push({
+                        fileName,
+                        total
                     });
                 }
             });
         }
 
-        // Handle new files
-        const files = claim.files || {}; // Use existing files or initialize empty object
-        if (req.files) {
-            Object.keys(req.files).forEach(type => {
-                if (!files[type]) files[type] = [];
-                const uploadedFiles = Array.isArray(req.files[type]) ? req.files[type] : [req.files[type]];
-                uploadedFiles.forEach(file => {
-                    files[type].push(file.name);
-                });
-            });
-        }
-
-        // Update claim with new data
-        Object.assign(claim, {
-            ...req.body,
-            files
-        });
-
+        // Update other claim data and save
+        Object.assign(claim, req.body);
         await claim.save();
+        console.log('Saved claim with invoice totals:', claim.invoiceTotals);
 
-        // Redirect to the updated claim
         res.redirect(`/claims/${claim._id}`);
     } catch (error) {
         console.error('Error updating claim:', error);
@@ -1062,5 +1024,74 @@ router.delete('/api/settings/:type/:id', ensureAuthenticated, ensureRole('admin'
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
+// Route to update invoice total
+router.put('/:id/invoice-total', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    const claimId = req.params.id;
+    const { fileName, total } = req.body;
+
+    try {
+        // Find the claim
+        const claim = await Claim.findById(claimId);
+        if (!claim) {
+            console.error(`Claim not found with ID: ${claimId}`);
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Claim not found' 
+            });
+        }
+
+        // Find and update the specific invoice total
+        const invoiceIndex = claim.invoiceTotals.findIndex(inv => inv.fileName === fileName);
+        if (invoiceIndex !== -1) {
+            // Log the update
+            console.log(`Updating invoice total for ${fileName}:`, {
+                oldTotal: claim.invoiceTotals[invoiceIndex].total,
+                newTotal: total
+            });
+
+            // Update the total
+            claim.invoiceTotals[invoiceIndex].total = parseFloat(total);
+            await claim.save();
+
+            // Return success with updated data
+            res.json({ 
+                success: true,
+                data: {
+                    invoiceTotal: claim.invoiceTotals[invoiceIndex],
+                    adminFee: calculateAdminFee(claim.invoiceTotals)
+                }
+            });
+        } else {
+            console.error(`Invoice not found: ${fileName} in claim ${claimId}`);
+            res.status(404).json({ 
+                success: false, 
+                message: 'Invoice not found' 
+            });
+        }
+    } catch (error) {
+        console.error('Error updating invoice total:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
+    }
+});
+
+// Helper function to calculate admin fee
+function calculateAdminFee(invoiceTotals) {
+    const totalInvoices = invoiceTotals.reduce((sum, invoice) => sum + (invoice.total || 0), 0);
+    let adminFee = 0;
+    
+    if (totalInvoices >= 100 && totalInvoices < 500) {
+        adminFee = 50;
+    } else if (totalInvoices >= 500 && totalInvoices < 1500) {
+        adminFee = 100;
+    } else if (totalInvoices >= 1500) {
+        adminFee = 150;
+    }
+    
+    return adminFee;
+}
 
 module.exports = router; // Export the router

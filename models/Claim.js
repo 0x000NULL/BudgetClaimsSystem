@@ -219,8 +219,15 @@ const ClaimSchema = new Schema({
     },
     // New field: Invoice totals
     invoiceTotals: [{
-        fileName: String,
-        total: Number
+        fileName: {
+            type: String,
+            required: true
+        },
+        total: {
+            type: Number,
+            required: true,
+            default: 0
+        }
     }],
     // Field for storing different versions of the claim
     versions: {

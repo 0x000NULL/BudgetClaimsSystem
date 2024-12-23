@@ -271,15 +271,30 @@
 
                 <!-- Display Invoice Totals -->
                 <label>Invoice Totals:</label>
-                <ul>
+                <div class="invoice-totals">
                     <% if (claim.invoiceTotals && claim.invoiceTotals.length > 0) { %>
-                        <% claim.invoiceTotals.forEach(invoice => { %>
-                            <li><%= invoice.fileName %>: $<%= invoice.total.toFixed(2) %></li>
-                        <% }) %>
+                        <ul class="invoice-list">
+                            <% claim.invoiceTotals.forEach(invoice => { %>
+                                <li class="invoice-item" data-filename="<%= invoice.fileName %>">
+                                    <span class="invoice-name"><%= invoice.fileName %></span>
+                                    <div class="invoice-amount-container">
+                                        <span class="invoice-amount">$<%= invoice.total.toFixed(2) %></span>
+                                        <input type="number" 
+                                               class="invoice-edit-input" 
+                                               value="<%= invoice.total || 0 %>" 
+                                               placeholder="$0.00"
+                                               step="0.01" 
+                                               min="0" 
+                                               style="display: none;">
+                                        <button class="btn btn-edit-invoice">Edit</button>
+                                    </div>
+                                </li>
+                            <% }) %>
+                        </ul>
                     <% } else { %>
-                        <li>No invoices found</li>
+                        <p>No invoices found</p>
                     <% } %>
-                </ul>
+                </div>
 
                 <!-- Calculate and Display Admin Fee -->
                 <%
@@ -294,7 +309,7 @@
                     }
                 %>
                 <label>Admin Fee:</label>
-                <p>$<%= adminFee.toFixed(2) %></p>
+                <p id="adminFeeAmount">$<%= adminFee.toFixed(2) %></p>
             </div>
             <div class="button-group">
                 <a href="/claims/<%= claim._id %>/edit" class="btn">Edit Claim</a> <!-- Button to edit claim -->
@@ -317,6 +332,9 @@
         </div>
     </div>
 
+    <script>
+        const claimId = '<%= claim._id %>'; // Make claim ID available to JavaScript
+    </script>
     <script src="/js/claim-view.js"></script>
 </body>
 </html>
