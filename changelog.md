@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.4.39] - 2024-12-24 (Commit: 9162ff1)
+
+### Added
+- Added invoice total editing functionality in claim view
+- Added admin fee auto-calculation based on invoice totals
+- Added real-time invoice total updates without page refresh
+
+### Changed
+- Enhanced invoice display with better formatting and alignment
+- Improved invoice total editing UI with edit/save button toggle
+- Updated admin fee calculation to update automatically when invoice totals change
+- Improved form tab structure in add claim view for better organization
+
+### Fixed
+- Fixed missing div closure in claim details tab causing subsequent tabs to be hidden
+- Fixed invoice total display formatting to always show two decimal places
+- Fixed admin fee element selection in JavaScript
+- Fixed tab ID mismatch for Additional Coverage section
+- Fixed claim ID reference in invoice total editing functionality
+
+### Technical
+- Added client-side JavaScript for handling invoice total updates
+- Enhanced server-side route for updating invoice totals
+- Added admin fee calculation helper function
+- Improved error handling for invoice total updates
+
+### UI/UX
+- Added visual feedback for invoice total editing
+- Improved alignment of invoice amounts
+- Enhanced button styling for edit/save functionality
+- Better organization of claim form tabs
+
 ## [1.4.38] - 2024-12-23 (Commit: pending)
 
 ### Changed
