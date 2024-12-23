@@ -170,7 +170,8 @@
                             <option value="<%= status._id %>" <%= claim.status && claim.status.toString() === status._id.toString() ? 'selected' : '' %>><%= status.name %></option>
                             <% }) %>
                         </select>
-                </div>    
+                    </div>
+                </div>
 
                 <!-- Tab content for Insurance Information -->
                 <div id="InsuranceInfo" class="tabcontent">
@@ -267,7 +268,7 @@
                 </div>
 
                 <!-- Tab content for Additional Coverage -->
-                <div id="additionalCoverage" class="tabcontent">
+                <div id="AdditionalCoverage" class="tabcontent">
                     <div class="claim-info">
                         <label for="rentersLiabilityInsurance">Was Renters Liability Insurance purchased?</label>
                         <select id="rentersLiabilityInsurance" name="rentersLiabilityInsurance">
