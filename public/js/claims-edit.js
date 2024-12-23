@@ -77,26 +77,112 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Handle new file selections
+    // Handle file management
     const fileInputs = document.querySelectorAll('input[type="file"]');
+
     fileInputs.forEach(input => {
+        const fileSection = input.closest('.file-section');
+        const existingFiles = fileSection.querySelector('.existing-files');
+        
+        // Add rename functionality to existing files
+        if (existingFiles) {
+            Array.from(existingFiles.children).forEach(fileItem => {
+                addFileControls(fileItem, input.name);
+            });
+        }
+
+        // Handle new file selections
         input.addEventListener('change', function() {
-            const fileSection = input.closest('.file-section');
-            const existingFiles = fileSection.querySelector('.existing-files');
-            
             Array.from(this.files).forEach(file => {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item new-file';
-                fileItem.innerHTML = `
-                    <span class="file-name">${file.name}</span>
-                    <div class="file-actions">
-                        <button type="button" class="remove-file" data-file="${file.name}">Remove</button>
-                    </div>
-                `;
+                addFileControls(fileItem, input.name, file.name);
                 existingFiles.appendChild(fileItem);
             });
         });
     });
+
+    function addFileControls(fileItem, fileType, fileName = fileItem.dataset.filename) {
+        fileItem.innerHTML = `
+            <div class="file-info">
+                <span class="file-name">${fileName}</span>
+                <input type="text" class="rename-input" value="${fileName}" style="display: none;">
+            </div>
+            <div class="file-actions">
+                <button type="button" class="view-file" data-file="${fileName}">View</button>
+                <button type="button" class="rename-file" data-file="${fileName}">Rename</button>
+                <button type="button" class="remove-file" data-file="${fileName}">Remove</button>
+            </div>
+        `;
+
+        // Add rename event listener
+        const renameBtn = fileItem.querySelector('.rename-file');
+        const fileNameSpan = fileItem.querySelector('.file-name');
+        const renameInput = fileItem.querySelector('.rename-input');
+
+        renameBtn.addEventListener('click', function() {
+            if (renameInput.style.display === 'none') {
+                // Show rename input
+                fileNameSpan.style.display = 'none';
+                renameInput.style.display = 'block';
+                renameInput.focus();
+                renameBtn.textContent = 'Save';
+            } else {
+                // Save new filename
+                const newName = renameInput.value.trim();
+                const oldName = fileNameSpan.textContent;
+                
+                if (newName && newName !== oldName) {
+                    // Add hidden input to track renamed files
+                    let renamedFiles = document.querySelector('input[name="renamedFiles"]');
+                    if (!renamedFiles) {
+                        renamedFiles = document.createElement('input');
+                        renamedFiles.type = 'hidden';
+                        renamedFiles.name = 'renamedFiles';
+                        renamedFiles.value = '[]';
+                        document.querySelector('form').appendChild(renamedFiles);
+                    }
+
+                    // Update renamed files array
+                    const renamedFilesArray = JSON.parse(renamedFiles.value);
+                    renamedFilesArray.push({
+                        type: fileType,
+                        oldName: oldName,
+                        newName: newName
+                    });
+                    renamedFiles.value = JSON.stringify(renamedFilesArray);
+
+                    // Update UI
+                    fileNameSpan.textContent = newName;
+                    fileItem.dataset.filename = newName;
+                    fileItem.querySelector('.view-file').dataset.file = newName;
+                    fileItem.querySelector('.remove-file').dataset.file = newName;
+                    fileItem.querySelector('.rename-file').dataset.file = newName;
+                }
+                
+                fileNameSpan.style.display = 'block';
+                renameInput.style.display = 'none';
+                renameBtn.textContent = 'Rename';
+            }
+        });
+
+        // Handle Enter key in rename input
+        renameInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                renameBtn.click();
+            }
+        });
+
+        // Handle Escape key to cancel rename
+        renameInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Escape') {
+                renameInput.value = fileNameSpan.textContent;
+                fileNameSpan.style.display = 'block';
+                renameInput.style.display = 'none';
+                renameBtn.textContent = 'Rename';
+            }
+        });
+    }
 
     // Handle form submission
     document.querySelector('form').addEventListener('submit', function(e) {
