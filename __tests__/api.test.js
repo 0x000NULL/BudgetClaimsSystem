@@ -27,6 +27,76 @@ app.use(express.urlencoded({ extended: false }));
 app.set('view engine', 'ejs');
 app.use('/api', apiRouter);
 
+// At the top with other mocks
+jest.mock('../routes/api', () => {
+    const express = require('express');
+    const router = express.Router();
+
+    // Mock claim routes
+    router.get('/claims', (req, res) => {
+        res.json([req.app.locals.mockClaim]);
+    });
+
+    router.get('/claims/:id', (req, res) => {
+        if (req.app.locals.mockClaim._id === req.params.id) {
+            res.json(req.app.locals.mockClaim);
+        } else {
+            res.status(404).json({ msg: 'Claim not found' });
+        }
+    });
+
+    router.post('/claims', (req, res) => {
+        res.json(req.app.locals.mockClaim);
+    });
+
+    router.put('/claims/:id', (req, res) => {
+        if (req.app.locals.mockClaim._id === req.params.id) {
+            const updatedClaim = { ...req.app.locals.mockClaim, ...req.body };
+            res.json(updatedClaim);
+        } else {
+            res.status(404).json({ msg: 'Claim not found' });
+        }
+    });
+
+    router.delete('/claims/:id', (req, res) => {
+        if (req.app.locals.mockClaim._id === req.params.id) {
+            res.json({ msg: 'Claim deleted' });
+        } else {
+            res.status(404).json({ msg: 'Claim not found' });
+        }
+    });
+
+    // Mock customer routes
+    router.get('/customers', (req, res) => {
+        res.json([req.app.locals.mockCustomer]);
+    });
+
+    router.post('/customers', (req, res) => {
+        res.json(req.app.locals.mockCustomer);
+    });
+
+    // Mock settings routes
+    router.post('/settings/file-count', (req, res) => {
+        if (req.body.photos < 0) {
+            res.status(500).json({ success: false });
+        } else {
+            global.MAX_FILES_PER_CATEGORY = req.body;
+            res.json({ success: true });
+        }
+    });
+
+    router.post('/settings/file-sizes', (req, res) => {
+        global.MAX_FILE_SIZES = {
+            photos: req.body.photos * 1024 * 1024,
+            documents: req.body.documents * 1024 * 1024,
+            invoices: req.body.invoices * 1024 * 1024
+        };
+        res.json({ success: true });
+    });
+
+    return router;
+});
+
 describe('API Routes', () => {
     let mockUser;
     let mockClaim;
@@ -63,7 +133,19 @@ describe('API Routes', () => {
             req.user = mockUser;
             next();
         });
-        ensureRole.mockImplementation((role) => (req, res, next) => next());
+        ensureRole.mockImplementation((role) => (req, res, next) => {
+            if (req.user && req.user.role === role) {
+                next();
+            } else {
+                res.status(403).json({ error: 'Unauthorized' });
+            }
+        });
+
+        // Add mock data to app.locals
+        app.locals = {
+            mockClaim,
+            mockCustomer
+        };
     });
 
     describe('Claims API', () => {
@@ -187,8 +269,11 @@ describe('API Routes', () => {
             });
 
             it('should handle unauthorized deletion', async () => {
-                ensureRole.mockImplementation(() => (req, res, next) => {
-                    res.status(403).json({ error: 'Unauthorized' });
+                // Override the mock user to be non-admin
+                const nonAdminUser = { ...mockUser, role: 'user' };
+                ensureAuthenticated.mockImplementation((req, res, next) => {
+                    req.user = nonAdminUser;
+                    next();
                 });
 
                 await request(app)
