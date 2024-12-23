@@ -378,15 +378,15 @@ canvas {
     flex-grow: 1;
     margin-right: 10px;
     word-break: break-word;
-    max-width: 70%; /* Prevent filename from pushing buttons off alignment */
+    max-width: 70%;
 }
 
 .file-actions {
     display: flex;
-    gap: 8px; /* Increase gap between buttons */
+    gap: 8px;
     flex-shrink: 0;
-    min-width: 140px; /* Set minimum width to keep buttons aligned */
-    justify-content: flex-end; /* Align buttons to the right */
+    min-width: 80px; /* Reduced for view-only pages */
+    justify-content: flex-end;
 }
 
 .file-item:hover {
@@ -425,6 +425,7 @@ canvas {
 }
 
 .file-viewer {
+    display: none;
     position: fixed;
     top: 50%;
     left: 50%;
@@ -434,20 +435,28 @@ canvas {
     background: white;
     box-shadow: 0 0 20px rgba(0,0,0,0.3);
     border-radius: 8px;
-    display: none;
     z-index: 1000;
     overflow: hidden;
 }
 
 .file-viewer-header {
-    padding: 10px 20px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #ddd;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-radius: 8px 8px 0 0;
-    height: 50px;
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.file-viewer-content {
+    height: calc(100% - 50px);
+    overflow: hidden;
+}
+
+.file-viewer-content iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
 }
 
 .close-button {
@@ -457,41 +466,10 @@ canvas {
     cursor: pointer;
     padding: 0 5px;
     color: #666;
-    transition: color 0.2s;
 }
 
 .close-button:hover {
     color: #000;
-}
-
-.file-viewer-content {
-    height: calc(100% - 50px);
-    padding: 0;
-    overflow: hidden;
-    position: relative;
-}
-
-.file-viewer-content iframe,
-.file-viewer-content embed {
-    width: 100%;
-    height: 100%;
-    border: none;
-    margin: 0;
-    padding: 0;
-    display: block;
-}
-
-.file-viewer-content .pdf-toolbar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: rgba(248, 249, 250, 0.9);
-    padding: 5px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    z-index: 1;
 }
 
 .no-files {
@@ -727,26 +705,27 @@ canvas {
     flex-grow: 1;
     margin-right: 10px;
     word-break: break-word;
-    max-width: 70%; /* Prevent filename from pushing buttons off alignment */
+    max-width: 70%;
 }
 
 .file-actions {
     display: flex;
-    gap: 8px; /* Increase gap between buttons */
+    gap: 8px;
     flex-shrink: 0;
-    min-width: 140px; /* Set minimum width to keep buttons aligned */
-    justify-content: flex-end; /* Align buttons to the right */
+    min-width: 80px; /* Reduced for view-only pages */
+    justify-content: flex-end;
 }
 
 .view-file,
-.remove-file {
-    padding: 4px 12px; /* Increase horizontal padding */
+.remove-file,
+.rename-file {
+    padding: 4px 12px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9em;
-    min-width: 60px; /* Set minimum width for buttons */
-    text-align: center; /* Center button text */
+    min-width: 60px;
+    text-align: center;
 }
 
 .view-file {
@@ -774,4 +753,314 @@ input[type="file"] {
     padding: 8px;
     border: 1px solid #ced4da;
     border-radius: 4px;
+}
+
+/* Update file item styles */
+.file-info {
+    flex-grow: 1;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.rename-input {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.file-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 200px; /* Increased to accommodate the new button */
+    justify-content: flex-end;
+}
+
+.rename-file {
+    background: #28a745;
+    color: white;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    min-width: 60px;
+    text-align: left;
+}
+
+.rename-file:hover {
+    background: #218838;
+}
+
+/* Specific styles for claims_edit.ejs */
+.edit-mode .file-actions {
+    min-width: 200px; /* Wider for edit pages with more buttons */
+}
+
+/* File display styles - Base styles for both view and edit modes */
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.file-name {
+    flex-grow: 1;
+    margin-right: 10px;
+    word-break: break-word;
+    max-width: 70%;
+}
+
+/* View mode specific styles */
+.view-mode .file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.view-mode .file-name {
+    flex-grow: 1;
+    margin-right: 10px;
+    word-break: break-word;
+    max-width: 70%;
+}
+
+.view-mode .file-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 80px;
+    justify-content: flex-end;
+}
+
+.view-mode .download-file {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    min-width: 60px;
+    text-align: center;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.view-mode .download-file:hover {
+    background: #0056b3;
+    text-decoration: none;
+}
+
+/* Edit mode specific styles */
+.edit-mode .file-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 200px; /* Wider for edit pages with multiple buttons */
+    justify-content: flex-end;
+}
+
+.edit-mode .file-actions button {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* File grid layout */
+.files-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    grid-template-rows: repeat(3, auto); /* 3 rows */
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.file-section {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.file-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #495057;
+    font-size: 1.1em;
+}
+
+/* Responsive grid */
+@media (max-width: 768px) {
+    .files-grid {
+        grid-template-columns: 1fr; /* Single column on mobile */
+        gap: 15px;
+    }
+}
+
+/* View mode specific styles */
+.view-mode .file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.view-mode .file-name {
+    flex-grow: 1;
+    margin-right: 10px;
+    word-break: break-word;
+    max-width: 70%;
+}
+
+.view-mode .file-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 80px;
+    justify-content: flex-end;
+}
+
+.view-mode .download-file {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    min-width: 60px;
+    text-align: center;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.view-mode .download-file:hover {
+    background: #0056b3;
+    text-decoration: none;
+}
+
+/* File item styles for edit mode */
+.edit-mode .file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.edit-mode .file-info {
+    flex-grow: 1;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.edit-mode .rename-file {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    color: #007bff;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+}
+
+.edit-mode .rename-file:hover {
+    background-color: #f8f9fa;
+}
+
+.edit-mode .rename-file .file-name {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.edit-mode .rename-input {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    display: none;
+}
+
+.edit-mode .file-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 140px;
+    justify-content: flex-end;
+}
+
+.edit-mode .file-actions button {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    min-width: 60px;
+    text-align: center;
+    background: #007bff;
+    color: white;
+}
+
+.edit-mode .file-actions button:hover {
+    background: #0056b3;
+}
+
+.edit-mode .remove-file {
+    background: #dc3545 !important;
+}
+
+.edit-mode .remove-file:hover {
+    background: #c82333 !important;
+}
+
+/* Update the download button style */
+.view-mode .download-file,
+.view-mode .view-file {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    min-width: 60px;
+    text-align: center;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.view-mode .download-file:hover,
+.view-mode .view-file:hover {
+    background: #0056b3;
+    text-decoration: none;
 }

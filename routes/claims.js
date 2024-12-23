@@ -40,6 +40,7 @@ const Location = require('../models/Location'); // Import Location model
 const DamageType = require('../models/DamageType'); // Import DamageType model
 const fileUpload = require('express-fileupload');
 const Settings = require('../models/Settings'); // Import Settings model
+const { uploadsPath } = require('../config/settings');
 
 // Setup cache manager with Redis
 const cache = cacheManager.caching({
@@ -621,6 +622,36 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             return res.status(404).json({ success: false, message: 'Claim not found' });
         }
 
+        // Handle renamed files
+        if (req.body.renamedFiles) {
+            const renamedFiles = JSON.parse(req.body.renamedFiles);
+            for (const fileInfo of renamedFiles) {
+                const { type, oldName, newName } = fileInfo;
+                if (claim.files && claim.files[type]) {
+                    const index = claim.files[type].indexOf(oldName);
+                    if (index !== -1) {
+                        claim.files[type][index] = newName;
+                        
+                        // Rename actual file
+                        const oldPath = path.join(uploadsPath, oldName);
+                        const newPath = path.join(uploadsPath, newName);
+                        try {
+                            // Check if old file exists
+                            if (fs.existsSync(oldPath)) {
+                                await fs.promises.rename(oldPath, newPath);
+                            } else {
+                                console.error(`File not found: ${oldPath}`);
+                                // Update database even if file doesn't exist physically
+                            }
+                        } catch (err) {
+                            console.error(`Error renaming file from ${oldName} to ${newName}:`, err);
+                            // Continue with other files even if one fails
+                        }
+                    }
+                }
+            }
+        }
+
         // Handle removed files
         if (req.body.removedFiles) {
             const removedFiles = JSON.parse(req.body.removedFiles);
@@ -638,7 +669,7 @@ router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logAc
             });
         }
 
-        // Handle file uploads if any new files were added
+        // Handle new files
         const files = claim.files || {}; // Use existing files or initialize empty object
         if (req.files) {
             Object.keys(req.files).forEach(type => {

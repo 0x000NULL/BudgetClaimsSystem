@@ -175,55 +175,97 @@
                 <p><%= claim.status %></p>
 
                 <label>Files:</label>
-                <div class="files-section">
-                    <% const fileCategories = [
-                        { title: 'Incident Reports', files: claim.files.incidentReports || [], icon: '📄' },
-                        { title: 'Correspondence', files: claim.files.correspondence || [], icon: '✉️' },
-                        { title: 'Rental Agreement', files: claim.files.rentalAgreement || [], icon: '📝' },
-                        { title: 'Police Report', files: claim.files.policeReport || [], icon: '👮' },
-                        { title: 'Invoices', files: claim.files.invoices || [], icon: '💰' },
-                        { title: 'Photos', files: claim.files.photos || [], icon: '📸' }
-                    ]; %>
-                    
-                    <div class="file-categories">
-                        <% fileCategories.forEach(category => { %>
-                            <div class="file-category">
-                                <h4><%= category.icon %> <%= category.title %></h4>
-                                <div class="file-list">
-                                    <% if (category.files.length > 0) { %>
-                                        <% category.files.forEach(file => { %>
-                                            <div class="file-item">
-                                                <a href="#" 
-                                                   class="file-link"
-                                                   data-action="view"
-                                                   data-filepath="/uploads/<%= file %>"
-                                                   data-filename="<%= file %>">
-                                                    <%= file.substring(file.lastIndexOf('/') + 1) %>
-                                                </a>
-                                                <div class="file-actions">
-                                                    <button class="btn-icon" 
-                                                            data-action="download"
-                                                            data-filepath="/uploads/<%= file %>"
-                                                            title="Download">
-                                                        ⬇️
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        <% }) %>
-                                    <% } else { %>
-                                        <p class="no-files">No files uploaded</p>
-                                    <% } %>
-                                </div>
-                            </div>
-                        <% }) %>
-                    </div>
-
-                    <div class="file-viewer">
-                        <div class="file-viewer-header">
-                            <span></span>
-                            <button class="close-button">&times;</button>
+                <div class="files-section">              
+                    <div class="files-grid">
+                        <div class="file-section view-mode">
+                            <h3>📄 Incident Reports</h3>
+                            <% if (claim.files && claim.files.incidentReports) { %>
+                                <% claim.files.incidentReports.forEach(file => { %>
+                                    <div class="file-item">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <a href="/uploads/<%= file %>" class="download-file" download>Download</a>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
                         </div>
-                        <div class="file-viewer-content"></div>
+
+                        <div class="file-section view-mode">
+                            <h3>📋 Correspondence</h3>
+                            <% if (claim.files && claim.files.correspondence) { %>
+                                <% claim.files.correspondence.forEach(file => { %>
+                                    <div class="file-item">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <a href="/uploads/<%= file %>" class="download-file" download>Download</a>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
+
+                        <div class="file-section view-mode">
+                            <h3>📋 Rental Agreement</h3>
+                            <% if (claim.files && claim.files.rentalAgreement) { %>
+                                <% claim.files.rentalAgreement.forEach(file => { %>
+                                    <div class="file-item">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <a href="/uploads/<%= file %>" class="download-file" download>Download</a>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
+
+                        <div class="file-section view-mode">
+                            <h3>💰 Police Report</h3>
+                            <% if (claim.files && claim.files.policeReport) { %>
+                                <% claim.files.policeReport.forEach(file => { %>
+                                    <div class="file-item">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <a href="/uploads/<%= file %>" class="download-file" download>Download</a>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
+
+                        <div class="file-section view-mode">
+                            <h3>💰 Invoices</h3>
+                            <% if (claim.files && claim.files.invoices) { %>
+                                <% claim.files.invoices.forEach(file => { %>
+                                    <div class="file-item">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <a href="/uploads/<%= file %>" class="download-file" download>Download</a>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
+
+                        <div class="file-section view-mode">
+                            <h3>📸 Photos</h3>
+                            <% if (claim.files && claim.files.photos) { %>
+                                <% claim.files.photos.forEach(file => { %>
+                                    <div class="file-item">
+                                        <span class="file-name"><%= file %></span>
+                                        <div class="file-actions">
+                                            <button type="button" class="view-file" data-file="<%= file %>">View</button>
+                                            <a href="/uploads/<%= file %>" class="download-file" download>Download</a>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } %>
+                        </div>
                     </div>
                 </div>
 
@@ -264,6 +306,16 @@
             </div>
         </div>
     </main>
+
+    <div id="fileViewer" class="file-viewer">
+        <div class="file-viewer-header">
+            <span id="fileViewerTitle"></span>
+            <button class="close-button" id="closeFileViewerBtn">&times;</button>
+        </div>
+        <div class="file-viewer-content">
+            <iframe id="fileViewerFrame"></iframe>
+        </div>
+    </div>
 
     <script src="/js/claim-view.js"></script>
 </body>
