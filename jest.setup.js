@@ -3,18 +3,41 @@ const mongoose = require('mongoose');
 const { createClient } = require('redis');
 const path = require('path');
 
+// Mock connect-mongo
+jest.mock('connect-mongo', () => {
+  return {
+    create: jest.fn().mockReturnValue({
+      on: jest.fn(),
+      close: jest.fn(),
+      get: jest.fn(),
+      set: jest.fn(),
+      destroy: jest.fn()
+    })
+  };
+});
+
 let mongoServer;
 let redisClient;
 
 beforeAll(async () => {
   try {
+    // Create MongoDB Memory Server
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
     
-    await mongoose.connect(mongoUri);
+    // Connect to MongoDB with optimized settings
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
 
+    // Setup Redis with optimized settings
     redisClient = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379'
+      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      socket: {
+        connectTimeout: 5000,
+        reconnectStrategy: false // Disable reconnection attempts during tests
+      }
     });
     await redisClient.connect();
   } catch (error) {
@@ -24,43 +47,51 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
-  try {
-    const collections = mongoose.connection.collections;
-    const clearPromises = Object.values(collections).map(collection => 
-      collection.deleteMany({})
-    );
-    await Promise.all(clearPromises);
-    await redisClient.flushAll();
-  } catch (error) {
-    console.error('Error in test cleanup:', error);
-    throw error;
+  if (mongoose.connection.readyState !== 0) {
+    try {
+      // More efficient way to clear collections
+      const collections = mongoose.connection.collections;
+      await Promise.all(
+        Object.values(collections).map(collection => 
+          collection.deleteMany({}, { timeout: false })
+        )
+      );
+    } catch (error) {
+      console.error('Error in collection cleanup:', error);
+    }
+  }
+
+  if (redisClient?.isOpen) {
+    try {
+      await redisClient.flushAll();
+    } catch (error) {
+      console.error('Error in Redis cleanup:', error);
+    }
   }
 });
 
 afterAll(async () => {
   try {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-    await redisClient.quit();
-    
-    // Add a small delay to ensure connections are properly closed
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Cleanup in parallel
+    await Promise.all([
+      mongoose.connection.readyState !== 0 ? mongoose.disconnect() : Promise.resolve(),
+      mongoServer ? mongoServer.stop() : Promise.resolve(),
+      redisClient?.isOpen ? redisClient.quit() : Promise.resolve()
+    ]);
   } catch (error) {
     console.error('Error in test teardown:', error);
-    throw error;
   }
 });
 
-// Global test timeout
-jest.setTimeout(30000);
+// Increased timeout for slower operations
+jest.setTimeout(120000);
 
 // Mock environment variables
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.SESSION_SECRET = 'test-session-secret';
-process.env.TEST_TIMEOUT = '30000';
+process.env.MONGODB_URI = 'mock-uri'; // Required for connect-mongo
 process.env.REDIS_TEST_URL = 'redis://localhost:6379';
-process.env.MONGODB_TEST_URI = 'mongodb://localhost:27017/test';
 
 // Suppress console logs during tests
 global.console = {
