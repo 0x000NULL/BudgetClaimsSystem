@@ -26,8 +26,8 @@ const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
 const path = require('path'); // Import Path to handle file and directory paths
 const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
-const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
-const { notifyNewClaim, notifyClaimStatusUpdate } = require('../notifications/notify'); // Import notification functions
+const { logActivity } = require('../middleware/activityLogger'); // Import activity logging middleware
+const { notifyNewClaim, notifyClaimStatusUpdate, notifyClaimAssigned, notifyClaimUpdated } = require('../notifications/notify'); // Import notification functions
 const csv = require('csv-express'); // Import csv-express for CSV export
 const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
 const PDFDocument = require('pdfkit'); // Import PDFKit for PDF export
@@ -41,6 +41,8 @@ const DamageType = require('../models/DamageType'); // Import DamageType model
 const fileUpload = require('express-fileupload');
 const Settings = require('../models/Settings'); // Import Settings model
 const { uploadsPath } = require('../config/settings');
+const { logRequest } = require('../middleware/auditLogger');
+const logger = require('../logger');
 
 // Setup cache manager with Redis
 const cache = cacheManager.caching({
@@ -84,17 +86,7 @@ const validateFile = (file, category) => {
 
 // Helper function to sanitize filename
 const sanitizeFilename = (filename) => {
-    // Remove special characters except - and _
-    const sanitized = filename
-        .replace(/[^a-zA-Z0-9-_.]/, '_')
-        .replace(/_{2,}/g, '_');
-    
-    // Add timestamp to ensure uniqueness
-    const ext = path.extname(sanitized);
-    const name = path.basename(sanitized, ext);
-    const finalName = `${name}_${Date.now()}${ext}`;
-    
-    return finalName;
+    return filename.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
 };
 
 const router = express.Router(); // Create a new router
@@ -104,74 +96,30 @@ const sensitiveFields = ['password', 'token', 'ssn'];
 
 // Function to filter out sensitive fields from the request body
 const filterSensitiveData = (data) => {
-    if (!data || typeof data !== 'object') {
-        return data;
-    }
+    const filtered = { ...data };
+    const sensitiveFields = ['password', 'token', 'ssn', 'creditCard'];
     
-    return Object.keys(data).reduce((filteredData, key) => {
-        if (sensitiveFields.includes(key)) {
-            filteredData[key] = '***REDACTED***'; // Mask the sensitive field
-        } else if (typeof data[key] === 'object') {
-            filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
-        } else {
-            filteredData[key] = data[key];
+    sensitiveFields.forEach(field => {
+        if (filtered[field]) {
+            filtered[field] = '[REDACTED]';
         }
-        return filteredData;
-    }, {});
-};
-
-// Helper function to log requests with user and session info
-/**
- * Logs an HTTP request with relevant details using pinoLogger.
- *
- * @param {Object} req - The HTTP request object.
- * @param {string} message - A custom log message.
- * @param {Object} [extra={}] - Additional information to log.
- * @param {string} [extra.someKey] - Example of additional information.
- *
- * @property {string} req.method - The HTTP method of the request.
- * @property {string} req.originalUrl - The original URL of the request.
- * @property {Object} req.headers - The headers of the request.
- * @property {Object} req.body - The body of the request.
- * @property {Object} req.user - The user object, if authenticated.
- * @property {string} req.user.email - The email of the authenticated user.
- * @property {string} req.ip - The IP address of the request.
- * @property {string} req.sessionID - The session ID of the request.
- *
- * @returns {void}
- */
-const logRequest = (req, message, extra = {}) => {
-    const { method, originalUrl, headers, body } = req;
-    const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
-
-    pinoLogger.info({
-        message,
-        user: req.user ? req.user.email : 'Unauthenticated',
-        ip: req.ip,
-        sessionId: req.sessionID,
-        method,
-        url: originalUrl,
-        headers: {
-            'User-Agent': headers['user-agent'],
-            'Referer': headers['referer'],
-            // Add other headers if needed
-        },
-        requestBody: filteredBody, // Log the filtered request body
-        timestamp: new Date().toISOString(),
-        ...extra
     });
+    
+    return filtered;
 };
 
-// Initialize file categories if not present
-const initializeFileCategories = (files) => {
-    return {
-        incidentReports: files.incidentReports || [],
-        correspondence: files.correspondence || [],
-        rentalAgreement: files.rentalAgreement || [],
-        policeReport: files.policeReport || [],
-        invoices: files.invoices || [],
-        photos: files.photos || []
-    };
+// Helper function to initialize file categories
+const initializeFileCategories = (existingFiles = {}) => {
+    const categories = ['photos', 'documents', 'invoices'];
+    const files = { ...existingFiles };
+    
+    categories.forEach(category => {
+        if (!files[category]) {
+            files[category] = [];
+        }
+    });
+    
+    return files;
 };
 
 // Route to export a claim as PDF
@@ -384,110 +332,44 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
 
 
 // Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
-router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), async (req, res) => {
-    logRequest(req, 'Fetching claims with query:', { query: req.query });
-    const { mva, customerName, status, startDate, endDate } = req.query; // Extract query parameters
-
-    // Build a filter object based on provided query parameters
-    let filter = {};
-    if (mva) filter.mva = mva;
-    if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
-    if (status) filter.status = status;
-    if (startDate || endDate) {
-        filter.date = {};
-        if (startDate) filter.date.$gte = new Date(startDate); // Filter by start date
-        if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
-    }
-
-    //const cacheKey = JSON.stringify(filter); // Create a cache key based on the filter
-
+router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res) => {
     try {
-        // Attempt to get the cached data
-        //const cachedClaims = await cache.get(cacheKey);
-        //if (cachedClaims) {
-            //logRequest(req, 'Returning cached claims data:', { cachedClaims });
-            // If cached data exists, respond with it
-            //return res.json(cachedClaims);
-        //}
-
-        // If no cached data, fetch claims from the database
-        const claims = await Claim.find(filter).exec();
-        logRequest(req, 'Claims fetched from database:', { claims });
-        // Cache the fetched data
-        //await cache.set(cacheKey, claims);
-        // Respond with the fetched data
+        let query = {};
+        
+        // Filter by status if provided
+        if (req.query.status) {
+            query.status = req.query.status;
+        }
+        
+        const claims = await Claim.find(query)
+            .populate('createdBy', 'username')
+            .sort({ createdAt: -1 });
+            
         res.json(claims);
-    } catch (err) {
-        logRequest(req, 'Error fetching claims:', { error: err });
-        res.status(500).json({ error: err.message }); // Handle errors
+    } catch (error) {
+        logger.error('Error fetching claims:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Route to add a new claim, accessible by admin and manager
-router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), async (req, res) => {
-    logRequest(req, 'Adding new claim with data:', { 
-        body: req.body,
-        files: req.files,
-        headers: req.headers
-    });
-
+// POST /claims - Add a new claim
+router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, res) => {
     try {
-        // Initialize files and invoice totals
-        let files = initializeFileCategories({});
-        let invoiceTotals = [];
-
-        // Handle file uploads
-        if (req.files) {
-            for (const category in req.files) {
-                const categoryFiles = Array.isArray(req.files[category]) 
-                    ? req.files[category] 
-                    : [req.files[category]];
-
-                // Process each file in the category
-                for (const file of categoryFiles) {
-                    const sanitizedFilename = sanitizeFilename(file.name);
-                    const filePath = path.join(uploadsPath, sanitizedFilename);
-
-                    // Create upload directory if it doesn't exist
-                    if (!fs.existsSync(uploadsPath)) {
-                        fs.mkdirSync(uploadsPath, { recursive: true });
-                    }
-
-                    // Move file with sanitized name
-                    await file.mv(filePath);
-                    
-                    // Add to appropriate files array
-                    if (!files[category]) files[category] = [];
-                    files[category].push(sanitizedFilename);
-
-                    // If this is an invoice, add to invoice totals
-                    if (category === 'invoices') {
-                        const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
-                        invoiceTotals.push({
-                            fileName: sanitizedFilename,
-                            total: total
-                        });
-                        console.log('Added invoice total:', { fileName: sanitizedFilename, total });
-                    }
-                }
-            }
-        }
-
-        // Create new claim with files and invoice totals
         const newClaim = new Claim({
             ...req.body,
-            files,
-            invoiceTotals
+            createdBy: req.user._id
         });
 
-        const claim = await newClaim.save();
-        console.log('Saved new claim with invoice totals:', claim.invoiceTotals);
-        
-        notifyNewClaim(req.user.email, claim);
-        res.redirect('/dashboard');
-    } catch (err) {
-        logRequest(req, 'Error adding new claim:', { error: err });
-        res.status(500).json({ error: err.message });
+        await newClaim.save();
+        await notifyNewClaim(req.user.email, newClaim);
+
+        res.status(200).json({
+            success: true,
+            claim: newClaim
+        });
+    } catch (error) {
+        logger.error('Error creating claim:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -533,152 +415,45 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
 });
 
         
-// Route to update a claim by ID, accessible by admin and manager
-router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), async (req, res) => {
+// PUT /claims/:id - Update a claim
+router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req, res) => {
     try {
         const claim = await Claim.findById(req.params.id);
         if (!claim) {
-            return res.status(404).json({ success: false, message: 'Claim not found' });
-        }
-
-        // Debug logging
-        console.log('Current invoice totals:', claim.invoiceTotals);
-        console.log('Request body:', req.body);
-
-        // Initialize or maintain existing invoiceTotals
-        if (!claim.invoiceTotals) {
-            claim.invoiceTotals = [];
-        }
-
-        // Handle file operations
-        if (req.files) {
-            // Handle new invoices
-            if (req.files.invoices) {
-                const invoiceFiles = Array.isArray(req.files.invoices) ? req.files.invoices : [req.files.invoices];
-                
-                for (const file of invoiceFiles) {
-                    const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
-                    claim.invoiceTotals.push({
-                        fileName: file.name,
-                        total: total
-                    });
-                    
-                    // Add to files array if it doesn't exist
-                    if (!claim.files) claim.files = {};
-                    if (!claim.files.invoices) claim.files.invoices = [];
-                    claim.files.invoices.push(file.name);
-                    
-                    console.log('Added invoice:', file.name, 'with total:', total);
-                }
-            }
-
-            // Handle other file types
-            Object.keys(req.files).forEach(type => {
-                if (type !== 'invoices') {  // Skip invoices as they're handled above
-                    if (!claim.files) claim.files = {};
-                    if (!claim.files[type]) claim.files[type] = [];
-                    const uploadedFiles = Array.isArray(req.files[type]) ? req.files[type] : [req.files[type]];
-                    uploadedFiles.forEach(file => {
-                        claim.files[type].push(file.name);
-                    });
-                }
+            return res.status(404).json({
+                success: false,
+                message: 'Claim not found'
             });
         }
 
-        // Handle renamed files
-        if (req.body.renamedFiles) {
-            const renamedFiles = JSON.parse(req.body.renamedFiles);
-            for (const fileInfo of renamedFiles) {
-                const { type, oldName, newName } = fileInfo;
-                
-                // Update invoice totals if renaming an invoice
-                if (type === 'invoices') {
-                    const invoiceIndex = claim.invoiceTotals.findIndex(inv => inv.fileName === oldName);
-                    if (invoiceIndex !== -1) {
-                        claim.invoiceTotals[invoiceIndex].fileName = newName;
-                    }
-                }
-
-                // Update files array
-                if (claim.files && claim.files[type]) {
-                    const index = claim.files[type].indexOf(oldName);
-                    if (index !== -1) {
-                        claim.files[type][index] = newName;
-                    }
-                }
-            }
-        }
-
-        // Handle removed files
-        if (req.body.removedFiles) {
-            const removedFiles = JSON.parse(req.body.removedFiles);
-            removedFiles.forEach(fileInfo => {
-                const { type, name } = JSON.parse(fileInfo);
-                
-                // Remove from invoice totals if it's an invoice
-                if (type === 'invoices') {
-                    claim.invoiceTotals = claim.invoiceTotals.filter(inv => inv.fileName !== name);
-                }
-
-                // Remove from files array
-                if (claim.files && claim.files[type]) {
-                    claim.files[type] = claim.files[type].filter(file => file !== name);
-                }
-            });
-        }
-
-        // Sync invoice totals with files
-        if (claim.files && claim.files.invoices) {
-            // Keep only invoice totals that have corresponding files
-            claim.invoiceTotals = claim.invoiceTotals.filter(invoice => 
-                claim.files.invoices.includes(invoice.fileName)
-            );
-
-            // Add missing invoice totals for files
-            claim.files.invoices.forEach(fileName => {
-                if (!claim.invoiceTotals.some(invoice => invoice.fileName === fileName)) {
-                    // Try to get total from request body or default to 0
-                    const total = parseFloat(req.body[`invoiceTotal_${fileName}`]) || 0;
-                    claim.invoiceTotals.push({
-                        fileName,
-                        total
-                    });
-                }
-            });
-        }
-
-        // Update other claim data and save
         Object.assign(claim, req.body);
         await claim.save();
-        console.log('Saved claim with invoice totals:', claim.invoiceTotals);
+        await notifyClaimUpdated(req.user.email, claim);
 
-        res.redirect(`/claims/${claim._id}`);
+        res.status(200).json({
+            success: true,
+            claim: claim
+        });
     } catch (error) {
-        console.error('Error updating claim:', error);
-        res.status(500).json({ success: false, message: error.message });
+        logger.error('Error updating claim:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
 
-// Route to delete a claim by ID, accessible only by admin
-router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), async (req, res) => {
-    const claimId = req.params.id;
-
-    logRequest(req, 'Deleting claim with ID:', { claimId });
-
+// DELETE /claims/:id - Delete a claim
+router.delete('/:id', ensureAuthenticated, logActivity('delete claim'), async (req, res) => {
     try {
-        const claim = await Claim.findByIdAndDelete(claimId);
+        const claim = await Claim.findById(req.params.id);
         if (!claim) {
-            logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).json({ error: 'Claim not found' });
         }
-        logRequest(req, 'Claim deleted:', { claimId });
-        res.json({ msg: 'Claim deleted' }); // Respond with deletion confirmation
-        //cache.del(`claim_${claimId}`); // Invalidate the cache for the deleted claim
-        //cache.del('/claims'); // Invalidate the cache for claims list
-    } catch (err) {
-        logRequest(req, 'Error deleting claim:', { error: err });
-        res.status(500).json({ error: err.message });
+
+        await claim.remove();
+        res.status(200).json({ msg: 'Claim deleted' });
+    } catch (error) {
+        logger.error('Error deleting claim:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
