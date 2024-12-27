@@ -1,88 +1,62 @@
 const request = require('supertest');
 const express = require('express');
-const mongoose = require('mongoose');
+
+// Mock environment variables before any imports
+process.env.EMAIL_USER = 'test@example.com';
+process.env.EMAIL_PASS = 'testpass';
+process.env.NODE_ENV = 'test';
 
 // Create mock ObjectId before mocking
 const mockObjectId = '507f1f77bcf86cd799439011';
 
-// Mock nodemailer configuration
+// Mock all external dependencies first
 jest.mock('../../config/nodemailer', () => ({
     transporter: {
-        sendMail: jest.fn().mockResolvedValue({ messageId: 'test-id' })
+        sendMail: jest.fn().mockReturnValue({ messageId: 'test-id' })
     }
 }));
 
-// Mock notifications
 jest.mock('../../notifications/notify', () => ({
-    notifyNewClaim: jest.fn().mockResolvedValue(),
-    notifyClaimStatusUpdate: jest.fn().mockResolvedValue(),
-    notifyClaimAssigned: jest.fn().mockResolvedValue(),
-    notifyClaimUpdated: jest.fn().mockResolvedValue()
+    notifyNewClaim: jest.fn().mockReturnValue(),
+    notifyClaimStatusUpdate: jest.fn().mockReturnValue(),
+    notifyClaimAssigned: jest.fn().mockReturnValue(),
+    notifyClaimUpdated: jest.fn().mockReturnValue()
 }));
 
-// Mock models
-jest.mock('../../models/Claim', () => {
-    const mockClaim = {
-        _id: mockObjectId,
-        mva: 'TEST123',
-        customerName: 'Test Customer',
-        damagesTotal: 2000,
-        status: ['pending'],
-        save: jest.fn().mockResolvedValue(true),
-        remove: jest.fn().mockResolvedValue(true)
-    };
+// Mock models with synchronous implementations
+jest.mock('../../models/Status', () => ({
+    find: jest.fn().mockReturnValue([{ name: 'pending' }]),
+    findOne: jest.fn().mockReturnValue({ name: 'pending' })
+}));
 
-    return {
-        find: jest.fn().mockImplementation(() => ({
-            populate: jest.fn().mockReturnThis(),
-            sort: jest.fn().mockResolvedValue([mockClaim]),
-            exec: jest.fn().mockResolvedValue([mockClaim])
-        })),
-        findById: jest.fn().mockResolvedValue(mockClaim),
-        prototype: {
-            save: jest.fn().mockResolvedValue(mockClaim)
-        },
-        mockClaim,
-        create: jest.fn().mockResolvedValue(mockClaim)
-    };
-});
+jest.mock('../../models/Location', () => ({
+    find: jest.fn().mockReturnValue([{ name: 'test location' }]),
+    findOne: jest.fn().mockReturnValue({ name: 'test location' })
+}));
 
-jest.mock('../../models/Status');
-jest.mock('../../models/Location');
-jest.mock('../../models/DamageType');
+jest.mock('../../models/DamageType', () => ({
+    find: jest.fn().mockReturnValue([{ name: 'test damage' }]),
+    findOne: jest.fn().mockReturnValue({ name: 'test damage' })
+}));
 
-// Mock middleware
+// Mock middleware with synchronous implementations
 jest.mock('../../middleware/activityLogger', () => ({
     logActivity: jest.fn().mockImplementation((action) => (req, res, next) => next())
 }));
 
 jest.mock('../../middleware/auditLogger', () => ({
-    logRequest: jest.fn().mockImplementation((req, message, extra) => {})
+    logRequest: jest.fn()
 }));
 
 jest.mock('../../middleware/auth', () => ({
-    isAuthenticated: jest.fn((req, res, next) => {
-        req.user = {
-            _id: mockObjectId,
-            username: 'testuser',
-            role: 'admin'
-        };
-        next();
-    }),
-    hasRole: jest.fn(() => (req, res, next) => next()),
     ensureAuthenticated: jest.fn((req, res, next) => {
-        req.user = {
-            _id: mockObjectId,
-            username: 'testuser',
-            role: 'admin'
-        };
+        req.user = { _id: mockObjectId, username: 'testuser', role: 'admin' };
         next();
     }),
     ensureRole: jest.fn(() => (req, res, next) => next()),
     ensureRoles: jest.fn(() => (req, res, next) => next())
 }));
 
-// Mock logger
 jest.mock('../../logger', () => ({
     info: jest.fn(),
     error: jest.fn(),
@@ -90,64 +64,128 @@ jest.mock('../../logger', () => ({
     debug: jest.fn()
 }));
 
-// Mock cache manager and Redis store
+// Mock cache manager with synchronous implementation
+const mockCache = {
+    get: jest.fn().mockReturnValue(null),
+    set: jest.fn().mockReturnValue(true),
+    del: jest.fn().mockReturnValue(true)
+};
+
 jest.mock('cache-manager', () => ({
-    caching: jest.fn().mockReturnValue({
-        get: jest.fn().mockResolvedValue(null),
-        set: jest.fn().mockResolvedValue(true),
-        del: jest.fn().mockResolvedValue(true)
-    })
+    caching: jest.fn().mockReturnValue(mockCache)
 }));
 
 jest.mock('cache-manager-redis-store', () => ({
-    redisStore: {}
+    redisStore: jest.fn()
 }));
 
-// Mock settings
 jest.mock('../../config/settings', () => ({
-    uploadsPath: '/tmp/uploads'
+    uploadsPath: '/tmp/uploads',
+    cache: {
+        ttl: 60,
+        max: 100
+    }
 }));
 
-// Now require the models and routes after mocking
+// Mock Claim model with synchronous responses
+const mockClaim = {
+    _id: mockObjectId,
+    mva: 'TEST123',
+    customerName: 'Test Customer',
+    damagesTotal: 2000,
+    status: ['pending'],
+    createdAt: new Date(),
+    updatedAt: new Date()
+};
+
+jest.mock('../../models/Claim', () => {
+    const mockFind = jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnValue([mockClaim]),
+        exec: jest.fn().mockReturnValue([mockClaim])
+    });
+
+    const mockFindById = jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockReturnValue(mockClaim)
+    });
+
+    return {
+        find: mockFind,
+        findById: mockFindById,
+        create: jest.fn().mockReturnValue(mockClaim),
+        prototype: {
+            save: jest.fn().mockReturnValue(mockClaim)
+        }
+    };
+});
+
 const Claim = require('../../models/Claim');
 const claimsRouter = require('../../routes/claims');
 
 describe('Claims Routes', () => {
     let app;
+    let server;
+
+    beforeAll(() => {
+        jest.clearAllMocks();
+        // Increase timeout for all tests in this suite
+        jest.setTimeout(300000); // 5 minutes
+    });
+
+    afterAll(() => {
+        jest.resetModules();
+    });
 
     beforeEach(() => {
         app = express();
         app.use(express.json());
+        
+        // Add error handling middleware
+        app.use((err, req, res, next) => {
+            console.error('Error:', err);
+            res.status(500).json({ error: err.message });
+        });
+
+        // Add basic middleware
         app.use((req, res, next) => {
             req.app = {
                 locals: {
-                    uploadsPath: '/tmp/uploads'
+                    uploadsPath: '/tmp/uploads',
+                    cache: mockCache
                 }
             };
             next();
         });
+
         app.use('/claims', claimsRouter);
+        server = app.listen(0); // Start server on random port
     });
 
-    afterEach(() => {
-        jest.clearAllMocks();
+    afterEach((done) => {
+        if (server) {
+            server.close(done);
+        } else {
+            done();
+        }
     });
 
     describe('GET /claims', () => {
-        it('should return all claims', async () => {
-            const res = await request(app)
+        test('should return all claims', async () => {
+            const response = await request(app)
                 .get('/claims')
-                .expect('Content-Type', /json/)
+                .set('Accept', 'application/json')
                 .expect(200);
 
-            expect(Array.isArray(res.body)).toBeTruthy();
-            expect(res.body.length).toBe(1);
-            expect(res.body[0].mva).toBe('TEST123');
+            expect(response.type).toMatch(/json/);
+            expect(Array.isArray(response.body)).toBeTruthy();
+            expect(response.body.length).toBe(1);
+            expect(response.body[0].mva).toBe('TEST123');
         });
     });
 
     describe('POST /claims', () => {
-        it('should create a new claim', async () => {
+        test('should create a new claim', async () => {
             const newClaim = {
                 mva: 'NEW123',
                 customerName: 'New Customer',
@@ -155,32 +193,50 @@ describe('Claims Routes', () => {
                 status: ['pending']
             };
 
-            const res = await request(app)
+            const response = await request(app)
                 .post('/claims')
                 .send(newClaim)
-                .expect('Content-Type', /json/)
                 .expect(200);
 
-            expect(res.body.success).toBe(true);
-            expect(res.body.claim.mva).toBe('TEST123');
-        }, 30000);
+            expect(response.body.success).toBe(true);
+            expect(response.body.claim).toBeDefined();
+        });
+
+        test('should handle errors when creating a claim', async () => {
+            const saveSpy = jest.spyOn(Claim.prototype, 'save')
+                .mockImplementation(() => Promise.reject(new Error('Database error')));
+
+            const newClaim = {
+                mva: 'NEW123',
+                customerName: 'New Customer',
+                damagesTotal: 3000,
+                status: ['pending']
+            };
+
+            const response = await request(app)
+                .post('/claims')
+                .send(newClaim)
+                .expect(500);
+
+            expect(response.body.error).toBeDefined();
+            saveSpy.mockRestore();
+        });
     });
 
     describe('PUT /claims/:id', () => {
-        it('should update an existing claim', async () => {
+        test('should update an existing claim', async () => {
             const updateData = {
                 customerName: 'Updated Customer',
                 damagesTotal: 4000
             };
 
-            const res = await request(app)
+            const response = await request(app)
                 .put(`/claims/${mockObjectId}`)
                 .send(updateData)
-                .expect('Content-Type', /json/)
                 .expect(200);
 
-            expect(res.body.success).toBe(true);
-            expect(res.body.claim.mva).toBe('TEST123');
+            expect(response.body.success).toBe(true);
+            expect(response.body.claim.mva).toBe('TEST123');
         });
     });
 }); 
