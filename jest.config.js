@@ -1,21 +1,17 @@
 module.exports = {
   testEnvironment: 'node',
-  verbose: true,
-  clearMocks: true,
-  testMatch: ['**/__tests__/**/*.test.js'],
+  setupFilesAfterEnv: ['./jest.setup.js'],
+  modulePathIgnorePatterns: ['<rootDir>/dist/'],
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov'],
-  collectCoverageFrom: [
-    'setupServer.js',
-    'routes/**/*.js',
-    'models/**/*.js',
-    'middleware/**/*.js',
-    '!**/node_modules/**',
-    '!**/__tests__/**',
-    '!**/__fixtures__/**'
-  ],
-  forceExit: true,
-  testTimeout: 10000
+  testTimeout: 30000,
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
+  moduleNameMapper: {
+    '^cache-manager-redis-store$': '<rootDir>/__mocks__/cache-manager-redis-store.js',
+    '^cache-manager$': '<rootDir>/__mocks__/cache-manager.js'
+  }
 };
   
