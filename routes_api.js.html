@@ -201,6 +201,9 @@ const Customer = require('../models/Customer'); // Import the Customer model to 
 const { ensureAuthenticated, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const pinoLogger = require('../logger'); // Import Pino logger
 const Settings = require('../models/Settings');
+const Location = require('../models/Location');
+const Status = require('../models/Status');
+const DamageType = require('../models/DamageType');
 
 const router = express.Router(); // Create a new router
 
@@ -505,14 +508,15 @@ router.post('/settings/file-types', ensureAuthenticated, ensureRole('admin'), as
 // Add this route to handle the general settings page
 router.get('/general-settings', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
     try {
-        // Fetch settings for each type
-        const [fileSize, fileCount, fileType] = await Promise.all([
+        // Fetch all required data
+        const [fileSize, fileCount, fileType, locations, statuses, damageTypes] = await Promise.all([
             Settings.findOne({ type: 'fileSize' }),
             Settings.findOne({ type: 'fileCount' }),
-            Settings.findOne({ type: 'fileType' })
+            Settings.findOne({ type: 'fileType' }),
+            Location.find().sort('name'),
+            Status.find().sort('name'),
+            DamageType.find().sort('name')
         ]);
-
-        console.log('Raw database results:', { fileSize, fileCount, fileType });
 
         const dbSettings = {
             fileSize: fileSize || { settings: {} },
@@ -520,17 +524,287 @@ router.get('/general-settings', ensureAuthenticated, ensureRole('admin'), async 
             fileType: fileType || { settings: {} }
         };
 
-        console.log('Structured settings:', dbSettings);
+        // Log what we're sending to the template
+        console.log('Rendering general_settings with:', {
+            settingsCount: Object.keys(dbSettings).length,
+            locationsCount: locations.length,
+            statusesCount: statuses.length,
+            damageTypesCount: damageTypes.length
+        });
 
         res.render('general_settings', {
             dbSettings,
+            locations,    // Pass locations to the template
             statuses,
-            damageTypes,
-            rentingLocations
+            damageTypes
         });
     } catch (error) {
         console.error('Error fetching settings:', error);
         res.status(500).send('Error loading settings');
+    }
+});
+
+// Update the API route for adding items
+router.post('/settings/:type', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    const { type } = req.params;
+    const { name } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'Name is required'
+        });
+    }
+
+    try {
+        let result;
+        const trimmedName = name.trim();
+        
+        switch (type.toLowerCase()) {
+            case 'location':
+            case 'rentinglocation':
+                // Check if location already exists
+                const existingLocation = await Location.findOne({ 
+                    name: { $regex: new RegExp(`^${trimmedName}$`, 'i') } 
+                });
+                
+                if (existingLocation) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Location "${trimmedName}" already exists`
+                    });
+                }
+                result = await Location.create({ name: trimmedName });
+                break;
+            case 'status':
+                result = await Status.create({ name: trimmedName });
+                break;
+            case 'damagetype':
+                result = await DamageType.create({ name: trimmedName });
+                break;
+            default:
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid type'
+                });
+        }
+
+        console.log(`Successfully created ${type}:`, result);
+
+        res.json({
+            success: true,
+            data: result,
+            message: `${type} added successfully`
+        });
+    } catch (error) {
+        console.error(`Error adding ${type}:`, {
+            error: error.message,
+            stack: error.stack,
+            type,
+            name
+        });
+        
+        // Provide a more user-friendly error message
+        const errorMessage = error.code === 11000 
+            ? `${type} "${name}" already exists` 
+            : `Failed to add ${type}`;
+            
+        res.status(500).json({
+            success: false,
+            message: errorMessage,
+            error: error.message
+        });
+    }
+});
+
+// API route for deleting items
+router.delete('/settings/:type/:id', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    const { type, id } = req.params;
+
+    try {
+        let result;
+        switch (type.toLowerCase()) {
+            case 'location':
+            case 'rentinglocation':
+                // Check if location is in use
+                const claimsUsingLocation = await Claim.findOne({ rentingLocation: id });
+                if (claimsUsingLocation) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Cannot delete location as it is being used by existing claims'
+                    });
+                }
+                result = await Location.findByIdAndDelete(id);
+                break;
+            case 'status':
+                // Check if status is in use
+                const claimsUsingStatus = await Claim.findOne({ status: id });
+                if (claimsUsingStatus) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Cannot delete status as it is being used by existing claims'
+                    });
+                }
+                result = await Status.findByIdAndDelete(id);
+                break;
+            case 'damagetype':
+                // Check if damage type is in use
+                const claimsUsingDamageType = await Claim.findOne({ damageType: id });
+                if (claimsUsingDamageType) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Cannot delete damage type as it is being used by existing claims'
+                    });
+                }
+                result = await DamageType.findByIdAndDelete(id);
+                break;
+            default:
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid type'
+                });
+        }
+
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: `${type} not found`
+            });
+        }
+
+        console.log(`Successfully deleted ${type}:`, result);
+
+        res.json({
+            success: true,
+            message: `${type} deleted successfully`,
+            data: result
+        });
+    } catch (error) {
+        console.error(`Error deleting ${type}:`, {
+            error: error.message,
+            stack: error.stack,
+            type,
+            id
+        });
+        
+        res.status(500).json({
+            success: false,
+            message: `Failed to delete ${type}`,
+            error: error.message
+        });
+    }
+});
+
+// API route for updating items
+router.put('/settings/:type/:id', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
+    const { type, id } = req.params;
+    const { name } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'Name is required'
+        });
+    }
+
+    try {
+        let result;
+        const trimmedName = name.trim();
+
+        switch (type.toLowerCase()) {
+            case 'location':
+            case 'rentinglocation':
+                // Check if new name already exists for a different location
+                const existingLocation = await Location.findOne({
+                    _id: { $ne: id },
+                    name: { $regex: new RegExp(`^${trimmedName}$`, 'i') }
+                });
+                if (existingLocation) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Location "${trimmedName}" already exists`
+                    });
+                }
+                result = await Location.findByIdAndUpdate(
+                    id,
+                    { name: trimmedName },
+                    { new: true }
+                );
+                break;
+
+            case 'status':
+                // Check if new name already exists for a different status
+                const existingStatus = await Status.findOne({
+                    _id: { $ne: id },
+                    name: { $regex: new RegExp(`^${trimmedName}$`, 'i') }
+                });
+                if (existingStatus) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Status "${trimmedName}" already exists`
+                    });
+                }
+                result = await Status.findByIdAndUpdate(
+                    id,
+                    { name: trimmedName },
+                    { new: true }
+                );
+                break;
+
+            case 'damagetype':
+                // Check if new name already exists for a different damage type
+                const existingDamageType = await DamageType.findOne({
+                    _id: { $ne: id },
+                    name: { $regex: new RegExp(`^${trimmedName}$`, 'i') }
+                });
+                if (existingDamageType) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Damage Type "${trimmedName}" already exists`
+                    });
+                }
+                result = await DamageType.findByIdAndUpdate(
+                    id,
+                    { name: trimmedName },
+                    { new: true }
+                );
+                break;
+
+            default:
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid type'
+                });
+        }
+
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: `${type} not found`
+            });
+        }
+
+        console.log(`Successfully updated ${type}:`, result);
+
+        res.json({
+            success: true,
+            data: result,
+            message: `${type} updated successfully`
+        });
+    } catch (error) {
+        console.error(`Error updating ${type}:`, {
+            error: error.message,
+            stack: error.stack,
+            type,
+            id,
+            name
+        });
+        
+        res.status(500).json({
+            success: false,
+            message: `Failed to update ${type}`,
+            error: error.message
+        });
     }
 });
 
@@ -545,13 +819,13 @@ module.exports = router; // Export the router
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_customers.html">routes/customers</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#FileCategory">FileCategory</a></li><li><a href="global.html#closeFileViewer">closeFileViewer</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#openEmailForm">openEmailForm</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li><li><a href="global.html#viewFileInline">viewFileInline</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_customers.html">routes/customers</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#FileCategory">FileCategory</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Dec 21 2024 18:35:18 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Dec 30 2024 19:25:39 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

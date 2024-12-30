@@ -55,19 +55,22 @@ const Claim = require('../models/Claim'); // Import the Claim model to interact 
 const path = require('path'); // Import Path to handle file and directory paths
 const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
-const { notifyNewClaim, notifyClaimStatusUpdate } = require('../notifications/notify'); // Import notification functions
+const { notifyNewClaim, notifyClaimStatusUpdate, notifyClaimAssigned, notifyClaimUpdated } = require('../notifications/notify'); // Import notification functions
 const csv = require('csv-express'); // Import csv-express for CSV export
 const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
 const PDFDocument = require('pdfkit'); // Import PDFKit for PDF export
 const fs = require('fs'); // Import File System to handle file operations
 const cacheManager = require('cache-manager'); // Import cache manager for caching
-const { redisStore } = require('cache-manager-redis-store'); // Import Redis store for cache manager
+const redisStore = require('cache-manager-redis-store'); // Import Redis store for cache manager
 const pinoLogger = require('../logger'); // Import Pino logger
 const Status = require('../models/Status'); // Import Status model
 const Location = require('../models/Location'); // Import Location model
 const DamageType = require('../models/DamageType'); // Import DamageType model
 const fileUpload = require('express-fileupload');
 const Settings = require('../models/Settings'); // Import Settings model
+const uploadsPath = require('../config/settings');
+const logRequest = require('../middleware/auditLogger');
+const logger = require('../logger');
 
 // Setup cache manager with Redis
 const cache = cacheManager.caching({
@@ -79,64 +82,39 @@ const cache = cacheManager.caching({
 
 // Helper function to validate file
 const validateFile = (file, category) => {
-    // Get the file extension
     const ext = path.extname(file.name).toLowerCase();
-    
-    // Determine allowed types based on category
     const allowedTypes = category === 'photos' ? global.ALLOWED_FILE_TYPES.photos :
                         category === 'invoices' ? global.ALLOWED_FILE_TYPES.invoices :
                         global.ALLOWED_FILE_TYPES.documents;
 
-    // Get size limit based on category
     const sizeLimit = category === 'photos' ? global.MAX_FILE_SIZES.photos :
                      category === 'invoices' ? global.MAX_FILE_SIZES.invoices :
                      global.MAX_FILE_SIZES.documents;
 
     const errors = [];
 
-    // Check file type
+    // Check file type with more user-friendly message
     if (!allowedTypes.includes(ext)) {
-        errors.push(`Invalid file type. Allowed types for ${category}: ${allowedTypes.join(', ')}`);
+        errors.push(`${file.name}: File type not allowed. Please use ${allowedTypes.join(', ')} for ${category}`);
     }
 
-    // Check file size
+    // Check file size with more user-friendly message
     if (file.size > sizeLimit) {
-        errors.push(`File size exceeds limit of ${sizeLimit / (1024 * 1024)}MB`);
+        const sizeMB = Math.round(sizeLimit / (1024 * 1024));
+        errors.push(`${file.name}: File is too large. Maximum size allowed is ${sizeMB}MB`);
     }
 
-    // Check file name length and characters
-    if (file.name.length > 100) {
-        errors.push('File name is too long (max 100 characters)');
-    }
-
-    // Check for special characters in filename (except - and _)
-    if (/[^a-zA-Z0-9-_.]/.test(file.name)) {
-        errors.push('File name contains invalid characters');
+    // Check file name with more user-friendly message
+    if (file.name.length > 100 || /[&lt;>:"/\\|?*]/.test(file.name)) {
+        errors.push(`${file.name}: File name is invalid. Please remove special characters and ensure name is less than 100 characters`);
     }
 
     return errors;
 };
 
 // Helper function to sanitize filename
-const sanitizeFilename = async (filename, uploadDir) => {
-    // Remove special characters except - and _
-    const sanitized = filename
-        .replace(/[^a-zA-Z0-9-_.]/, '_')
-        .replace(/_{2,}/g, '_');
-    
-    // Check if file already exists
-    const ext = path.extname(sanitized);
-    const name = path.basename(sanitized, ext);
-    let finalName = sanitized;
-    let counter = 1;
-
-    // If file exists, add timestamp only then
-    while (fs.existsSync(path.join(uploadDir, finalName))) {
-        finalName = `${name}_${Date.now()}${ext}`;
-        if (counter++ > 100) break; // Prevent infinite loop
-    }
-
-    return finalName;
+const sanitizeFilename = (filename) => {
+    return filename.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
 };
 
 const router = express.Router(); // Create a new router
@@ -146,74 +124,30 @@ const sensitiveFields = ['password', 'token', 'ssn'];
 
 // Function to filter out sensitive fields from the request body
 const filterSensitiveData = (data) => {
-    if (!data || typeof data !== 'object') {
-        return data;
-    }
+    const filtered = { ...data };
+    const sensitiveFields = ['password', 'token', 'ssn', 'creditCard'];
     
-    return Object.keys(data).reduce((filteredData, key) => {
-        if (sensitiveFields.includes(key)) {
-            filteredData[key] = '***REDACTED***'; // Mask the sensitive field
-        } else if (typeof data[key] === 'object') {
-            filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
-        } else {
-            filteredData[key] = data[key];
+    sensitiveFields.forEach(field => {
+        if (filtered[field]) {
+            filtered[field] = '[REDACTED]';
         }
-        return filteredData;
-    }, {});
-};
-
-// Helper function to log requests with user and session info
-/**
- * Logs an HTTP request with relevant details using pinoLogger.
- *
- * @param {Object} req - The HTTP request object.
- * @param {string} message - A custom log message.
- * @param {Object} [extra={}] - Additional information to log.
- * @param {string} [extra.someKey] - Example of additional information.
- *
- * @property {string} req.method - The HTTP method of the request.
- * @property {string} req.originalUrl - The original URL of the request.
- * @property {Object} req.headers - The headers of the request.
- * @property {Object} req.body - The body of the request.
- * @property {Object} req.user - The user object, if authenticated.
- * @property {string} req.user.email - The email of the authenticated user.
- * @property {string} req.ip - The IP address of the request.
- * @property {string} req.sessionID - The session ID of the request.
- *
- * @returns {void}
- */
-const logRequest = (req, message, extra = {}) => {
-    const { method, originalUrl, headers, body } = req;
-    const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
-
-    pinoLogger.info({
-        message,
-        user: req.user ? req.user.email : 'Unauthenticated',
-        ip: req.ip,
-        sessionId: req.sessionID,
-        method,
-        url: originalUrl,
-        headers: {
-            'User-Agent': headers['user-agent'],
-            'Referer': headers['referer'],
-            // Add other headers if needed
-        },
-        requestBody: filteredBody, // Log the filtered request body
-        timestamp: new Date().toISOString(),
-        ...extra
     });
+    
+    return filtered;
 };
 
-// Initialize file categories if not present
-const initializeFileCategories = (files) => {
-    return {
-        incidentReports: files.incidentReports || [],
-        correspondence: files.correspondence || [],
-        rentalAgreement: files.rentalAgreement || [],
-        policeReport: files.policeReport || [],
-        invoices: files.invoices || [],
-        photos: files.photos || []
-    };
+// Helper function to initialize file categories
+const initializeFileCategories = (existingFiles = {}) => {
+    const categories = ['photos', 'documents', 'invoices'];
+    const files = { ...existingFiles };
+    
+    categories.forEach(category => {
+        if (!files[category]) {
+            files[category] = [];
+        }
+    });
+    
+    return files;
 };
 
 // Route to export a claim as PDF
@@ -426,166 +360,40 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
 
 
 // Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
-router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claims list'), async (req, res) => {
-    logRequest(req, 'Fetching claims with query:', { query: req.query });
-    const { mva, customerName, status, startDate, endDate } = req.query; // Extract query parameters
-
-    // Build a filter object based on provided query parameters
-    let filter = {};
-    if (mva) filter.mva = mva;
-    if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
-    if (status) filter.status = status;
-    if (startDate || endDate) {
-        filter.date = {};
-        if (startDate) filter.date.$gte = new Date(startDate); // Filter by start date
-        if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
-    }
-
-    //const cacheKey = JSON.stringify(filter); // Create a cache key based on the filter
-
+router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res) => {
     try {
-        // Attempt to get the cached data
-        //const cachedClaims = await cache.get(cacheKey);
-        //if (cachedClaims) {
-            //logRequest(req, 'Returning cached claims data:', { cachedClaims });
-            // If cached data exists, respond with it
-            //return res.json(cachedClaims);
-        //}
-
-        // If no cached data, fetch claims from the database
-        const claims = await Claim.find(filter).exec();
-        logRequest(req, 'Claims fetched from database:', { claims });
-        // Cache the fetched data
-        //await cache.set(cacheKey, claims);
-        // Respond with the fetched data
+        let query = {};
+        
+        // Filter by status if provided
+        if (req.query.status) {
+            query.status = req.query.status;
+        }
+        
+        const claims = await Claim.find(query)
+            .sort({ createdAt: -1 });
+            
         res.json(claims);
-    } catch (err) {
-        logRequest(req, 'Error fetching claims:', { error: err });
-        res.status(500).json({ error: err.message }); // Handle errors
+    } catch (error) {
+        logger.error('Error fetching claims:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Route to add a new claim, accessible by admin and manager
-router.post('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Added new claim'), async (req, res) => {
-    logRequest(req, 'Adding new claim with data:', { 
-        body: req.body,
-        files: req.files,
-        headers: req.headers
-    });
-    
-    const {
-        mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
-        ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
-        customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
-        carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
-        damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
-        insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
-        thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
-        rentersLiabilityInsurance, lossDamageWaiver, invoice, amount // Add these fields
-    } = req.body;
-
-    let files = initializeFileCategories({});
-    let invoiceTotals = [];
-
-    if (req.files) {
-        try {
-            const fileErrors = [];
-            const processedFiles = {};
-
-            // First, validate all files
-            for (const category of Object.keys(req.files)) {
-                const categoryFiles = Array.isArray(req.files[category]) 
-                    ? req.files[category] 
-                    : [req.files[category]];
-
-                // Check number of files in category
-                if (categoryFiles.length > global.MAX_FILES_PER_CATEGORY[category]) {
-                    fileErrors.push(`Too many files in ${category}. Maximum allowed: ${global.MAX_FILES_PER_CATEGORY[category]}`);
-                    continue;
-                }
-
-                processedFiles[category] = [];
-
-                for (const file of categoryFiles) {
-                    const validationErrors = validateFile(file, category);
-                    if (validationErrors.length > 0) {
-                        fileErrors.push(...validationErrors.map(err => `${file.name}: ${err}`));
-                    } else {
-                        processedFiles[category].push(file);
-                    }
-                }
-            }
-
-            // If there are any validation errors, return them
-            if (fileErrors.length > 0) {
-                return res.status(400).json({ 
-                    error: 'File validation failed', 
-                    details: fileErrors 
-                });
-            }
-
-            // Process valid files
-            for (const [category, categoryFiles] of Object.entries(processedFiles)) {
-                for (const file of categoryFiles) {
-                    const sanitizedFilename = sanitizeFilename(file.name);
-                    const filePath = path.join(__dirname, '../public/uploads', sanitizedFilename);
-
-                    // Create upload directory if it doesn't exist
-                    const uploadDir = path.dirname(filePath);
-                    if (!fs.existsSync(uploadDir)) {
-                        fs.mkdirSync(uploadDir, { recursive: true });
-                    }
-
-                    // Move file with sanitized name
-                    await file.mv(filePath);
-                    logRequest(req, 'File uploaded successfully:', { 
-                        originalName: file.name,
-                        sanitizedName: sanitizedFilename 
-                    });
-
-                    files[category].push(sanitizedFilename);
-                    
-                    if (category === 'invoices') {
-                        const total = parseFloat(req.body[`invoiceTotal_${file.name}`]) || 0;
-                        invoiceTotals.push({ 
-                            fileName: sanitizedFilename, 
-                            originalName: file.name,
-                            total 
-                        });
-                    }
-                }
-            }
-        } catch (err) {
-            logRequest(req, 'Error uploading files:', { error: err });
-            return res.status(500).json({ 
-                error: 'File upload failed',
-                details: err.message 
-            });
-        }
-    }
-
-    const newClaim = new Claim({
-        mva, customerName, description, status, damageType, dateOfLoss, raNumber, rentingLocation,
-        ldwAccepted, policeDepartment, policeReportNumber, claimCloseDate, vehicleOdometer,
-        customerNumber, customerEmail, customerAddress, customerDriversLicense, carMake,
-        carModel, carYear, carColor, carVIN, accidentDate, billable, isRenterAtFault,
-        damagesTotal, bodyShopName, insuranceCarrier, insuranceAgent, insurancePhoneNumber,
-        insuranceFaxNumber, insuranceAddress, insuranceClaimNumber, thirdPartyName,
-        thirdPartyPhoneNumber, thirdPartyInsuranceName, thirdPartyPolicyNumber,
-        rentersLiabilityInsurance, lossDamageWaiver, invoice, amount, // Add these fields
-        files,
-        invoiceTotals // Add invoice totals
-    });
-
+// POST /claims - Add a new claim
+router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, res) => {
     try {
-        const claim = await newClaim.save();
-        logRequest(req, 'New claim added:', { claim });
-        notifyNewClaim(req.user.email, claim);
-        //cache.store.del('/claims');
-        res.redirect('/dashboard');
-    } catch (err) {
-        logRequest(req, 'Error adding new claim:', { error: err });
-        res.status(500).json({ error: err.message });
+        const newClaim = new Claim({
+            ...req.body,
+            createdBy: req.user._id
+        });
+
+        await newClaim.save();
+        await notifyNewClaim(req.user.email, newClaim);
+
+        res.redirect(`/claims/${newClaim._id}`);
+    } catch (error) {
+        logger.error('Error creating claim:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -631,168 +439,48 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
 });
 
         
-// Route to update a claim by ID, accessible by admin and manager
-router.put('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Updated claim'), async (req, res) => {
-    const claimId = req.params.id;
-    logRequest(req, `Updating claim with ID: ${claimId}`);
-
+// PUT /claims/:id - Update a claim
+router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req, res) => {
     try {
-        // Fetch the claim from the database
-        const claim = await Claim.findById(claimId);
-        
+        const claim = await Claim.findById(req.params.id);
         if (!claim) {
-            logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
-            return res.status(404).json({ error: 'Claim not found' });
-        }
-
-        // Perform validation here (e.g., using express-validator or custom logic)
-        const errors = {}; // Initialize an empty object to store error messages
-
-        if (!req.body.customerName) {
-            errors.customerName = { msg: 'Customer Name is required' };
-        }
-        // Perform other field validations as necessary
-
-        // If there are errors, re-render the edit view with the errors object
-        if (Object.keys(errors).length > 0) {
-            const statuses = await Status.find().sort({ name: 1 });
-            const rentingLocations = await Location.find().sort({ name: 1 });
-            const damageTypes = await DamageType.find().sort({ name: 1 });
-
-            return res.render('claims_edit', { 
-                title: 'Edit Claim', 
-                claim, 
-                statuses, 
-                rentingLocations, 
-                damageTypes, 
-                errors 
+            return res.status(404).json({
+                success: false,
+                message: 'Claim not found'
             });
         }
 
-        // Initialize files with existing files from the claim
-        let files = {
-            incidentReports: [...(claim.files?.incidentReports || [])],
-            correspondence: [...(claim.files?.correspondence || [])],
-            rentalAgreement: [...(claim.files?.rentalAgreement || [])],
-            policeReport: [...(claim.files?.policeReport || [])],
-            invoices: [...(claim.files?.invoices || [])],
-            photos: [...(claim.files?.photos || [])]
-        };
+        Object.assign(claim, req.body);
+        await claim.save();
+        await notifyClaimStatusUpdate(req.user.email, claim);
 
-        // Process new file uploads
-        if (req.files) {
-            try {
-                for (const category in req.files) {
-                    const categoryFiles = Array.isArray(req.files[category]) 
-                        ? req.files[category] 
-                        : [req.files[category]];
-
-                    for (const file of categoryFiles) {
-                        // Validate file
-                        const validationErrors = validateFile(file, category);
-                        if (validationErrors.length > 0) {
-                            return res.status(400).json({ 
-                                error: 'File validation failed', 
-                                details: validationErrors 
-                            });
-                        }
-
-                        const uploadDir = path.join(__dirname, '../public/uploads');
-                        
-                        // Create upload directory if it doesn't exist
-                        if (!fs.existsSync(uploadDir)) {
-                            fs.mkdirSync(uploadDir, { recursive: true });
-                        }
-
-                        // Sanitize filename and handle duplicates
-                        const sanitizedFilename = await sanitizeFilename(file.name, uploadDir);
-                        const filePath = path.join(uploadDir, sanitizedFilename);
-
-                        // Move file
-                        await file.mv(filePath);
-                        
-                        // Add file to appropriate category
-                        files[category].push(sanitizedFilename);
-                        
-                        logRequest(req, 'File uploaded successfully:', { 
-                            originalName: file.name,
-                            sanitizedName: sanitizedFilename,
-                            category 
-                        });
-                    }
-                }
-            } catch (err) {
-                logRequest(req, 'Error processing uploaded files:', { error: err });
-                return res.status(500).json({ 
-                    error: 'File upload failed',
-                    details: err.message 
-                });
-            }
-        }
-
-        // Process invoice totals
-        const invoiceTotals = req.body.invoiceTotals || [];
-        const updatedInvoiceTotals = Array.isArray(invoiceTotals) ? invoiceTotals.map(invoice => ({
-            fileName: invoice.fileName,
-            total: parseFloat(invoice.total) || 0 // Ensure total is a number
-        })) : [];
-
-        // Update claim data
-        const updatedClaimData = {
-            ...req.body, // Spread all form fields
-            files, // Add processed files
-            invoiceTotals: updatedInvoiceTotals
-        };
-
-        // Save version history
-        if (!claim.versions) {
-            claim.versions = [];
-        }
-        claim.versions.push({
-            description: claim.description,
-            status: claim.status,
-            files: claim.files,
-            updatedAt: claim.updatedAt
+        res.status(200).json({
+            success: true,
+            claim: claim
         });
-
-        const updatedClaim = await Claim.findByIdAndUpdate(
-            claimId, 
-            updatedClaimData, 
-            { new: true, runValidators: true }
-        );
-
-        logRequest(req, 'Claim updated:', { claim: updatedClaim });
-        
-        // Redirect to the claim's view page
-        res.redirect(`/claims/${claimId}`);
-    } catch (err) {
-        logRequest(req, 'Error updating claim:', { error: err });
-        res.status(500).render('500', { 
-            message: 'Error updating claim: ' + err.message 
+    } catch (error) {
+        logger.error('Error updating claim:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
         });
     }
 });
 
 
-// Route to delete a claim by ID, accessible only by admin
-router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('Deleted claim'), async (req, res) => {
-    const claimId = req.params.id;
-
-    logRequest(req, 'Deleting claim with ID:', { claimId });
-
+// DELETE /claims/:id - Delete a claim
+router.delete('/:id', ensureAuthenticated, logActivity('delete claim'), async (req, res) => {
     try {
-        const claim = await Claim.findByIdAndDelete(claimId);
+        const claim = await Claim.findById(req.params.id);
         if (!claim) {
-            logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).json({ error: 'Claim not found' });
         }
-        logRequest(req, 'Claim deleted:', { claimId });
-        res.json({ msg: 'Claim deleted' }); // Respond with deletion confirmation
-        //cache.del(`claim_${claimId}`); // Invalidate the cache for the deleted claim
-        //cache.del('/claims'); // Invalidate the cache for claims list
-    } catch (err) {
-        logRequest(req, 'Error deleting claim:', { error: err });
-        res.status(500).json({ error: err.message });
+
+        await claim.remove();
+        res.status(200).json({ msg: 'Claim deleted' });
+    } catch (error) {
+        logger.error('Error deleting claim:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -1139,6 +827,75 @@ router.delete('/api/settings/:type/:id', ensureAuthenticated, ensureRole('admin'
     }
 });
 
+// Route to update invoice total
+router.put('/:id/invoice-total', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    const claimId = req.params.id;
+    const { fileName, total } = req.body;
+
+    try {
+        // Find the claim
+        const claim = await Claim.findById(claimId);
+        if (!claim) {
+            console.error(`Claim not found with ID: ${claimId}`);
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Claim not found' 
+            });
+        }
+
+        // Find and update the specific invoice total
+        const invoiceIndex = claim.invoiceTotals.findIndex(inv => inv.fileName === fileName);
+        if (invoiceIndex !== -1) {
+            // Log the update
+            console.log(`Updating invoice total for ${fileName}:`, {
+                oldTotal: claim.invoiceTotals[invoiceIndex].total,
+                newTotal: total
+            });
+
+            // Update the total
+            claim.invoiceTotals[invoiceIndex].total = parseFloat(total);
+            await claim.save();
+
+            // Return success with updated data
+            res.json({ 
+                success: true,
+                data: {
+                    invoiceTotal: claim.invoiceTotals[invoiceIndex],
+                    adminFee: calculateAdminFee(claim.invoiceTotals)
+                }
+            });
+        } else {
+            console.error(`Invoice not found: ${fileName} in claim ${claimId}`);
+            res.status(404).json({ 
+                success: false, 
+                message: 'Invoice not found' 
+            });
+        }
+    } catch (error) {
+        console.error('Error updating invoice total:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
+    }
+});
+
+// Helper function to calculate admin fee
+function calculateAdminFee(invoiceTotals) {
+    const totalInvoices = invoiceTotals.reduce((sum, invoice) => sum + (invoice.total || 0), 0);
+    let adminFee = 0;
+    
+    if (totalInvoices >= 100 &amp;&amp; totalInvoices &lt; 500) {
+        adminFee = 50;
+    } else if (totalInvoices >= 500 &amp;&amp; totalInvoices &lt; 1500) {
+        adminFee = 100;
+    } else if (totalInvoices >= 1500) {
+        adminFee = 150;
+    }
+    
+    return adminFee;
+}
+
 module.exports = router; // Export the router</code></pre>
         </article>
     </section>
@@ -1149,13 +906,13 @@ module.exports = router; // Export the router</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_customers.html">routes/customers</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#FileCategory">FileCategory</a></li><li><a href="global.html#closeFileViewer">closeFileViewer</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#openEmailForm">openEmailForm</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li><li><a href="global.html#viewFileInline">viewFileInline</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_customers.html">routes/customers</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#FileCategory">FileCategory</a></li><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Dec 21 2024 18:35:18 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Dec 30 2024 19:25:39 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
