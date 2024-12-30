@@ -1286,3 +1286,39 @@ input[type="file"] {
 .btn-edit-invoice.save:hover {
     background-color: #218838;
 }
+
+.error-container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    text-align: center;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.error-container h1 {
+    color: #dc3545;
+    margin-bottom: 20px;
+}
+
+.error-message {
+    color: #666;
+    margin-bottom: 30px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.debug-info {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    text-align: left;
+}
+
+.debug-info pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}

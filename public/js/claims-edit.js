@@ -197,6 +197,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.appendChild(input);
             }
         }
+
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        let hasFiles = false;
+        
+        fileInputs.forEach(input => {
+            if (input.files.length > 0) {
+                hasFiles = true;
+                console.log(`Files selected for ${input.name}:`, input.files);
+            }
+        });
+        
+        if (hasFiles) {
+            // Add a loading indicator or disable submit button if needed
+            console.log('Form submitted with files');
+        }
     });
 
     function openFileViewer(filename) {
@@ -289,5 +304,26 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Enter') {
             saveBtn.click();
         }
+    });
+
+    // Add file preview functionality
+    document.querySelectorAll('input[type="file"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const category = this.id;
+            const fileList = document.querySelector(`#${category}List`);
+            
+            if (fileList) {
+                fileList.innerHTML = '';
+                Array.from(this.files).forEach(file => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerHTML = `
+                        <span class="file-name">${file.name}</span>
+                        <span class="file-size">(${(file.size / 1024).toFixed(2)} KB)</span>
+                    `;
+                    fileList.appendChild(item);
+                });
+            }
+        });
     });
 }); 

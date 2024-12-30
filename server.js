@@ -147,7 +147,16 @@ mongoose.connect(process.env.MONGO_URI, {})
 app.use(express.json()); // Parse incoming JSON requests
 app.use(express.urlencoded({ extended: false })); // Parse URL-encoded bodies
 app.use(cors()); // Enable CORS
-app.use(fileUpload()); // Enable file uploads
+app.use(fileUpload({
+    createParentPath: true,
+    limits: {
+        fileSize: 50 * 1024 * 1024 // 50MB max file size
+    },
+    abortOnLimit: true,
+    useTempFiles: true,
+    tempFileDir: '/tmp/',
+    debug: process.env.NODE_ENV === 'development'
+})); // Enable file uploads with dynamic size limit
 app.use(methodOverride('_method')); // Allow PUT and DELETE methods via POST
 if (process.env.NODE_ENV === 'production') {
     // Production security settings
@@ -342,25 +351,30 @@ if (process.env.NODE_ENV === 'production') {
 async function loadSettings() {
     try {
         pinoLogger.info('Loading file settings from database');
+        console.log('Loading file settings from database');
         
         const fileSizeSettings = await Settings.findOne({ type: 'fileSize' });
         if (fileSizeSettings) {
             Object.assign(MAX_FILE_SIZES, fileSizeSettings.settings);
             pinoLogger.info('Loaded file size settings:', fileSizeSettings.settings);
+            console.log('Loaded file size settings:', fileSizeSettings.settings);
         }
 
         const fileCountSettings = await Settings.findOne({ type: 'fileCount' });
         if (fileCountSettings) {
             Object.assign(MAX_FILES_PER_CATEGORY, fileCountSettings.settings);
             pinoLogger.info('Loaded file count settings:', fileCountSettings.settings);
+            console.log('Loaded file count settings:', fileCountSettings.settings);
         }
 
         const fileTypeSettings = await Settings.findOne({ type: 'fileType' });
         if (fileTypeSettings) {
             Object.assign(ALLOWED_FILE_TYPES, fileTypeSettings.settings);
             pinoLogger.info('Loaded file type settings:', fileTypeSettings.settings);
+            console.log('Loaded file type settings:', fileTypeSettings.settings);
         }
     } catch (error) {
         pinoLogger.error('Error loading settings:', error);
+        console.error('Error loading settings:', error);
     }
 }
