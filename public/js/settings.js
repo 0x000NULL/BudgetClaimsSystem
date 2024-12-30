@@ -13,24 +13,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Add event delegation for list items
+    document.addEventListener('click', function(e) {
+        const target = e.target;
+        
+        // Handle edit buttons
+        if (target.classList.contains('btn-edit')) {
+            const id = target.dataset.id;
+            const name = target.dataset.name;
+            const type = target.dataset.type;
+            editItem(id, name, type);
+        }
+        
+        // Handle delete buttons
+        if (target.classList.contains('btn-delete')) {
+            const id = target.dataset.id;
+            const type = target.dataset.type;
+            deleteItem(id, type);
+        }
+    });
+
     // Form submission handlers
     const addLocationForm = document.getElementById('addLocationForm');
     const addStatusForm = document.getElementById('addStatusForm');
     const addDamageTypeForm = document.getElementById('addDamageTypeForm');
     const editForm = document.getElementById('editForm');
 
-    if (addLocationForm) {
-        addLocationForm.addEventListener('submit', handleAdd);
-    }
-    if (addStatusForm) {
-        addStatusForm.addEventListener('submit', handleAdd);
-    }
-    if (addDamageTypeForm) {
-        addDamageTypeForm.addEventListener('submit', handleAdd);
-    }
-    if (editForm) {
-        editForm.addEventListener('submit', handleEdit);
-    }
+    if (addLocationForm) addLocationForm.addEventListener('submit', handleAdd);
+    if (addStatusForm) addStatusForm.addEventListener('submit', handleAdd);
+    if (addDamageTypeForm) addDamageTypeForm.addEventListener('submit', handleAdd);
+    if (editForm) editForm.addEventListener('submit', handleEdit);
 });
 
 function handleAdd(e) {
@@ -38,9 +50,12 @@ function handleAdd(e) {
     const form = e.target;
     const type = form.id.replace('add', '').replace('Form', '').toLowerCase();
     const formData = new FormData(form);
-    const data = {};
-    formData.forEach((value, key) => {
-        data[key] = value;
+    const name = formData.get('name');
+
+    console.log('Submitting form:', {
+        type,
+        name,
+        endpoint: `/api/settings/${type}`
     });
 
     fetch(`/api/settings/${type}`, {
@@ -48,10 +63,18 @@ function handleAdd(e) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ name })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`Server responded with ${response.status}: ${text}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('Server response:', data);
         if (data.success) {
             location.reload();
         } else {
@@ -59,9 +82,11 @@ function handleAdd(e) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error: Failed to add item');
+        console.error('Error adding item:', error);
+        alert('Error: ' + error.message);
     });
+
+    form.reset();
 }
 
 function handleEdit(e) {
@@ -70,6 +95,13 @@ function handleEdit(e) {
     const type = document.getElementById('editItemType').value;
     const name = document.getElementById('editItemName').value;
 
+    console.log('Submitting edit:', {
+        type,
+        id,
+        name,
+        endpoint: `/api/settings/${type}/${id}`
+    });
+
     fetch(`/api/settings/${type}/${id}`, {
         method: 'PUT',
         headers: {
@@ -77,8 +109,16 @@ function handleEdit(e) {
         },
         body: JSON.stringify({ name })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`Server responded with ${response.status}: ${text}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('Edit response:', data);
         if (data.success) {
             location.reload();
         } else {
@@ -86,9 +126,13 @@ function handleEdit(e) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error: Failed to update item');
+        console.error('Error updating item:', error);
+        alert('Error: ' + error.message);
     });
+
+    // Close the modal
+    const modal = document.getElementById('editModal');
+    modal.style.display = 'none';
 }
 
 function editItem(id, name, type) {
@@ -100,12 +144,25 @@ function editItem(id, name, type) {
 }
 
 function deleteItem(id, type) {
-    if (confirm('Are you sure you want to delete this item?')) {
+    if (confirm(`Are you sure you want to delete this ${type}?`)) {
+        console.log(`Attempting to delete ${type} with ID:`, id);
+        
         fetch(`/api/settings/${type}/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`Server responded with ${response.status}: ${text}`);
+                });
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Delete response:', data);
             if (data.success) {
                 location.reload();
             } else {
@@ -113,8 +170,8 @@ function deleteItem(id, type) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Error: Failed to delete item');
+            console.error('Error deleting item:', error);
+            alert('Error: ' + error.message);
         });
     }
 }

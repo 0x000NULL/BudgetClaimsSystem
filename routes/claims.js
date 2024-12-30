@@ -26,22 +26,22 @@ const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
 const path = require('path'); // Import Path to handle file and directory paths
 const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
-const { logActivity } = require('../middleware/activityLogger'); // Import activity logging middleware
+const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
 const { notifyNewClaim, notifyClaimStatusUpdate, notifyClaimAssigned, notifyClaimUpdated } = require('../notifications/notify'); // Import notification functions
 const csv = require('csv-express'); // Import csv-express for CSV export
 const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
 const PDFDocument = require('pdfkit'); // Import PDFKit for PDF export
 const fs = require('fs'); // Import File System to handle file operations
 const cacheManager = require('cache-manager'); // Import cache manager for caching
-const { redisStore } = require('cache-manager-redis-store'); // Import Redis store for cache manager
+const redisStore = require('cache-manager-redis-store'); // Import Redis store for cache manager
 const pinoLogger = require('../logger'); // Import Pino logger
 const Status = require('../models/Status'); // Import Status model
 const Location = require('../models/Location'); // Import Location model
 const DamageType = require('../models/DamageType'); // Import DamageType model
 const fileUpload = require('express-fileupload');
 const Settings = require('../models/Settings'); // Import Settings model
-const { uploadsPath } = require('../config/settings');
-const { logRequest } = require('../middleware/auditLogger');
+const uploadsPath = require('../config/settings');
+const logRequest = require('../middleware/auditLogger');
 const logger = require('../logger');
 
 // Setup cache manager with Redis
@@ -342,7 +342,6 @@ router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res
         }
         
         const claims = await Claim.find(query)
-            .populate('createdBy', 'username')
             .sort({ createdAt: -1 });
             
         res.json(claims);
@@ -363,10 +362,7 @@ router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, r
         await newClaim.save();
         await notifyNewClaim(req.user.email, newClaim);
 
-        res.status(200).json({
-            success: true,
-            claim: newClaim
-        });
+        res.redirect(`/claims/${newClaim._id}`);
     } catch (error) {
         logger.error('Error creating claim:', error);
         res.status(500).json({ error: error.message });
@@ -428,7 +424,7 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
 
         Object.assign(claim, req.body);
         await claim.save();
-        await notifyClaimUpdated(req.user.email, claim);
+        await notifyClaimStatusUpdate(req.user.email, claim);
 
         res.status(200).json({
             success: true,
@@ -436,7 +432,10 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
         });
     } catch (error) {
         logger.error('Error updating claim:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
 });
 
