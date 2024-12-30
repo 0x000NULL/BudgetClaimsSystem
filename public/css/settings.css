@@ -58,12 +58,12 @@
 
 .list-item {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    padding: 0.75rem;
-    background: #f8f9fa;
-    border-radius: 4px;
+    padding: 0.5rem;
     margin-bottom: 0.5rem;
-    transition: background-color 0.2s;
+    background: #f5f5f5;
+    border-radius: 4px;
 }
 
 .list-item:hover {
@@ -80,16 +80,15 @@
 }
 
 .btn {
-    padding: 0.5rem 1rem;
+    padding: 0.25rem 0.75rem;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
+    font-size: 0.875rem;
 }
 
 .btn-primary {
-    background: #3498db;
+    background: #2196F3;
     color: white;
 }
 
@@ -98,7 +97,7 @@
 }
 
 .btn-edit {
-    background: #2ecc71;
+    background: #4CAF50;
     color: white;
 }
 
@@ -107,7 +106,7 @@
 }
 
 .btn-delete {
-    background: #e74c3c;
+    background: #f44336;
     color: white;
 }
 

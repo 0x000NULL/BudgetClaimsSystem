@@ -185,6 +185,9 @@ const logRequest = (req, message, extra = {}) => {
 // Home page route
 router.get('/', (req, res) => {
     logRequest(req, 'Home route accessed');
+    if (req.isAuthenticated()) {
+        return res.redirect('/dashboard');
+    }
     res.render('index', { title: 'Welcome to Budget Claims System' }); // Render the home page with the title 'Welcome to Budget Claims System'
 });
 
@@ -277,8 +280,13 @@ router.get('/reports', ensureAuthenticated, ensureRoles(['admin', 'manager']), (
 // Logout route
 router.get('/logout', (req, res) => {
     logRequest(req, 'Logout route accessed'); // Log route access
-    req.logout(); // Logout the user
-    res.redirect('/'); // Redirect to the home page
+    req.logout((err) => {
+        if (err) {
+            logRequest(req, 'Error during logout', { error: err.message }); // Log error
+            return res.status(500).json({ error: err.message });
+        }
+        res.redirect('/'); // Redirect to the home page after successful logout
+    });
 });
 
 // Audit Logs Route
@@ -303,43 +311,42 @@ router.get('/import', (req, res) => {
 
 // General settings route
 // Only accessible to authenticated users with 'admin' role
-router.get('/general-settings', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+router.get('/general-settings', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
     try {
-        // Fetch settings for each type
-        const [fileSize, fileCount, fileType] = await Promise.all([
-            Settings.findOne({ type: 'fileSize' }),
-            Settings.findOne({ type: 'fileCount' }),
-            Settings.findOne({ type: 'fileType' })
+        // Fetch all required data
+        const [locations, statuses, damageTypes, settings] = await Promise.all([
+            Location.find().sort('name'),
+            Status.find().sort('name'),
+            DamageType.find().sort('name'),
+            Settings.find()
         ]);
 
-        console.log('Raw database results:', { fileSize, fileCount, fileType });
+        console.log('Fetched data for general settings:', {
+            locationsCount: locations.length,
+            locations: locations.map(l => l.name),
+            statusesCount: statuses.length,
+            damageTypesCount: damageTypes.length
+        });
 
-        const dbSettings = {
-            fileSize: fileSize || { settings: {} },
-            fileCount: fileCount || { settings: {} },
-            fileType: fileType || { settings: {} }
-        };
-
-        // Fetch other required data
-        const [statuses, damageTypes] = await Promise.all([
-            Status.find({}),
-            DamageType.find({})
-        ]);
-
-        console.log('Structured settings:', dbSettings);
-
-        // Get unique renting locations from Claims collection
-        const rentingLocations = await Claim.distinct('rentingLocation');
+        // Convert settings array to object by type
+        const dbSettings = settings.reduce((acc, setting) => {
+            acc[setting.type] = setting;
+            return acc;
+        }, {});
 
         res.render('general_settings', {
-            dbSettings,
+            title: 'General Settings',
+            locations,
             statuses,
             damageTypes,
-            rentingLocations
+            dbSettings
         });
     } catch (error) {
-        console.error('Error fetching settings:', error);
-        res.status(500).send('Error loading settings');
+        console.error('Error loading general settings:', error);
+        res.status(500).render('error', {
+            message: 'Error loading settings page',
+            error
+        });
     }
 });
 

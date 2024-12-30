@@ -56,7 +56,7 @@
                 <form id="maxFileSizesForm">
                     <div class="form-group">
                         <label for="photoSize">Photos:</label>
-                        <input type="number" id="photoSize" name="photos" min="1" max="50" 
+                        <input type="number" id="photoSize" name="photos" min="1" max="12500" 
                             value="<%= Math.floor((dbSettings?.fileSize?.settings?.photos || 5 * 1024 * 1024) / (1024 * 1024)) %>">
                     </div>
                     <div class="form-group">
@@ -105,10 +105,17 @@
                 <ul id="locationsList">
                     <% if (locals.locations && locations.length > 0) { %>
                         <% locations.forEach(location => { %>
-                            <li>
-                                <%= location.name %>
-                                <button onclick="editLocation('<%= location._id %>', '<%= location.name %>')" class="btn-edit">Edit</button>
-                                <button onclick="deleteLocation('<%= location._id %>')" class="btn-delete">Delete</button>
+                            <li class="list-item">
+                                <span class="list-item-name"><%= location.name %></span>
+                                <div class="button-group">
+                                    <button class="btn btn-edit" 
+                                        data-id="<%= location._id %>" 
+                                        data-name="<%= location.name %>" 
+                                        data-type="location">Edit</button>
+                                    <button class="btn btn-delete" 
+                                        data-id="<%= location._id %>" 
+                                        data-type="location">Delete</button>
+                                </div>
                             </li>
                         <% }); %>
                     <% } else { %>
@@ -120,7 +127,7 @@
                 <div class="form-group">
                     <label for="newLocation">Add New Location:</label>
                     <input type="text" id="newLocation" name="name" required>
-                    <button type="submit" class="btn-add">Add Location</button>
+                    <button type="submit" class="btn btn-primary">Add Location</button>
                 </div>
             </form>
         </section>
@@ -133,10 +140,17 @@
                 <ul id="statusesList">
                     <% if (locals.statuses && statuses.length > 0) { %>
                         <% statuses.forEach(status => { %>
-                            <li>
-                                <%= status.name %>
-                                <button onclick="editStatus('<%= status._id %>', '<%= status.name %>')" class="btn-edit">Edit</button>
-                                <button onclick="deleteStatus('<%= status._id %>')" class="btn-delete">Delete</button>
+                            <li class="list-item">
+                                <span class="list-item-name"><%= status.name %></span>
+                                <div class="button-group">
+                                    <button class="btn btn-edit" 
+                                        data-id="<%= status._id %>" 
+                                        data-name="<%= status.name %>" 
+                                        data-type="status">Edit</button>
+                                    <button class="btn btn-delete" 
+                                        data-id="<%= status._id %>" 
+                                        data-type="status">Delete</button>
+                                </div>
                             </li>
                         <% }); %>
                     <% } else { %>
@@ -148,7 +162,7 @@
                 <div class="form-group">
                     <label for="newStatus">Add New Status:</label>
                     <input type="text" id="newStatus" name="name" required>
-                    <button type="submit" class="btn-add">Add Status</button>
+                    <button type="submit" class="btn btn-primary">Add Status</button>
                 </div>
             </form>
         </section>
@@ -161,10 +175,17 @@
                 <ul id="damageTypesList">
                     <% if (locals.damageTypes && damageTypes.length > 0) { %>
                         <% damageTypes.forEach(damageType => { %>
-                            <li>
-                                <%= damageType.name %>
-                                <button onclick="editDamageType('<%= damageType._id %>', '<%= damageType.name %>')" class="btn-edit">Edit</button>
-                                <button onclick="deleteDamageType('<%= damageType._id %>')" class="btn-delete">Delete</button>
+                            <li class="list-item">
+                                <span class="list-item-name"><%= damageType.name %></span>
+                                <div class="button-group">
+                                    <button class="btn btn-edit" 
+                                        data-id="<%= damageType._id %>" 
+                                        data-name="<%= damageType.name %>" 
+                                        data-type="damagetype">Edit</button>
+                                    <button class="btn btn-delete" 
+                                        data-id="<%= damageType._id %>" 
+                                        data-type="damagetype">Delete</button>
+                                </div>
                             </li>
                         <% }); %>
                     <% } else { %>
@@ -176,7 +197,7 @@
                 <div class="form-group">
                     <label for="newDamageType">Add New Damage Type:</label>
                     <input type="text" id="newDamageType" name="name" required>
-                    <button type="submit" class="btn-add">Add Damage Type</button>
+                    <button type="submit" class="btn btn-primary">Add Damage Type</button>
                 </div>
             </form>
         </section>
