@@ -335,19 +335,14 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
 router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res) => {
     try {
         let query = {};
-        
-        // Filter by status if provided
         if (req.query.status) {
             query.status = req.query.status;
         }
-        
-        const claims = await Claim.find(query)
-            .sort({ createdAt: -1 });
-            
+        const claims = await Claim.find(query).sort({ createdAt: -1 });
         res.json(claims);
     } catch (error) {
         logger.error('Error fetching claims:', error);
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error fetching claims' });
     }
 });
 
@@ -358,14 +353,12 @@ router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, r
             ...req.body,
             createdBy: req.user._id
         });
-
         await newClaim.save();
         await notifyNewClaim(req.user.email, newClaim);
-
         res.redirect(`/claims/${newClaim._id}`);
     } catch (error) {
         logger.error('Error creating claim:', error);
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error creating claim' });
     }
 });
 
@@ -377,7 +370,7 @@ router.post('/locations', ensureAuthenticated, ensureRoles(['admin', 'manager'])
         await newLocation.save();
         res.status(201).json({ message: 'Location added successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Error adding location', error });
+        res.render('500', { message: 'Error adding location' });
     }
 });
 
@@ -416,25 +409,98 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
     try {
         const claim = await Claim.findById(req.params.id);
         if (!claim) {
-            return res.status(404).json({
-                success: false,
-                message: 'Claim not found'
-            });
+            logger.error('Claim not found:', req.params.id);
+            return res.render('500', { message: 'Claim not found' });
         }
 
-        Object.assign(claim, req.body);
-        await claim.save();
-        await notifyClaimStatusUpdate(req.user.email, claim);
+        // Handle file uploads
+        if (req.files) {
+            logger.info('Processing file uploads:', Object.keys(req.files));
+            
+            // Initialize files object if it doesn't exist
+            if (!claim.files) {
+                claim.files = {};
+            }
 
-        res.status(200).json({
-            success: true,
-            claim: claim
-        });
+            // Process each file category
+            const categories = ['incidentReports', 'correspondence', 'rentalAgreement', 'policeReport', 'invoices', 'photos'];
+            
+            for (const category of categories) {
+                if (req.files[category]) {
+                    try {
+                        const files = Array.isArray(req.files[category]) ? req.files[category] : [req.files[category]];
+                        logger.info(`Processing ${files.length} files for category: ${category}`);
+                        
+                        // Initialize category array if it doesn't exist
+                        if (!claim.files[category]) {
+                            claim.files[category] = [];
+                        }
+
+                        for (const file of files) {
+                            // Validate file
+                            const errors = validateFile(file, category);
+                            if (errors.length > 0) {
+                                logger.error('File validation errors:', errors);
+                                return res.render('500', { 
+                                    message: `File validation failed: ${errors.join(', ')}` 
+                                });
+                            }
+
+                            // Sanitize filename
+                            const sanitizedFilename = sanitizeFilename(file.name);
+                            const uploadPath = path.join(uploadsPath, sanitizedFilename);
+                            logger.info(`Moving file to: ${uploadPath}`);
+
+                            try {
+                                // Ensure uploads directory exists
+                                const uploadsDir = path.dirname(uploadPath);
+                                if (!fs.existsSync(uploadsDir)) {
+                                    fs.mkdirSync(uploadsDir, { recursive: true });
+                                }
+
+                                // Move file to uploads directory
+                                await file.mv(uploadPath);
+                                
+                                // Add filename to claim's files array
+                                claim.files[category].push(sanitizedFilename);
+                                logger.info(`Successfully uploaded file: ${sanitizedFilename}`);
+                            } catch (moveError) {
+                                logger.error('Error moving file:', moveError);
+                                return res.render('500', { 
+                                    message: `Error uploading file: ${file.name}` 
+                                });
+                            }
+                        }
+                    } catch (categoryError) {
+                        logger.error(`Error processing category ${category}:`, categoryError);
+                        return res.render('500', { 
+                            message: `Error processing ${category} files` 
+                        });
+                    }
+                }
+            }
+        }
+
+        // Update other claim fields
+        logger.info('Updating claim fields');
+        Object.assign(claim, req.body);
+        
+        // Save the updated claim
+        try {
+            await claim.save();
+            await notifyClaimStatusUpdate(req.user.email, claim);
+            logger.info('Claim updated successfully:', claim._id);
+            res.redirect(`/claims/${claim._id}`);
+        } catch (saveError) {
+            logger.error('Error saving claim:', saveError);
+            return res.render('500', { 
+                message: 'Error saving claim updates' 
+            });
+        }
     } catch (error) {
         logger.error('Error updating claim:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
+        res.render('500', { 
+            message: 'Error updating claim: ' + (error.message || 'Unknown error') 
         });
     }
 });
@@ -447,12 +513,11 @@ router.delete('/:id', ensureAuthenticated, logActivity('delete claim'), async (r
         if (!claim) {
             return res.status(404).json({ error: 'Claim not found' });
         }
-
         await claim.remove();
         res.status(200).json({ msg: 'Claim deleted' });
     } catch (error) {
         logger.error('Error deleting claim:', error);
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error deleting claim' });
     }
 });
 
@@ -471,7 +536,7 @@ router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']
         //cache.del('/claims'); // Invalidate the cache for claims list
     } catch (err) {
         logRequest(req, 'Error bulk updating claims:', { error: err });
-        res.status(500).json({ error: err.message }); // Handle errors
+        res.render('500', { message: 'Error updating claims' });
     }
 });
 
@@ -557,7 +622,7 @@ router.post('/status/add', ensureAuthenticated, ensureRoles(['admin', 'manager']
         await newStatus.save();
         res.status(201).json({ message: 'Status added successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error adding status' });
     }
 });
 
@@ -570,7 +635,7 @@ router.post('/damage-type/add', ensureAuthenticated, ensureRoles(['admin', 'mana
         await newDamageType.save();
         res.status(201).json({ message: 'Damage Type added successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error adding damage type' });
     }
 });
 
@@ -583,7 +648,7 @@ router.post('/location/add', ensureAuthenticated, ensureRoles(['admin', 'manager
         await newLocation.save();
         res.status(201).json({ message: 'Location added successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error adding location' });
     }
 })
 
@@ -596,7 +661,7 @@ router.get('/statuses', ensureAuthenticated, ensureRoles(['admin']), async (req,
         res.json(statuses); // Return statuses as JSON
     } catch (err) {
         logRequest(req, 'Error fetching statuses', { error: err.message }); // Log error
-        res.status(500).json({ error: err.message }); // Handle errors
+        res.render('500', { message: 'Error fetching statuses' });
     }
 });
 
@@ -608,7 +673,7 @@ router.delete('/status/remove/:id', ensureAuthenticated, ensureRoles(['admin', '
         await Status.findByIdAndDelete(statusId);
         res.status(200).json({ message: 'Status removed successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error removing status' });
     }
 });
 
@@ -620,7 +685,7 @@ router.delete('/damage-type/remove/:id', ensureAuthenticated, ensureRoles(['admi
         await DamageType.findByIdAndDelete(damageTypeId);
         res.status(200).json({ message: 'Damage Type removed successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error removing damage type' });
     }
 });
 
@@ -633,7 +698,7 @@ router.get('/damage-types', ensureAuthenticated, ensureRoles(['admin']), async (
         res.json(damageTypes); // Return damage types as JSON
     } catch (err) {
         logRequest(req, 'Error fetching damage types', { error: err.message }); // Log error
-        res.status(500).json({ error: err.message }); // Handle errors
+        res.render('500', { message: 'Error fetching damage types' });
     }
 });
 
@@ -645,7 +710,7 @@ router.post('/location/add', ensureAuthenticated, ensureRoles(['admin', 'manager
         await newLocation.save();
         res.json({ message: 'Renting location added successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error adding location' });
     }
 });
 
@@ -656,7 +721,7 @@ router.delete('/location/remove/:id', ensureAuthenticated, ensureRoles(['admin',
         await Location.findByIdAndDelete(locationId);
         res.json({ message: 'Renting location removed successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error removing location' });
     }
 });
 
@@ -667,7 +732,7 @@ router.post('/api/settings/file-sizes', ensureAuthenticated, ensureRole('admin')
         Object.assign(global.MAX_FILE_SIZES, req.body);
         res.json({ message: 'File size limits updated successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error updating file sizes' });
     }
 });
 
@@ -678,7 +743,7 @@ router.post('/api/settings/file-counts', ensureAuthenticated, ensureRole('admin'
         Object.assign(global.MAX_FILES_PER_CATEGORY, req.body);
         res.json({ message: 'File count limits updated successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error updating file counts' });
     }
 });
 
@@ -689,7 +754,7 @@ router.post('/api/settings/file-types', ensureAuthenticated, ensureRole('admin')
         Object.assign(global.ALLOWED_FILE_TYPES, req.body);
         res.json({ message: 'Allowed file types updated successfully' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.render('500', { message: 'Error updating file types' });
     }
 });
 
@@ -718,7 +783,7 @@ router.get('/settings', ensureAuthenticated, ensureRole('admin'), async (req, re
         });
     } catch (error) {
         console.error('Error fetching settings data:', error);
-        res.status(500).render('500', { 
+        res.render('500', { 
             message: 'Error loading settings page'
         });
     }
@@ -746,7 +811,7 @@ router.post('/api/settings/:type', ensureAuthenticated, ensureRole('admin'), asy
         }
         res.json({ success: true, data: result });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.render('500', { message: 'Error adding setting' });
     }
 });
 
@@ -771,7 +836,7 @@ router.put('/api/settings/:type/:id', ensureAuthenticated, ensureRole('admin'), 
         }
         res.json({ success: true, data: result });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.render('500', { message: 'Error updating setting' });
     }
 });
 
@@ -795,7 +860,7 @@ router.delete('/api/settings/:type/:id', ensureAuthenticated, ensureRole('admin'
         }
         res.json({ success: true, data: result });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.render('500', { message: 'Error removing setting' });
     }
 });
 
@@ -845,10 +910,7 @@ router.put('/:id/invoice-total', ensureAuthenticated, ensureRoles(['admin', 'man
         }
     } catch (error) {
         console.error('Error updating invoice total:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message 
-        });
+        res.render('500', { message: 'Error updating invoice total' });
     }
 });
 
