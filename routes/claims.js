@@ -304,7 +304,7 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
         if (mva) filter.mva = mva;
         if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
         if (vin) filter.carVIN = new RegExp(vin, 'i'); // Case-insensitive search for VIN
-        if (claimNumber) filter.insuranceClaimNumber = new RegExp(claimNumber, 'i'); // Case-insensitive search for claim number
+        if (claimNumber) filter.claimNumber = new RegExp(claimNumber, 'i'); // Case-insensitive search for claim number
         if (damageType) filter.damageType = { $in: Array.isArray(damageType) ? damageType : [damageType] }; // Search for any of the selected damage types
         if (status) filter.status = { $in: Array.isArray(status) ? status : [status] }; // Search for any of the selected statuses
         if (raNumber) filter.raNumber = raNumber;

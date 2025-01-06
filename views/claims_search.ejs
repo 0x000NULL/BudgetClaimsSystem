@@ -135,7 +135,7 @@
                 <input type="text" id="vin" name="vin" value="<%= filter && filter.carVIN ? filter.carVIN.source.replace(/\\/g, '') : '' %>">
 
                 <label for="claimNumber">Claim Number:</label>
-                <input type="text" id="claimNumber" name="claimNumber" value="<%= filter && filter.insuranceClaimNumber ? filter.insuranceClaimNumber.source.replace(/\\/g, '') : '' %>">
+                <input type="text" id="claimNumber" name="claimNumber" value="<%= filter && filter.claimNumber ? filter.claimNumber.source.replace(/\\/g, '') : '' %>">
 
                 <label for="raNumber">RA Number:</label>
                 <input type="text" id="raNumber" name="raNumber" value="<%= filter ? (filter.raNumber || '') : '' %>">
@@ -182,10 +182,10 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>Claim Number</th>
                                 <th>MVA</th>
                                 <th>Customer Name</th>
                                 <th>VIN</th>
-                                <th>Claim Number</th>
                                 <th>Damage Type</th>
                                 <th>Status</th>
                                 <th>Date</th>
@@ -193,12 +193,12 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% claims.forEach(claim => { %> <!-- Iterate over claims -->
+                            <% claims.forEach(claim => { %>
                                 <tr>
+                                    <td><%= claim.claimNumber %></td>
                                     <td><%= claim.mva %></td>
                                     <td><%= claim.customerName %></td>
                                     <td><%= claim.carVIN %></td>
-                                    <td><%= claim.insuranceClaimNumber %></td>
                                     <td><%= claim.damageType.join(', ') %></td>
                                     <td>
                                         <% 
@@ -209,10 +209,10 @@
                                                 %>Unknown Status<%
                                             }
                                         %>
-                                    </td> <!-- Display status name -->
+                                    </td>
                                     <td><%= new Date(claim.date).toLocaleDateString() %></td>
                                     <td>
-                                        <a href="/claims/<%= claim._id %>" class="btn">View</a> <!-- Button to view the claim -->
+                                        <a href="/claims/<%= claim._id %>" class="btn">View</a>
                                     </td>
                                 </tr>
                             <% }) %>
