@@ -15,6 +15,11 @@
 - Added detailed debug logging for import process
 - Added status mapping for Rentworks statuses
 - Added race condition handling for status creation
+- Added notes system to claims with support for import summaries
+- Added automatic conversion of Rentworks summaries to claim notes
+- Added Rentworks user mapping for imported notes
+- Added rentworksId field to User model
+- Added migration for rentworksId field
 
 ### Changed
 - Improved claims search UX with better filter management
@@ -27,6 +32,10 @@
 - Updated status handling to support case-insensitive matching
 - Enhanced file cleanup process for imported files
 - Improved data mapping for Rentworks imports
+- Enhanced Claim model with structured notes system
+- Improved data mapping for Rentworks imports including summary notes
+- Enhanced note creation to link with mapped Rentworks users
+- Improved error handling for note creation
 
 ### Fixed
 - Fixed CSP violations in pagination controls
@@ -37,6 +46,8 @@
 - Fixed Excel parsing issues for Rentworks format
 - Fixed file cleanup in import process
 - Fixed status mapping for non-standard statuses
+- Fixed createdBy validation errors in note imports
+- Fixed user mapping for Rentworks imported notes
 
 ### Security
 - Removed inline JavaScript event handlers for better CSP compliance
@@ -53,6 +64,24 @@
 - Enhanced debug logging for import process
 - Added file cleanup safeguards
 - Improved error reporting for failed imports
+- Added notes schema to Claim model with type categorization
+- Added support for source tracking in imported notes
+
+### Documentation
+- Added technical documentation for claim number generation
+- Updated API documentation for claim creation
+- Added migration script documentation
+- Added troubleshooting guides for claim number issues
+
+### Dependencies
+- No new dependencies added
+- Utilizing existing MongoDB features for atomic operations
+
+### Migration
+- Added initialize-claim-numbers.js migration script
+- Added safety checks in migration process
+- Added detailed logging for migration tracking
+- Added rollback capability for failed migrations
 
 ## [1.4.40] - 2025-1-06 (Commit: d33099f)
 

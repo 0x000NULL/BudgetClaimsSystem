@@ -265,7 +265,32 @@ const ClaimSchema = new Schema({
     lossDamageWaiver: {
         type: String, // Data type is String
         required: false // This field is not required
-    }
+    },
+    // Field for storing notes and summaries
+    notes: [{
+        content: {
+            type: String,
+            required: true
+        },
+        type: {
+            type: String,
+            enum: ['import', 'user', 'system'],
+            default: 'user'
+        },
+        source: {
+            type: String,
+            default: null
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        },
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        }
+    }]
 });
 
 // Add a pre-save middleware to generate sequential claim numbers

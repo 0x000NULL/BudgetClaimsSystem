@@ -1424,3 +1424,120 @@ select[multiple] option:first-child:checked {
     font-style: italic;
     color: #666;
 }
+
+/* Notes Styling */
+.notes-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 5px;
+}
+
+.notes-list {
+    max-height: 500px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.note-item {
+    background: white;
+    border: 1px solid #ddd;
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.note-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+    color: #666;
+    align-items: center;
+}
+
+.note-type {
+    font-weight: bold;
+    color: #444;
+    background: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.note-source {
+    font-style: italic;
+}
+
+.note-date {
+    margin-left: auto;
+    font-size: 0.85em;
+}
+
+.note-content textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    margin-bottom: 10px;
+    font-size: 0.95em;
+}
+
+.add-note-form {
+    margin-top: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.add-note-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    margin-bottom: 10px;
+    font-size: 0.95em;
+    min-height: 80px;
+}
+
+.delete-note {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.delete-note:hover {
+    background: #c82333;
+}
+
+/* Toast notification styles */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 4px;
+    color: white;
+    z-index: 1000;
+    display: none;
+}
+
+.toast.success {
+    background-color: #28a745;
+}
+
+.toast.error {
+    background-color: #dc3545;
+}
+
+.toast.info {
+    background-color: #17a2b8;
+}

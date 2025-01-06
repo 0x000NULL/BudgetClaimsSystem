@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema({
         type: String, // Data type is String
         required: true, // This field is required
         minlength: 6 // Minimum length of the password is 6 characters
+    },
+    rentworksId: {
+        type: String,
+        sparse: true,
+        unique: true
     }
 }, {
     timestamps: true // Automatically add 'createdAt' and 'updatedAt' fields
