@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Express Claim - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Express Claim</h1>
+        <p>Quick claim creation with essential information only</p>
+
+        <form action="/claims" method="POST" class="claim-info">
+            <!-- MVA Number -->
+            <div>
+                <label for="mva">MVA Number *</label>
+                <input type="text" id="mva" name="mva" required>
+            </div>
+
+            <!-- Accident Date -->
+            <div>
+                <label for="accidentDate">Accident Date *</label>
+                <input type="date" id="accidentDate" name="accidentDate" required>
+            </div>
+
+            <!-- Customer Name -->
+            <div>
+                <label for="customerName">Customer Name *</label>
+                <input type="text" id="customerName" name="customerName" required>
+            </div>
+
+            <!-- RA Number -->
+            <div>
+                <label for="raNumber">RA Number *</label>
+                <input type="text" id="raNumber" name="raNumber" required>
+            </div>
+
+            <!-- Hidden Status Field - Set to "Pending" by default -->
+            <input type="hidden" name="status[]" value="Pending">
+
+            <div class="button-group">
+                <button type="submit" class="btn">Create Express Claim</button>
+                <a href="/claims" class="btn" style="background-color: #6c757d;">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Set default date to today
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('accidentDate').value = today;
+        });
+    </script>
+</body>
+</html> 
