@@ -272,7 +272,19 @@ router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
     }
 });
 
-
+// Route to display the express claim form
+router.get('/express', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+    try {
+        logRequest(req, 'Express claim route accessed');
+        res.render('express_claim', {
+            title: 'Express Claim',
+            nonce: res.locals.nonce
+        });
+    } catch (error) {
+        logRequest(req, 'Error accessing express claim form:', { error });
+        res.status(500).render('500', { message: 'Internal Server Error' });
+    }
+});
 
 // Route to search for claims, accessible by admin, manager, and employee
 router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
