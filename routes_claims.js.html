@@ -316,8 +316,6 @@ router.get('/express', ensureAuthenticated, ensureRoles(['admin', 'manager', 'em
 
 // Route to search for claims, accessible by admin, manager, and employee
 router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
-    logRequest(req, 'Claims search route accessed');
-
     try {
         // Fetch necessary data for the search form
         const damageTypes = await DamageType.find().sort({ name: 1 });
@@ -334,7 +332,10 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
         if (vin) filter.carVIN = new RegExp(vin, 'i'); // Case-insensitive search for VIN
         if (claimNumber) filter.claimNumber = new RegExp(claimNumber, 'i'); // Case-insensitive search for claim number
         if (damageType) filter.damageType = { $in: Array.isArray(damageType) ? damageType : [damageType] }; // Search for any of the selected damage types
-        if (status) filter.status = { $in: Array.isArray(status) ? status : [status] }; // Search for any of the selected statuses
+        if (status) {
+            // Handle single status ID
+            filter.status = status; // No need for $in since status should be a single value
+        }
         if (raNumber) filter.raNumber = raNumber;
         if (dateOfLossStart || dateOfLossEnd) {
             filter.dateOfLoss = {};
@@ -347,26 +348,78 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
             if (endDate) filter.date.$lte = new Date(endDate); // Filter by end date
         }
 
-        // Find claims based on the filter object
-        const claims = await Claim.find(filter);
+        // Add debug logging for statuses
+        const allStatuses = await Status.find().sort({ name: 1 });
+        console.log('Available statuses:', allStatuses.map(s => ({ id: s._id, name: s.name })));
 
-        logRequest(req, 'Claims found', { claims });
+        // Get pagination parameters and fetch claims
+        const page = parseInt(req.query.page) || 1;
+        const resultsPerPage = parseInt(req.query.resultsPerPage) || 10;
+        const skip = (page - 1) * resultsPerPage;
 
-        // Render the view and pass the fetched data along with the filter
+        const totalClaims = await Claim.countDocuments(filter);
+        const totalPages = Math.ceil(totalClaims / resultsPerPage);
+
+        const claims = await Claim.find(filter)
+            .populate({
+                path: 'status',
+                model: 'Status',
+                select: 'name'
+            })
+            .skip(skip)
+            .limit(resultsPerPage)
+            .lean();
+
+        // Process claims status
+        claims.forEach(claim => {
+            if (Array.isArray(claim.status)) {
+                const statusName = claim.status[0];
+                const matchingStatus = allStatuses.find(s => s.name === statusName);
+                if (matchingStatus) {
+                    claim.status = { _id: matchingStatus._id, name: matchingStatus.name };
+                } else {
+                    claim.status = { name: statusName };
+                }
+            }
+        });
+
+        // Build query string
+        const queryString = Object.entries(req.query)
+            .filter(([key]) => !['page', 'resultsPerPage'].includes(key))
+            .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+            .join('&amp;');
+
+        // Check if this is an AJAX request
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.json({
+                claims,
+                page,
+                totalPages,
+                totalClaims,
+                resultsPerPage,
+                queryString: queryString ? `&amp;${queryString}` : ''
+            });
+        }
+
+        // Regular HTML response
         res.render('claims_search', {
             claims,
             filter,
             damageTypes,
-            statuses,
-            locations, // Pass the locations to the view if necessary
-            resultsPerPage: req.query.resultsPerPage || 10, // Default to 10 results per page if not specified
-            page: req.query.page || 1, // Default to page 1 if not specified
-            totalPages: Math.ceil(claims.length / (req.query.resultsPerPage || 10)), // Calculate total pages
-            queryString: `&amp;mva=${mva || ''}&amp;customerName=${customerName || ''}&amp;vin=${vin || ''}&amp;claimNumber=${claimNumber || ''}&amp;damageType=${damageType || ''}&amp;status=${status || ''}` // Query string to maintain search criteria
+            statuses: allStatuses,
+            locations,
+            resultsPerPage,
+            page,
+            totalPages,
+            totalClaims,
+            queryString: queryString ? `&amp;${queryString}` : ''
         });
     } catch (err) {
-        logRequest(req, 'Error fetching claims:', { error: err });
-        res.status(500).json({ error: err.message });
+        console.error('Search route error:', err);
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.status(500).render('500', { message: 'Error processing search' });
     }
 });
 
@@ -1052,7 +1105,7 @@ module.exports = router; // Export the router</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Jan 06 2025 20:00:50 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Jan 06 2025 21:38:58 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

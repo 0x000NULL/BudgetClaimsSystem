@@ -78,6 +78,11 @@ const EmailTemplate = require('../models/EmailTemplate'); // Import the EmailTem
 const Status = require('../models/Status'); // Import the Status model to interact with the statuses collection in MongoDB
 const Location = require('../models/Location'); // Import the Location model to interact with the locations collection in MongoDB
 const crypto = require('crypto');
+const { parse } = require('csv-parse');
+const xlsx = require('xlsx');
+const os = require('os');
+const debug = require('debug')('app:import');
+const mongoose = require('mongoose');
 
 const router = express.Router(); // Create a new router
 
@@ -119,328 +124,412 @@ const logRequest = (req, message, extra = {}) => {
     });
 };
 
-// Configure multer for file upload
-const upload = multer({
-    dest: 'uploads/',
-    limits: {
-        fileSize: 100 * 1024 * 1024, // 100MB limit
-    },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype !== 'application/zip') {
-            cb(new Error('Only ZIP files are allowed'), false);
+// Helper function to handle file upload
+const handleFileUpload = async (file, allowedExtensions) => {
+    if (!file) {
+        throw new Error('No file uploaded');
+    }
+
+    const fileExt = path.extname(file.name).toLowerCase();
+    if (!allowedExtensions.includes(fileExt)) {
+        throw new Error(`Invalid file type. Allowed types: ${allowedExtensions.join(', ')}`);
+    }
+
+    // Ensure uploads directory exists
+    const uploadDir = path.join(__dirname, '../uploads');
+    await fs.promises.mkdir(uploadDir, { recursive: true });
+
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const fileName = `import-${uniqueSuffix}${fileExt}`;
+    const filePath = path.join(uploadDir, fileName);
+
+    try {
+        await file.mv(filePath);
+        debug('File moved successfully to:', filePath);
+        return filePath;
+    } catch (error) {
+        debug('Error moving file:', error);
+        throw new Error(`Failed to save uploaded file: ${error.message}`);
+    }
+};
+
+// Add this after the other helper functions and before the routes
+
+/**
+ * Converts an Excel file to CSV format
+ * 
+ * @function convertExcelToCsv
+ * @param {string} filePath - Path to the Excel file
+ * @returns {Promise&lt;string>} Path to the converted CSV file
+ */
+const convertExcelToCsv = async (filePath) => {
+    try {
+        // Read the Excel file
+        const workbook = xlsx.readFile(filePath);
+        
+        // Get the first sheet
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        
+        // Convert to array of arrays first
+        const data = xlsx.utils.sheet_to_json(firstSheet, { 
+            header: 1,
+            raw: false,
+            dateNF: 'MM/DD/YY',
+            defval: '' // Default empty cells to empty string
+        });
+
+        // Find and clean the header row
+        const headerRowIndex = data.findIndex(row => 
+            row.some(cell => cell &amp;&amp; cell.toString().trim() === 'Claim #')
+        );
+
+        if (headerRowIndex === -1) {
+            throw new Error('Could not find header row in Excel file');
         }
-        cb(null, true);
+
+        // Get headers and clean them
+        const headers = data[headerRowIndex].map(header => 
+            header ? header.toString().trim().replace(/\s+/g, ' ') : ''
+        );
+
+        // Convert remaining rows to objects
+        const records = data.slice(headerRowIndex + 1)
+            .filter(row => row.some(cell => cell)) // Remove empty rows
+            .map(row => {
+                const record = {};
+                headers.forEach((header, index) => {
+                    if (header &amp;&amp; row[index]) {
+                        let value = row[index].toString().trim();
+                        // Handle special case for numeric values that might be "0.00"
+                        if (value === '0.00') value = '0';
+                        record[header] = value;
+                    }
+                });
+                return record;
+            });
+
+        debugData('Headers found:', headers);
+        debugData('First record:', records[0]);
+
+        // Convert back to CSV
+        const csvRows = [
+            headers.join(','),
+            ...records.map(record => 
+                headers.map(header => record[header] || '').join(',')
+            )
+        ];
+
+        const csvString = csvRows.join('\n');
+
+        // Create temporary file path
+        const tempDir = path.join(__dirname, '../uploads');
+        const tempFile = path.join(tempDir, `${path.basename(filePath, path.extname(filePath))}.csv`);
+        
+        // Write CSV content to file
+        await fs.promises.writeFile(tempFile, csvString, 'utf-8');
+        
+        debug('Excel file converted to CSV:', tempFile);
+        return tempFile;
+
+    } catch (error) {
+        debug('Error converting Excel to CSV:', error);
+        throw new Error(`Failed to convert Excel file: ${error.message}`);
     }
-});
+};
 
-// Helper function to extract an encrypted archive
-async function extractArchive(archivePath, extractPath, password) {
+// Add this helper function to parse CSV content
+const parseCSV = (content) => {
     return new Promise((resolve, reject) => {
-        const unzipper = require('unzipper');
-        fs.createReadStream(archivePath)
-            .pipe(unzipper.Extract({ 
-                path: extractPath,
-                password: password 
-            }))
-            .on('close', resolve)
-            .on('error', reject);
-    });
-}
-
-// Helper function to backup a collection
-async function backupCollection(Model, backupPath) {
-    const filename = `${Model.modelName.toLowerCase()}_backup.json`;
-    const filePath = path.join(backupPath, filename);
-    const data = await Model.find({}).lean();
-    await fs.promises.writeFile(filePath, JSON.stringify(data));
-    return filePath;
-}
-
-// Helper function to restore from backup
-async function restoreFromBackup(Model, backupPath) {
-    const filename = `${Model.modelName.toLowerCase()}_backup.json`;
-    const filePath = path.join(backupPath, filename);
-    if (fs.existsSync(filePath)) {
-        const data = JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
-        await Model.deleteMany({});
-        await Model.insertMany(data);
-    }
-}
-
-// Add stream processing helper
-const streamProcess = async (readStream, onChunk) => {
-    return new Promise((resolve, reject) => {
-        const chunks = [];
-        readStream
-            .on('data', chunk => {
-                chunks.push(chunk);
-                onChunk &amp;&amp; onChunk(chunk);
-            })
-            .on('end', () => resolve(Buffer.concat(chunks)))
-            .on('error', reject);
+        parse(content, {
+            columns: true,
+            skip_empty_lines: true,
+            trim: true,
+            relaxColumnCount: true
+        }, (err, records) => {
+            if (err) reject(err);
+            else resolve(records);
+        });
     });
 };
 
-router.post('/full', upload.single('file'), async (req, res) => {
-    const importId = crypto.randomUUID();
-    const tempDirs = [];
-    let collections = null;
+// Add these helper functions for Rentworks data processing
+const parseRentworksDate = (dateStr) => {
+    if (!dateStr || dateStr === '?' || dateStr === '') return null;
     
+    // Handle different date formats
+    const formats = [
+        'MM/DD/YY',
+        'MM/DD/YYYY',
+        'M/D/YY',
+        'M/D/YYYY'
+    ];
+
+    for (const format of formats) {
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+            return date;
+        }
+    }
+    return null;
+};
+
+const mapRentworksStatus = (status) => {
+    if (!status) return 'Pending';
+    
+    // Map common Rentworks statuses to our system's statuses
+    const statusMap = {
+        'Pending': 'Pending',
+        'Closed': 'Closed',
+        'Open': 'Open',
+        'LDW Discharge': 'Closed',
+        'Litigation': 'Open',
+        'Renter Resp': 'Open',
+        '': 'Pending'
+        // Add more mappings as needed
+    };
+    
+    return statusMap[status] || status; // Use original status if no mapping exists
+};
+
+// Add this debug helper at the top with other helpers
+const debugData = (label, data) => {
+    debug(`${label}:`, JSON.stringify(data, null, 2));
+};
+
+// Add this helper function to handle status creation/lookup
+const getOrCreateStatus = async (statusName) => {
     try {
-        // Verify authentication and permissions
-        if (!req.user.hasRole('admin')) {
-            throw new Error('Unauthorized access to full import');
-        }
-
-        // Verify file exists and has correct extension
-        if (!req.file || !req.file.path.endsWith('.zip')) {
-            throw new Error('Invalid file format. Please upload a zip file.');
-        }
-
-        // Verify encryption key exists
-        if (!process.env.EXPORT_ENCRYPTION_KEY) {
-            logRequest(req, 'Import failed - No encryption key configured');
-            return res.status(500).send('Import is not properly configured. Please contact your system administrator.');
-        }
-
-        // Initialize progress tracking with total file size
-        const totalSize = fs.statSync(req.file.path).size;
-        await Progress.create({
-            id: importId,
-            type: 'import',
-            status: 'started',
-            total: totalSize,
-            completed: 0,
-            startTime: new Date()
-        });
-
-        // Create temporary directories with error handling
-        const createTempDir = async (name) => {
-            const dir = path.join(__dirname, '../temp', `${importId}-${name}`);
-            await fs.promises.mkdir(dir, { recursive: true });
-            tempDirs.push(dir);
-            return dir;
-        };
-
-        const extractPath = await createTempDir('extract');
-        const backupPath = await createTempDir('backup');
-
-        // Extract with progress tracking
-        await new Promise((resolve, reject) => {
-            const unzipper = require('unzipper');
-            let bytesProcessed = 0;
-
-            fs.createReadStream(req.file.path)
-                .on('data', chunk => {
-                    bytesProcessed += chunk.length;
-                    Progress.findByIdAndUpdate(importId, {
-                        completed: bytesProcessed
-                    }).catch(console.error);
-                })
-                .pipe(unzipper.Extract({ 
-                    path: extractPath,
-                    password: process.env.EXPORT_ENCRYPTION_KEY 
-                }))
-                .on('close', resolve)
-                .on('error', reject);
-        });
-
-        // Verify metadata and version compatibility
-        const metadata = JSON.parse(await fs.promises.readFile(path.join(extractPath, 'metadata.json'), 'utf8'));
-        if (!metadata.version || !metadata.version.startsWith('1.')) {
-            throw new Error(`Incompatible import file version: ${metadata.version}`);
-        }
-
-        // Define collections with validation rules
-        collections = [
-            { 
-                model: User, 
-                requiredFields: ['email', 'role'],
-                validate: data => {
-                    if (!data.email || !data.email.includes('@')) {
-                        throw new Error('Invalid email format');
-                    }
-                }
-            },
-            { 
-                model: Claim, 
-                requiredFields: ['claimId', 'status'],
-                validate: data => {
-                    if (!data.claimId || typeof data.claimId !== 'string') {
-                        throw new Error('Invalid claimId format');
-                    }
-                }
-            },
-            // ... other collections with their validation rules ...
-        ];
-
-        // Backup existing data with progress tracking
-        await Progress.findByIdAndUpdate(importId, { status: 'backing_up' });
-        for (const { model } of collections) {
-            await backupCollection(model, backupPath);
-        }
-
-        // Verify file integrity with progress updates
-        await Progress.findByIdAndUpdate(importId, { status: 'verifying' });
-        for (const file of metadata.files) {
-            if (file.checksum) {
-                const filePath = path.join(extractPath, file.name);
-                const hash = crypto.createHash('sha256');
-                await streamProcess(
-                    fs.createReadStream(filePath),
-                    chunk => hash.update(chunk)
-                );
-                const calculatedHash = hash.digest('hex');
-                
-                if (calculatedHash !== file.checksum) {
-                    throw new Error(`File integrity check failed for ${file.name}`);
-                }
+        // Try to find existing status (case-insensitive)
+        let status = await Status.findOne({ 
+            name: { 
+                $regex: new RegExp(`^${statusName}$`, 'i') 
             }
-        }
+        });
 
-        // Import collections with transaction-like behavior
-        await Progress.findByIdAndUpdate(importId, { status: 'importing' });
-        for (const { model, requiredFields, validate } of collections) {
-            const filename = `${model.modelName.toLowerCase()}.json`;
-            const filePath = path.join(extractPath, filename);
+        // If status doesn't exist, create it
+        if (!status) {
+            debug('Creating new status:', statusName);
             
-            if (fs.existsSync(filePath)) {
-                const data = JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
-
-                // Validate data structure and required fields
-                if (!Array.isArray(data)) {
-                    throw new Error(`Invalid data format for ${model.modelName}`);
-                }
-
-                // Validate each record
-                data.forEach((item, index) => {
-                    requiredFields.forEach(field => {
-                        if (!item[field]) {
-                            throw new Error(`Missing required field '${field}' in ${model.modelName} at index ${index}`);
+            // Try to create the status, handle potential race condition
+            try {
+                status = await Status.create({
+                    name: statusName,
+                    description: `Status created from Rentworks import: ${statusName}`,
+                    active: true
+                });
+                debug('Created new status:', status);
+            } catch (createError) {
+                // If creation failed due to duplicate key, try to find it again
+                if (createError.code === 11000) {
+                    debug('Status was created by another process, retrieving existing status');
+                    status = await Status.findOne({ 
+                        name: { 
+                            $regex: new RegExp(`^${statusName}$`, 'i') 
                         }
                     });
-                    validate &amp;&amp; validate(item);
-                });
-
-                // Use transactions if available
-                const session = await model.startSession();
-                try {
-                    await session.withTransaction(async () => {
-                        await model.deleteMany({}, { session });
-                        await model.insertMany(data, { session });
-                    });
-                } finally {
-                    await session.endSession();
+                    
+                    if (!status) {
+                        throw new Error('Failed to find status after duplicate key error');
+                    }
+                } else {
+                    throw createError;
                 }
             }
+        } else {
+            debug('Found existing status:', status.name);
         }
 
-        // Import uploaded files with type and size validation
-        const uploadsDir = path.join(__dirname, '../uploads');
-        const importedUploadsDir = path.join(extractPath, 'uploads');
-        if (fs.existsSync(importedUploadsDir)) {
-            const allowedExtensions = ['.pdf', '.jpg', '.png', '.doc', '.docx'];
-            const maxFileSize = 10 * 1024 * 1024; // 10MB
-            const files = await fs.promises.readdir(importedUploadsDir);
-            
-            for (const file of files) {
-                const ext = path.extname(file).toLowerCase();
-                if (!allowedExtensions.includes(ext)) {
-                    throw new Error(`Invalid file type for ${file}`);
-                }
-                
-                const sourcePath = path.join(importedUploadsDir, file);
-                const stats = await fs.promises.stat(sourcePath);
-                if (stats.size > maxFileSize) {
-                    throw new Error(`File ${file} exceeds maximum size limit`);
-                }
-                
-                const targetPath = path.join(uploadsDir, file);
-                await fs.promises.copyFile(sourcePath, targetPath);
-            }
+        return status._id;
+    } catch (error) {
+        debug('Error handling status:', error);
+        throw new Error(`Failed to process status "${statusName}": ${error.message}`);
+    }
+};
+
+// Modify the mapRentworksRecord function
+const mapRentworksRecord = async (record) => {
+    debugData('Mapping Rentworks record', record);
+    
+    // Clean and prepare the record data
+    const cleanRecord = Object.entries(record).reduce((acc, [key, value]) => {
+        const cleanKey = key.trim().replace(/\s+/g, ' ');
+        acc[cleanKey] = value ? value.toString().trim() : '';
+        return acc;
+    }, {});
+
+    debugData('Cleaned record', cleanRecord);
+    
+    // Get or create status
+    const statusName = mapRentworksStatus(cleanRecord['Status']);
+    const statusId = await getOrCreateStatus(statusName);
+    
+    const claimData = {
+        claimNumber: cleanRecord['Claim #'],
+        customerName: cleanRecord['Renter'],
+        status: statusId, // Now using the status ObjectId
+        lossDamageWaiver: cleanRecord['LDW']?.toLowerCase() === 'yes' ? 'Yes' : 'No',
+        mva: cleanRecord['Unit #'],
+        raNumber: cleanRecord['RA Number'],
+        date: parseRentworksDate(cleanRecord['Claim Date'])
+    };
+    
+    // Remove empty/null/undefined values
+    Object.keys(claimData).forEach(key => {
+        if (claimData[key] === undefined || claimData[key] === null || claimData[key] === '') {
+            delete claimData[key];
+        }
+    });
+    
+    debugData('Mapped to claim data', claimData);
+    return claimData;
+};
+
+// Modify the external route handler's processing section
+router.post('/external', async (req, res) => {
+    let uploadedFile = null;
+    let convertedFile = null;
+
+    try {
+        if (!req.files || !req.files.importFile) {
+            throw new Error('No file uploaded');
         }
 
-        // Create detailed audit log entry
-        const collectionStats = await Promise.all(
-            collections.map(async ({ model }) => ({
-                name: model.modelName,
-                count: await model.countDocuments()
-            }))
-        );
+        const allowedExtensions = ['.csv', '.xls', '.xlsx'];
+        uploadedFile = await handleFileUpload(req.files.importFile, allowedExtensions);
+        
+        debug('File uploaded successfully:', uploadedFile);
+        debug('Form data:', req.body);
 
-        await AuditLog.create({
-            user: req.user.email,
-            action: 'full_import',
-            timestamp: new Date(),
-            ipAddress: req.ip,
-            details: {
-                importId,
-                metadata,
-                duration: Date.now() - progress.startTime,
-                collections: collectionStats
-            }
-        });
+        // Process the file based on its type
+        const fileExt = path.extname(uploadedFile).toLowerCase();
+        let csvFilePath = uploadedFile;
 
-        res.json({
-            success: true,
-            message: 'Import completed successfully',
-            importId,
-            details: {
-                duration: Date.now() - progress.startTime,
-                collectionsImported: collections.length
+        if (['.xlsx', '.xls'].includes(fileExt)) {
+            csvFilePath = await convertExcelToCsv(uploadedFile);
+            convertedFile = csvFilePath;
+        }
+
+        // Process based on selected system
+        if (req.body.system === 'rentworks-csv') {
+            const fileContent = await fs.promises.readFile(csvFilePath, 'utf-8');
+            debugData('Raw file content', fileContent.substring(0, 500));
+
+            const records = await parseCSV(fileContent);
+            debugData('Raw parsed records', records.slice(0, 2));
+
+            debug('Total parsed records:', records.length);
+
+            // Use Promise.all since mapRentworksRecord is now async
+            const claimRecords = await Promise.all(
+                records.map(record => mapRentworksRecord(record))
+            );
+
+            const filteredClaimRecords = claimRecords.filter(data => {
+                const hasRequiredFields = data.claimNumber; // Must have at least a claim number
+                if (!hasRequiredFields) {
+                    debug('Filtered out record without required fields');
+                }
+                return hasRequiredFields;
+            });
+
+            debug('Filtered claim records count:', filteredClaimRecords.length);
+            debugData('First claim record', filteredClaimRecords[0]);
+
+            if (filteredClaimRecords.length === 0) {
+                throw new Error('No valid claims found in the imported file');
             }
-        });
+
+            // Create/update claims in database
+            const results = await Promise.allSettled(
+                filteredClaimRecords.map(async record => {
+                    try {
+                        if (!record.claimNumber) {
+                            debug('Skipping record without claim number');
+                            debugData('Skipped record', record);
+                            return null;
+                        }
+
+                        const existingClaim = await Claim.findOne({ 
+                            claimNumber: record.claimNumber 
+                        });
+
+                        if (existingClaim) {
+                            debug('Found existing claim:', record.claimNumber);
+                            const updated = await Claim.findOneAndUpdate(
+                                { claimNumber: record.claimNumber },
+                                record,
+                                { new: true }
+                            );
+                            debugData('Updated claim', updated);
+                            return updated;
+                        } else {
+                            debug('Creating new claim:', record.claimNumber);
+                            const created = await Claim.create(record);
+                            debugData('Created claim', created);
+                            return created;
+                        }
+                    } catch (error) {
+                        debug('Error processing claim:', error);
+                        debugData('Problem record', record);
+                        throw new Error(`Error processing claim ${record.claimNumber}: ${error.message}`);
+                    }
+                })
+            );
+
+            const successfulResults = results.filter(r => r.status === 'fulfilled' &amp;&amp; r.value);
+            const failedResults = results.filter(r => r.status === 'rejected' || !r.value);
+
+            debugData('Import results', {
+                successful: {
+                    count: successfulResults.length,
+                    claims: successfulResults.map(r => r.value?.claimNumber)
+                },
+                failed: {
+                    count: failedResults.length,
+                    errors: failedResults.map(r => ({
+                        error: r.reason?.message || 'Unknown error',
+                        claim: r.reason?.claimNumber
+                    }))
+                }
+            });
+
+            // Also check Mongoose connection
+            debug('Mongoose connection state:', mongoose.connection.readyState);
+            // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+
+            res.json({
+                success: true,
+                message: 'Import completed successfully',
+                details: {
+                    recordsProcessed: filteredClaimRecords.length,
+                    successCount: successfulResults.length,
+                    failureCount: failedResults.length,
+                    errors: failedResults.map(r => r.reason?.message || 'Unknown error')
+                }
+            });
+        } else {
+            throw new Error('Unsupported import system');
+        }
 
     } catch (error) {
-        logRequest(req, 'Error during import', { 
-            error: error.message,
-            stack: error.stack
-        });
-
-        // Attempt to restore from backup
-        if (collections) {
-            try {
-                for (const { model } of collections) {
-                    await restoreFromBackup(model, backupPath);
-                }
-            } catch (restoreError) {
-                logRequest(req, 'Error during backup restoration', {
-                    error: restoreError.message
-                });
-            }
-        }
-
-        await Progress.findByIdAndUpdate(importId, {
-            status: 'failed',
-            error: error.message,
-            endTime: new Date()
-        });
-
+        debug('Error in upload handler:', error);
         res.status(500).json({
             success: false,
-            message: process.env.NODE_ENV === 'production' 
-                ? 'Error during import' 
-                : error.message,
-            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            message: error.message || 'Upload failed'
         });
-
     } finally {
-        // Ensure cleanup of temporary files
-        for (const dir of tempDirs) {
-            await fs.promises.rm(dir, { recursive: true, force: true })
-                .catch(console.error);
-        }
-        if (req.file?.path) {
-            await fs.promises.unlink(req.file.path).catch(console.error);
-        }
-
-        // Update final progress status
-        const progress = await Progress.findById(importId);
-        if (progress?.status !== 'failed') {
-            await Progress.findByIdAndUpdate(importId, {
-                status: 'completed',
-                endTime: new Date()
-            }).catch(console.error);
+        // Cleanup files
+        try {
+            if (uploadedFile &amp;&amp; fs.existsSync(uploadedFile)) {
+                await fs.promises.unlink(uploadedFile);
+                debug('Cleaned up uploaded file:', uploadedFile);
+            }
+            if (convertedFile &amp;&amp; fs.existsSync(convertedFile)) {
+                await fs.promises.unlink(convertedFile);
+                debug('Cleaned up converted file:', convertedFile);
+            }
+        } catch (cleanupError) {
+            debug('Error during file cleanup:', cleanupError);
         }
     }
 });
@@ -462,7 +551,7 @@ module.exports = router; // Export the router
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Jan 06 2025 20:00:50 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Jan 06 2025 21:38:58 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
