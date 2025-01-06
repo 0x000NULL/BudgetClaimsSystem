@@ -14,4 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = '/reports';
         });
     }
+
+    // Express claim button handler
+    const expressClaimButton = document.getElementById('expressClaimButton');
+    if (expressClaimButton) {
+        expressClaimButton.addEventListener('click', () => {
+            window.location.href = '/claims/express';
+        });
+    }
 }); 

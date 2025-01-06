@@ -67,6 +67,7 @@
         </div>
 
         <div class="quick-actions">
+            <button id="expressClaimButton" class="btn btn-primary">Express Claim</button>
             <button id="newClaimButton" class="btn btn-primary">Add New Claim</button>
             <button id="generateReportsButton" class="btn btn-secondary">Generate Reports</button>
         </div>
@@ -75,14 +76,20 @@
     <script>
         // Chart for Claims Status
         const ctxStatus = document.getElementById('claimsStatusChart').getContext('2d');
+        const chartData = {
+            open: <%- openClaims %>,
+            inProgress: <%- inProgressClaims %>,
+            closed: <%- closedClaims %>
+        };
+        
         const claimsStatusChart = new Chart(ctxStatus, {
             type: 'bar',
             data: {
                 labels: ['Open', 'In Progress', 'Closed'], // Labels for the chart
                 datasets: [{
                     label: 'Claims Status',
-                    data: [<%= openClaims %>, <%= inProgressClaims %>, <%= closedClaims %>], // Data for the chart
-                    backgroundColor: ['#007bff', '#ffc107', '#28a745'] // Colors for the bars
+                    data: [chartData.open, chartData.inProgress, chartData.closed],
+                    backgroundColor: ['#007bff', '#ffc107', '#28a745']
                 }]
             },
             options: {

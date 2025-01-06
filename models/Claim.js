@@ -3,6 +3,21 @@ const Schema = mongoose.Schema; // Use Schema to define the structure of documen
 
 // Define the schema for a Claim
 const ClaimSchema = new Schema({
+    // Field for the claim number
+    claimNumber: {
+        type: String,
+        required: true,
+        unique: true,
+        index: true,
+        immutable: true, // This prevents the field from being changed after creation
+        default: function() {
+            // Only called when document is first created
+            if (this.isNew) {
+                return Math.floor(10000000 + Math.random() * 90000000).toString();
+            }
+            return this.claimNumber; // Return existing claim number if document exists
+        }
+    },
     // Field for the MVA number
     mva: {
         type: String, // Data type is String
