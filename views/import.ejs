@@ -35,16 +35,91 @@
     </nav>
 </header>
     <main>
-        <h2>Import Data</h2> <!-- Section heading -->
-        
-        <!-- Form to upload a file for importing data -->
-        <form action="/import/full" method="post" enctype="multipart/form-data">
-            <div>
-                <label for="file">Choose a file to import:</label> <!-- Label for file input -->
-                <input type="file" id="file" name="file" accept=".zip" required> <!-- File input for importing data, accepts only .zip files -->
+        <section class="import-section">
+            <h2>Budget Claims System Import</h2>
+            
+            <form action="/import/full" method="post" enctype="multipart/form-data">
+                <div>
+                    <label for="file">Choose a file to import:</label>
+                    <input type="file" id="file" name="file" accept=".zip" required>
+                </div>
+                <button type="submit">Import</button>
+            </form>
+        </section>
+
+        <section class="import-section">
+            <h2>External System Import</h2>
+            
+            <form action="/import/external" method="post" enctype="multipart/form-data" id="externalImportForm">
+                <div class="form-group">
+                    <label for="system">Select System:</label>
+                    <select id="system" name="system" required>
+                        <option value="">-- Select a system --</option>
+                        <option value="rentworks-csv">Rentworks - CSV</option>
+                        <option value="other-csv">Other system - CSV</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="importFile">Choose a file to import:</label>
+                    <input type="file" id="importFile" name="importFile" accept=".csv,.xls,.xlsx" required>
+                </div>
+                <button type="submit" class="btn-submit">Import External Data</button>
+            </form>
+
+            <!-- Progress indicator -->
+            <div id="uploadProgress" style="display: none;">
+                <p>Uploading file...</p>
             </div>
-            <button type="submit">Import</button> <!-- Button to submit the form -->
-        </form>
+        </section>
+
+        <!-- Add error message display -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <!-- Add simple client-side validation -->
+        <script>
+            document.getElementById('externalImportForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const form = e.target;
+                const system = document.getElementById('system').value;
+                const file = document.getElementById('importFile').files[0];
+                const errorDiv = document.getElementById('errorMessage');
+                const progressDiv = document.getElementById('uploadProgress');
+                
+                if (!system || !file) {
+                    errorDiv.textContent = 'Please select both a system and a file.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    errorDiv.style.display = 'none';
+                    progressDiv.style.display = 'block';
+
+                    const formData = new FormData(form);
+                    
+                    const response = await fetch('/import/external', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    
+                    if (!result.success) {
+                        throw new Error(result.message || 'Import failed');
+                    }
+
+                    alert('Import completed successfully!');
+                    location.reload();
+
+                } catch (error) {
+                    errorDiv.textContent = error.message;
+                    errorDiv.style.display = 'block';
+                } finally {
+                    progressDiv.style.display = 'none';
+                }
+            });
+        </script>
     </main>
 </body>
 </html>
