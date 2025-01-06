@@ -313,6 +313,28 @@
                 %>
                 <label>Admin Fee:</label>
                 <p id="adminFeeAmount">$<%= adminFee.toFixed(2) %></p>
+
+                <label>Notes:</label>
+                <div class="notes-section">
+                    <% if (claim.notes && claim.notes.length > 0) { %>
+                        <div class="notes-list">
+                            <% claim.notes.sort((a, b) => b.createdAt - a.createdAt).forEach(note => { %>
+                                <div class="note-item">
+                                    <div class="note-header">
+                                        <span class="note-type"><%= note.type.charAt(0).toUpperCase() + note.type.slice(1) %></span>
+                                        <% if (note.source) { %>
+                                            <span class="note-source">from <%= note.source %></span>
+                                        <% } %>
+                                        <span class="note-date"><%= new Date(note.createdAt).toLocaleString() %></span>
+                                    </div>
+                                    <div class="note-content"><%= note.content %></div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } else { %>
+                        <p>No notes available</p>
+                    <% } %>
+                </div>
             </div>
             <div class="button-group">
                 <a href="/claims/<%= claim._id %>/edit" class="btn">Edit Claim</a> <!-- Button to edit claim -->

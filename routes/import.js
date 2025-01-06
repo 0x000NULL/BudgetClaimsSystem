@@ -318,7 +318,33 @@ const getOrCreateStatus = async (statusName) => {
     }
 };
 
-// Modify the mapRentworksRecord function
+// Add this helper function at the top with other helpers
+const createImportUser = async (rentworksId) => {
+    try {
+        // Try to find existing import user
+        let user = await User.findOne({ 
+            rentworksId: rentworksId 
+        });
+
+        // If user doesn't exist, create it
+        if (!user) {
+            user = await User.create({
+                email: `rentworks.${rentworksId}@import.system`,
+                name: `Rentworks User ${rentworksId}`,
+                rentworksId: rentworksId,
+                role: 'system',
+                password: crypto.randomBytes(16).toString('hex') // Random password
+            });
+        }
+
+        return user._id;
+    } catch (error) {
+        debug('Error creating import user:', error);
+        return null;
+    }
+};
+
+// Then modify the mapRentworksRecord function
 const mapRentworksRecord = async (record) => {
     debugData('Mapping Rentworks record', record);
     
@@ -338,12 +364,27 @@ const mapRentworksRecord = async (record) => {
     const claimData = {
         claimNumber: cleanRecord['Claim #'],
         customerName: cleanRecord['Renter'],
-        status: statusId, // Now using the status ObjectId
+        status: statusId,
         lossDamageWaiver: cleanRecord['LDW']?.toLowerCase() === 'yes' ? 'Yes' : 'No',
         mva: cleanRecord['Unit #'],
         raNumber: cleanRecord['RA Number'],
         date: parseRentworksDate(cleanRecord['Claim Date'])
     };
+
+    // Add summary as a note if it exists
+    if (cleanRecord['Summary']) {
+        const userId = cleanRecord['Entered By'] ? 
+            await createImportUser(cleanRecord['Entered By']) : 
+            null;
+
+        claimData.notes = [{
+            content: cleanRecord['Summary'],
+            type: 'import',
+            source: 'Rentworks',
+            createdAt: new Date(),
+            createdBy: userId
+        }];
+    }
     
     // Remove empty/null/undefined values
     Object.keys(claimData).forEach(key => {

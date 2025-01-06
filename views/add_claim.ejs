@@ -55,6 +55,7 @@
                         <button type="button" class="tablinks" data-tab="VehicleInfo">Vehicle Information</button>
                         <button type="button" class="tablinks" data-tab="ClaimDetails">Claim Details</button>
                         <button type="button" class="tablinks" data-tab="InsuranceInfo">Insurance Information</button>
+                        <button type="button" class="tablinks" data-tab="Notes">Notes</button>
                     </div>
                     <div class="tab-row">
                         <button type="button" class="tablinks" data-tab="ThirdPartyInfo">Third Party Information</button>
@@ -321,6 +322,16 @@
                         <h3>Photos</h3>
                         <input type="file" id="photos" name="photos" multiple>
                         <span class="error-message" id="errorPhotos"></span>
+                    </div>
+                </div>
+
+                <!-- Tab content for Notes -->
+                <div id="Notes" class="tabcontent">
+                    <div class="notes-section">
+                        <h3>Add Initial Note</h3>
+                        <div class="add-note-form">
+                            <textarea name="initialNote" rows="3" placeholder="Enter initial note here..."></textarea>
+                        </div>
                     </div>
                 </div>
 

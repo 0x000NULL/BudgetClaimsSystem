@@ -60,6 +60,7 @@
                         <button type="button" class="tablinks" id="vehicleInfoTab">Vehicle Information</button>
                         <button type="button" class="tablinks" id="claimDetailsTab">Claim Details</button>
                         <button type="button" class="tablinks" id="insuranceInfoTab">Insurance Information</button>
+                        <button type="button" class="tablinks" id="notesInfoTab">Notes</button>
                     </div>
                     <div class="tab-row">
                         <button type="button" class="tablinks" id="thirdPartyInfoTab">Third Party Information</button>
@@ -486,6 +487,50 @@
                             <% } %>
                         </div>
                         <input type="file" id="photos" name="photos" multiple>
+                    </div>
+                </div>
+
+                <!-- Tab content for Notes -->
+                <div id="notesInfo" class="tabcontent">
+                    <div class="notes-section">
+                        <!-- Existing Notes -->
+                        <h3>Existing Notes</h3>
+                        <div class="notes-list">
+                            <% if (claim.notes && claim.notes.length > 0) { %>
+                                <% claim.notes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach((note, index) => { %>
+                                    <div class="note-item" data-note-id="<%= note._id %>">
+                                        <div class="note-header">
+                                            <span class="note-type"><%= note.type.charAt(0).toUpperCase() + note.type.slice(1) %></span>
+                                            <% if (note.source) { %>
+                                                <span class="note-source">from <%= note.source %></span>
+                                            <% } %>
+                                            <span class="note-date"><%= new Date(note.createdAt).toLocaleString() %></span>
+                                        </div>
+                                        <div class="note-content">
+                                            <textarea readonly rows="3"><%= note.content %></textarea>
+                                            <input type="hidden" name="existingNotes[]" value='<%- JSON.stringify({
+                                                _id: note._id,
+                                                content: note.content,
+                                                type: note.type,
+                                                source: note.source,
+                                                createdAt: note.createdAt,
+                                                createdBy: note.createdBy
+                                            }).replace(/'/g, "&#39;") %>'/>
+                                        </div>
+                                        <button type="button" class="delete-note">Delete Note</button>
+                                    </div>
+                                <% }) %>
+                            <% } else { %>
+                                <p>No existing notes</p>
+                            <% } %>
+                        </div>
+
+                        <!-- Add New Note -->
+                        <h3>Add New Note</h3>
+                        <div class="add-note-form">
+                            <textarea name="newNotes" rows="3" placeholder="Enter your note here..."></textarea>
+                            <button type="button" id="addNote" class="btn">Add Note</button>
+                        </div>
                     </div>
                 </div>
 

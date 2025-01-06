@@ -538,96 +538,74 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
 // PUT /claims/:id - Update a claim
 router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req, res) => {
     try {
-        const claim = await Claim.findById(req.params.id);
+        const claimId = req.params.id;
+        console.log('Incoming request body:', req.body);
+
+        const claim = await Claim.findById(claimId);
+        
         if (!claim) {
-            logger.error('Claim not found:', req.params.id);
+            logger.error('Claim not found:', claimId);
             return res.render('500', { message: 'Claim not found' });
         }
 
-        // Handle file uploads
-        if (req.files) {
-            logger.info('Processing file uploads:', Object.keys(req.files));
+        const updateData = { ...req.body };
+        let notes = [];
+
+        // Process existing notes
+        if (claim.notes && claim.notes.length > 0) {
+            // Get array of deleted note IDs
+            const deletedNotes = updateData.deletedNotes ? JSON.parse(updateData.deletedNotes) : [];
             
-            // Initialize files object if it doesn't exist
-            if (!claim.files) {
-                claim.files = {};
-            }
+            // Keep notes that weren't deleted
+            notes = claim.notes.filter(note => !deletedNotes.includes(note._id.toString()));
+        }
 
-            // Process each file category
-            const categories = ['incidentReports', 'correspondence', 'rentalAgreement', 'policeReport', 'invoices', 'photos'];
-            
-            for (const category of categories) {
-                if (req.files[category]) {
-                    try {
-                        const files = Array.isArray(req.files[category]) ? req.files[category] : [req.files[category]];
-                        logger.info(`Processing ${files.length} files for category: ${category}`);
-                        
-                        // Initialize category array if it doesn't exist
-                        if (!claim.files[category]) {
-                            claim.files[category] = [];
-                        }
-
-                        for (const file of files) {
-                            // Validate file
-                            const errors = validateFile(file, category);
-                            if (errors.length > 0) {
-                                logger.error('File validation errors:', errors);
-                                return res.render('500', { 
-                                    message: `File validation failed: ${errors.join(', ')}` 
-                                });
-                            }
-
-                            // Sanitize filename
-                            const sanitizedFilename = sanitizeFilename(file.name);
-                            const uploadPath = path.join(uploadsPath, sanitizedFilename);
-                            logger.info(`Moving file to: ${uploadPath}`);
-
-                            try {
-                                // Ensure uploads directory exists
-                                const uploadsDir = path.dirname(uploadPath);
-                                if (!fs.existsSync(uploadsDir)) {
-                                    fs.mkdirSync(uploadsDir, { recursive: true });
-                                }
-
-                                // Move file to uploads directory
-                                await file.mv(uploadPath);
-                                
-                                // Add filename to claim's files array
-                                claim.files[category].push(sanitizedFilename);
-                                logger.info(`Successfully uploaded file: ${sanitizedFilename}`);
-                            } catch (moveError) {
-                                logger.error('Error moving file:', moveError);
-                                return res.render('500', { 
-                                    message: `Error uploading file: ${file.name}` 
-                                });
-                            }
-                        }
-                    } catch (categoryError) {
-                        logger.error(`Error processing category ${category}:`, categoryError);
-                        return res.render('500', { 
-                            message: `Error processing ${category} files` 
-                        });
-                    }
+        // Process new note
+        if (updateData.newNote) {
+            try {
+                let newNote;
+                if (typeof updateData.newNote === 'string') {
+                    newNote = JSON.parse(updateData.newNote);
+                } else {
+                    newNote = updateData.newNote;
                 }
+
+                if (newNote && newNote.content) {
+                    notes.push({
+                        content: newNote.content,
+                        type: newNote.type || 'user',
+                        source: newNote.source || null,
+                        createdAt: new Date(newNote.createdAt || Date.now()),
+                        createdBy: req.user ? req.user._id : null
+                    });
+                }
+            } catch (e) {
+                console.error('Error parsing new note:', e);
             }
         }
 
-        // Update other claim fields
-        logger.info('Updating claim fields');
-        Object.assign(claim, req.body);
+        // Update the notes in the updateData
+        updateData.notes = notes;
+
+        // Remove the note fields from updateData
+        delete updateData.newNote;
+        delete updateData.newNotes;
+        delete updateData['newNotes[]'];
+        delete updateData.deletedNotes;
+
+        // Update the claim
+        const updatedClaim = await Claim.findByIdAndUpdate(
+            claimId,
+            updateData,
+            { new: true }
+        );
+
+        await notifyClaimStatusUpdate(req.user.email, updatedClaim);
+        logger.info('Claim updated successfully:', updatedClaim._id);
         
-        // Save the updated claim
-        try {
-            await claim.save();
-            await notifyClaimStatusUpdate(req.user.email, claim);
-            logger.info('Claim updated successfully:', claim._id);
-            res.redirect(`/claims/${claim._id}`);
-        } catch (saveError) {
-            logger.error('Error saving claim:', saveError);
-            return res.render('500', { 
-                message: 'Error saving claim updates' 
-            });
-        }
+        // Redirect back to the claim view
+        res.redirect(`/claims/${updatedClaim._id}`);
+
     } catch (error) {
         logger.error('Error updating claim:', error);
         res.render('500', { 

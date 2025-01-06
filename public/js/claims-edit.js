@@ -1,4 +1,15 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // Add form submission handler
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        // e.preventDefault(); // Uncomment this line for testing
+        const formData = new FormData(this);
+        console.log('Form submission data:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+    });
+
     // Helper function to open a tab
     function openTab(evt, tabName) {
         var i, tabcontent, tablinks;
@@ -23,7 +34,8 @@ document.addEventListener('DOMContentLoaded', function () {
         'thirdPartyInfoTab': 'thirdPartyInfo',
         'rentalPoliceInfoTab': 'rentalPoliceInfo',
         'additionalCoverageTab': 'additionalCoverage',
-        'fileUploadsTab': 'fileUploads'
+        'fileUploadsTab': 'fileUploads',
+        'notesInfoTab': 'notesInfo'
     };
 
     Object.entries(tabs).forEach(([tabId, contentId]) => {
@@ -326,4 +338,110 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // Handle adding new notes
+    const addNoteButton = document.getElementById('addNote');
+    const notesList = document.querySelector('.notes-list');
+    
+    if (addNoteButton) {
+        addNoteButton.addEventListener('click', function() {
+            const newNoteTextarea = document.querySelector('textarea[name="newNotes"]');
+            const newNoteContent = newNoteTextarea.value;
+            
+            if (newNoteContent.trim()) {
+                const noteData = {
+                    content: newNoteContent,
+                    type: 'user',
+                    createdAt: new Date().toISOString(),
+                    source: null
+                };
+
+                // Create new note HTML
+                const noteDiv = document.createElement('div');
+                noteDiv.className = 'note-item';
+                noteDiv.innerHTML = `
+                    <div class="note-header">
+                        <span class="note-type">User</span>
+                        <span class="note-date">${new Date().toLocaleString()}</span>
+                    </div>
+                    <div class="note-content">
+                        <textarea readonly rows="3">${newNoteContent}</textarea>
+                        <input type="hidden" name="newNote" value='${JSON.stringify(noteData)}' />
+                    </div>
+                    <button type="button" class="delete-note">Delete Note</button>
+                `;
+
+                // Remove "No notes" message if it exists
+                const noNotesMessage = notesList.querySelector('p');
+                if (noNotesMessage && noNotesMessage.textContent === 'No existing notes') {
+                    noNotesMessage.remove();
+                }
+
+                // Add the new note at the beginning
+                if (notesList.firstChild) {
+                    notesList.insertBefore(noteDiv, notesList.firstChild);
+                } else {
+                    notesList.appendChild(noteDiv);
+                }
+
+                // Clear the input
+                newNoteTextarea.value = '';
+                
+                // Show success message
+                showToast('Note added successfully', 'success');
+            } else {
+                showToast('Please enter a note before adding', 'error');
+            }
+        });
+    }
+
+    // Handle deleting notes
+    const deletedNoteIds = new Set();
+
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-note')) {
+            if (confirm('Are you sure you want to delete this note?')) {
+                const noteItem = e.target.closest('.note-item');
+                const noteId = noteItem.dataset.noteId;
+                
+                if (noteId) {
+                    // Add to deleted notes set
+                    deletedNoteIds.add(noteId);
+                    
+                    // Add hidden input for deleted notes
+                    let deletedNotesInput = document.querySelector('input[name="deletedNotes"]');
+                    if (!deletedNotesInput) {
+                        deletedNotesInput = document.createElement('input');
+                        deletedNotesInput.type = 'hidden';
+                        deletedNotesInput.name = 'deletedNotes';
+                        document.querySelector('form').appendChild(deletedNotesInput);
+                    }
+                    deletedNotesInput.value = JSON.stringify(Array.from(deletedNoteIds));
+                }
+
+                noteItem.remove();
+
+                // If no notes left, show the "No existing notes" message
+                if (notesList.children.length === 0) {
+                    notesList.innerHTML = '<p>No existing notes</p>';
+                }
+
+                // Show deletion message
+                showToast('Note deleted successfully', 'success');
+            }
+        }
+    });
+
+    // Helper function to show toast messages
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+    }
 }); 
