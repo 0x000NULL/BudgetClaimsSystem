@@ -1,21 +1,18 @@
 const mongoose = require('mongoose'); // Import Mongoose to interact with MongoDB
 const Schema = mongoose.Schema; // Use Schema to define the structure of documents in the collection
+const { ClaimSettings, INITIAL_CLAIM_NUMBER } = require('./ClaimSettings');
 
 // Define the schema for a Claim
 const ClaimSchema = new Schema({
     // Field for the claim number
     claimNumber: {
         type: String,
-        required: true,
         unique: true,
         index: true,
         immutable: true, // This prevents the field from being changed after creation
-        default: function() {
-            // Only called when document is first created
-            if (this.isNew) {
-                return Math.floor(10000000 + Math.random() * 90000000).toString();
-            }
-            return this.claimNumber; // Return existing claim number if document exists
+        required: function() { 
+            // Only require claimNumber after the document is saved
+            return !this.isNew;
         }
     },
     // Field for the MVA number
@@ -267,6 +264,59 @@ const ClaimSchema = new Schema({
     lossDamageWaiver: {
         type: String, // Data type is String
         required: false // This field is not required
+    }
+});
+
+// Add a pre-save middleware to generate sequential claim numbers
+ClaimSchema.pre('save', async function(next) {
+    try {
+        if (this.isNew && !this.claimNumber) {
+            // Find and update the last claim number atomically with retries
+            let attempts = 3;
+            let settings = null;
+            
+            while (attempts > 0 && !settings) {
+                try {
+                    settings = await ClaimSettings.findOneAndUpdate(
+                        { type: 'lastClaimNumber' },
+                        { $inc: { value: 1 } },
+                        { 
+                            upsert: true, 
+                            new: true,
+                            setDefaultsOnInsert: true
+                        }
+                    );
+                } catch (err) {
+                    attempts--;
+                    if (attempts === 0) throw err;
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
+
+            if (!settings) {
+                throw new Error('Failed to generate claim number - settings not found');
+            }
+
+            // Ensure the number is at least INITIAL_CLAIM_NUMBER
+            const claimNumber = Math.max(settings.value, INITIAL_CLAIM_NUMBER);
+            this.claimNumber = claimNumber.toString().padStart(8, '0');
+            console.log('Generated claim number:', this.claimNumber);
+        }
+        next();
+    } catch (error) {
+        console.error('Error in claim pre-save middleware:', error);
+        next(error);
+    }
+});
+
+// Add a post-save hook to verify claim number was generated
+ClaimSchema.post('save', function(doc, next) {
+    if (!doc.claimNumber) {
+        console.error('Claim saved without claim number:', doc._id);
+        next(new Error('Claim number was not generated properly'));
+    } else {
+        console.log('Claim saved successfully with number:', doc.claimNumber);
+        next();
     }
 });
 
