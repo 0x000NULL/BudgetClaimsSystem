@@ -1,5 +1,65 @@
 # Changelog
 
+## [1.4.40] - 2025-1-06 (Commit: d33099f)
+
+### Added
+- Implemented sequential claim number generation system starting from 10000000
+- Added ClaimSettings model to manage and track claim number sequences
+- Added migration script for initializing and updating existing claim numbers
+- Added verification system to ensure claim numbers are properly generated
+
+### Changed
+- Modified claim number generation from random to sequential
+- Updated Claim model's pre-save middleware for more robust claim number generation
+- Enhanced claim number validation with post-save verification
+- Improved error handling for claim number generation
+- Updated claim creation process to use new sequential numbering system
+
+### Technical
+- Added new ClaimSettings model with:
+  - Atomic updates for claim number generation
+  - Initialization and verification methods
+  - Minimum value enforcement (10000000)
+  - Timestamp tracking for updates
+- Enhanced Claim model with:
+  - Retry logic for claim number generation
+  - Improved validation middleware
+  - Better error handling and logging
+  - Post-save verification hooks
+- Added migration script features:
+  - Environment configuration support
+  - Batch processing for existing claims
+  - Direct database updates to bypass middleware
+  - Progress logging during migration
+  - Validation of final counter state
+
+### Fixed
+- Fixed potential race conditions in claim number generation
+- Fixed validation issues with claim number requirements
+- Fixed middleware conflicts during claim updates
+- Fixed initialization issues with claim number sequences
+
+### Security
+- Added immutability to claim numbers after creation
+- Implemented atomic updates to prevent duplicate numbers
+- Added validation to prevent claim number manipulation
+
+### Documentation
+- Added technical documentation for claim number generation
+- Updated API documentation for claim creation
+- Added migration script documentation
+- Added troubleshooting guides for claim number issues
+
+### Dependencies
+- No new dependencies added
+- Utilizing existing MongoDB features for atomic operations
+
+### Migration
+- Added initialize-claim-numbers.js migration script
+- Added safety checks in migration process
+- Added detailed logging for migration tracking
+- Added rollback capability for failed migrations
+
 ## [1.4.39] - 2024-12-24 (Commit: 9162ff1)
 
 ### Added
