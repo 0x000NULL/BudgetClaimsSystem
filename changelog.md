@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.4.41] - 2024-01-06
+
+### Added
+- Added "Clear Filters" button to claims search page
+- Added ability to clear individual multiple-select filters
+- Added visual feedback for filter clearing options
+- Added AJAX-based search functionality to prevent page refreshes
+- Added client-side pagination without page reloads
+- Added Rentworks CSV/Excel import functionality
+- Added automatic status creation for imported claims
+- Added Excel to CSV conversion for import process
+- Added support for multiple date formats in imports
+- Added detailed debug logging for import process
+- Added status mapping for Rentworks statuses
+- Added race condition handling for status creation
+
+### Changed
+- Improved claims search UX with better filter management
+- Updated pagination to use event delegation instead of inline handlers
+- Made search interface more CSP compliant
+- Moved claims search JavaScript to separate file for better organization
+- Enhanced search form to maintain state during AJAX updates
+- Enhanced file upload handling with better error management
+- Improved import error handling and validation
+- Updated status handling to support case-insensitive matching
+- Enhanced file cleanup process for imported files
+- Improved data mapping for Rentworks imports
+
+### Fixed
+- Fixed CSP violations in pagination controls
+- Fixed issue with inability to clear damage type and status filters
+- Fixed pagination refresh issues
+- Fixed search form submission causing full page reload
+- Fixed duplicate status creation issues during import
+- Fixed Excel parsing issues for Rentworks format
+- Fixed file cleanup in import process
+- Fixed status mapping for non-standard statuses
+
+### Security
+- Removed inline JavaScript event handlers for better CSP compliance
+- Improved client-side script organization
+- Enhanced file upload validation
+- Added sanitization for imported data
+- Improved error handling to prevent data leaks
+
+### Technical
+- Added support for Excel file formats (.xls, .xlsx)
+- Added CSV parsing with headers detection
+- Implemented case-insensitive status matching
+- Added atomic operations for status creation
+- Enhanced debug logging for import process
+- Added file cleanup safeguards
+- Improved error reporting for failed imports
+
 ## [1.4.40] - 2025-1-06 (Commit: d33099f)
 
 ### Added

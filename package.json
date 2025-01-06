@@ -1,6 +1,6 @@
 {
   "name": "budget-claims-system",
-  "version": "1.4.40",
+  "version": "1.4.41",
   "description": "A system to manage vehicle claims.",
   "main": "server.js",
   "scripts": {
@@ -17,7 +17,8 @@
     "test:unit": "jest --testMatch='**/*.unit.test.js'",
     "test:integration": "jest --testMatch='**/*.integration.test.js'",
     "test:coverage": "jest --coverage --coverageReporters='text-summary'",
-    "test:clear": "jest --clearCache"
+    "test:clear": "jest --clearCache",
+    "migrate:status": "node migrations/status-migration.js"
   },
   "dependencies": {
     "archiver": "^7.0.1",

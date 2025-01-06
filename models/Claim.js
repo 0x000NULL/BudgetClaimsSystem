@@ -217,8 +217,9 @@ const ClaimSchema = new Schema({
     },
     // Field for the claim status
     status: {
-        type: [String], // Data type is an array of strings
-        required: false // This field is not required
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Status',
+        required: true
     },
     // Field for the files associated with the claim
     files: {

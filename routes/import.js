@@ -253,11 +253,14 @@ const mapRentworksStatus = (status) => {
         'Pending': 'Pending',
         'Closed': 'Closed',
         'Open': 'Open',
+        'LDW Discharge': 'Closed',
+        'Litigation': 'Open',
+        'Renter Resp': 'Open',
         '': 'Pending'
         // Add more mappings as needed
     };
     
-    return statusMap[status] || 'Other';
+    return statusMap[status] || status; // Use original status if no mapping exists
 };
 
 // Add this debug helper at the top with other helpers
@@ -265,8 +268,58 @@ const debugData = (label, data) => {
     debug(`${label}:`, JSON.stringify(data, null, 2));
 };
 
-// Add this with the other helper functions
-const mapRentworksRecord = (record) => {
+// Add this helper function to handle status creation/lookup
+const getOrCreateStatus = async (statusName) => {
+    try {
+        // Try to find existing status (case-insensitive)
+        let status = await Status.findOne({ 
+            name: { 
+                $regex: new RegExp(`^${statusName}$`, 'i') 
+            }
+        });
+
+        // If status doesn't exist, create it
+        if (!status) {
+            debug('Creating new status:', statusName);
+            
+            // Try to create the status, handle potential race condition
+            try {
+                status = await Status.create({
+                    name: statusName,
+                    description: `Status created from Rentworks import: ${statusName}`,
+                    active: true
+                });
+                debug('Created new status:', status);
+            } catch (createError) {
+                // If creation failed due to duplicate key, try to find it again
+                if (createError.code === 11000) {
+                    debug('Status was created by another process, retrieving existing status');
+                    status = await Status.findOne({ 
+                        name: { 
+                            $regex: new RegExp(`^${statusName}$`, 'i') 
+                        }
+                    });
+                    
+                    if (!status) {
+                        throw new Error('Failed to find status after duplicate key error');
+                    }
+                } else {
+                    throw createError;
+                }
+            }
+        } else {
+            debug('Found existing status:', status.name);
+        }
+
+        return status._id;
+    } catch (error) {
+        debug('Error handling status:', error);
+        throw new Error(`Failed to process status "${statusName}": ${error.message}`);
+    }
+};
+
+// Modify the mapRentworksRecord function
+const mapRentworksRecord = async (record) => {
     debugData('Mapping Rentworks record', record);
     
     // Clean and prepare the record data
@@ -278,10 +331,14 @@ const mapRentworksRecord = (record) => {
 
     debugData('Cleaned record', cleanRecord);
     
+    // Get or create status
+    const statusName = mapRentworksStatus(cleanRecord['Status']);
+    const statusId = await getOrCreateStatus(statusName);
+    
     const claimData = {
         claimNumber: cleanRecord['Claim #'],
         customerName: cleanRecord['Renter'],
-        status: mapRentworksStatus(cleanRecord['Status']),
+        status: statusId, // Now using the status ObjectId
         lossDamageWaiver: cleanRecord['LDW']?.toLowerCase() === 'yes' ? 'Yes' : 'No',
         mva: cleanRecord['Unit #'],
         raNumber: cleanRecord['RA Number'],
@@ -299,7 +356,7 @@ const mapRentworksRecord = (record) => {
     return claimData;
 };
 
-// Modify the external route to use express-fileupload
+// Modify the external route handler's processing section
 router.post('/external', async (req, res) => {
     let uploadedFile = null;
     let convertedFile = null;
@@ -327,33 +384,36 @@ router.post('/external', async (req, res) => {
         // Process based on selected system
         if (req.body.system === 'rentworks-csv') {
             const fileContent = await fs.promises.readFile(csvFilePath, 'utf-8');
-            debugData('Raw file content', fileContent.substring(0, 500)); // Show first 500 chars
+            debugData('Raw file content', fileContent.substring(0, 500));
 
             const records = await parseCSV(fileContent);
-            debugData('Raw parsed records', records.slice(0, 2)); // Show first 2 records
+            debugData('Raw parsed records', records.slice(0, 2));
 
             debug('Total parsed records:', records.length);
 
-            const claimRecords = records
-                .map(mapRentworksRecord)
-                .filter(data => {
-                    const hasRequiredFields = data.claimNumber; // Must have at least a claim number
-                    if (!hasRequiredFields) {
-                        debug('Filtered out record without required fields');
-                    }
-                    return hasRequiredFields;
-                });
+            // Use Promise.all since mapRentworksRecord is now async
+            const claimRecords = await Promise.all(
+                records.map(record => mapRentworksRecord(record))
+            );
 
-            debug('Filtered claim records count:', claimRecords.length);
-            debugData('First claim record', claimRecords[0]);
+            const filteredClaimRecords = claimRecords.filter(data => {
+                const hasRequiredFields = data.claimNumber; // Must have at least a claim number
+                if (!hasRequiredFields) {
+                    debug('Filtered out record without required fields');
+                }
+                return hasRequiredFields;
+            });
 
-            if (claimRecords.length === 0) {
+            debug('Filtered claim records count:', filteredClaimRecords.length);
+            debugData('First claim record', filteredClaimRecords[0]);
+
+            if (filteredClaimRecords.length === 0) {
                 throw new Error('No valid claims found in the imported file');
             }
 
             // Create/update claims in database
             const results = await Promise.allSettled(
-                claimRecords.map(async record => {
+                filteredClaimRecords.map(async record => {
                     try {
                         if (!record.claimNumber) {
                             debug('Skipping record without claim number');
@@ -413,7 +473,7 @@ router.post('/external', async (req, res) => {
                 success: true,
                 message: 'Import completed successfully',
                 details: {
-                    recordsProcessed: claimRecords.length,
+                    recordsProcessed: filteredClaimRecords.length,
                     successCount: successfulResults.length,
                     failureCount: failedResults.length,
                     errors: failedResults.map(r => r.reason?.message || 'Unknown error')
