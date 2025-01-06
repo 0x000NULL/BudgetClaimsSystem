@@ -154,6 +154,7 @@
 
                 <label for="damageType">Damage Type:</label> <!-- Label for damage type selection -->
                 <select id="damageType" name="damageType" multiple> <!-- Multiple select for damage types -->
+                    <option value="" disabled class="clear-option">Clear selection</option>
                     <% damageTypes.forEach(type => { %>
                         <option value="<%= type.name %>" <%= filter && filter.damageType && filter.damageType.$in.includes(type.name) ? 'selected' : '' %>><%= type.name %></option>
                     <% }) %>
@@ -161,8 +162,13 @@
 
                 <label for="status">Status:</label> <!-- Label for status selection -->
                 <select id="status" name="status" multiple> <!-- Multiple select for statuses -->
+                    <option value="" disabled class="clear-option">Clear selection</option>
                     <% statuses.forEach(status => { %>
-                        <option value="<%= status.name %>" <%= filter && filter.status && filter.status.$in.includes(status.name) ? 'selected' : '' %>><%= status.name %></option>
+                        <option value="<%= status._id %>" 
+                            <%= filter && filter.status && filter.status.$in && 
+                                filter.status.$in.includes(status._id.toString()) ? 'selected' : '' %>>
+                            <%= status.name %>
+                        </option>
                     <% }) %>
                 </select>
                 <label for="resultsPerPage">Results per page:</label>
@@ -174,6 +180,7 @@
                 </select>
 
                 <button type="submit" class="btn">Search</button> <!-- Button to submit the search form -->
+                <button type="button" class="btn btn-secondary" id="clearFilters">Clear Filters</button>
             </form>
 
             <div class="results">
@@ -201,14 +208,15 @@
                                     <td><%= claim.carVIN %></td>
                                     <td><%= claim.damageType.join(', ') %></td>
                                     <td>
-                                        <% 
-                                            const status = statuses.find(status => status._id.toString() === claim.status.toString());
-                                            if (status) {
-                                                %><%= status.name %><%
-                                            } else {
-                                                %>Unknown Status<%
-                                            }
-                                        %>
+                                        <% if (Array.isArray(claim.status)) { %>
+                                            <%= claim.status[0] %> <!-- Display first status if it's an array -->
+                                        <% } else if (claim.status && claim.status.name) { %>
+                                            <%= claim.status.name %>
+                                        <% } else if (typeof claim.status === 'string') { %>
+                                            <%= claim.status %>
+                                        <% } else { %>
+                                            Unknown Status
+                                        <% } %>
                                     </td>
                                     <td><%= new Date(claim.date).toLocaleDateString() %></td>
                                     <td>
@@ -221,20 +229,56 @@
 
                     <!-- Pagination controls -->
                     <div class="pagination">
-                        <% if (page > 1) { %>
-                            <a href="?page=<%= page - 1 %>&resultsPerPage=<%= resultsPerPage %><%= queryString %>">&laquo; Previous</a>
-                        <% } else { %>
-                            <a href="#" class="disabled">&laquo; Previous</a>
-                        <% } %>
+                        <% if (totalClaims > 0) { %>
+                            <div class="pagination-info">
+                                Showing <%= ((page - 1) * resultsPerPage) + 1 %> to <%= Math.min(page * resultsPerPage, totalClaims) %> of <%= totalClaims %> claims
+                            </div>
+                            
+                            <% if (totalPages > 1) { %>
+                                <div class="pagination-controls">
+                                    <% if (page > 1) { %>
+                                        <button data-page="<%= page - 1 %>" class="pagination-btn pagination-link">&laquo; Previous</button>
+                                    <% } else { %>
+                                        <button class="pagination-btn disabled">&laquo; Previous</button>
+                                    <% } %>
 
-                        <% for (let i = 1; i <= totalPages; i++) { %>
-                            <a href="?page=<%= i %>&resultsPerPage=<%= resultsPerPage %><%= queryString %>" class="<%= i === page ? 'active' : '' %>"><%= i %></a>
-                        <% } %>
+                                    <% 
+                                    let startPage = Math.max(1, page - 2);
+                                    let endPage = Math.min(totalPages, startPage + 4);
+                                    if (endPage - startPage < 4) {
+                                        startPage = Math.max(1, endPage - 4);
+                                    }
+                                    %>
 
-                        <% if (page < totalPages) { %>
-                            <a href="?page=<%= page + 1 %>&resultsPerPage=<%= resultsPerPage %><%= queryString %>">Next &raquo;</a>
-                        <% } else { %>
-                            <a href="#" class="disabled">Next &raquo;</a>
+                                    <% if (startPage > 1) { %>
+                                        <button data-page="1" class="pagination-btn pagination-link">1</button>
+                                        <% if (startPage > 2) { %>
+                                            <span>...</span>
+                                        <% } %>
+                                    <% } %>
+
+                                    <% for (let i = startPage; i <= endPage; i++) { %>
+                                        <button data-page="<%= i %>" class="pagination-btn pagination-link <%= i === page ? 'active' : '' %>">
+                                            <%= i %>
+                                        </button>
+                                    <% } %>
+
+                                    <% if (endPage < totalPages) { %>
+                                        <% if (endPage < totalPages - 1) { %>
+                                            <span>...</span>
+                                        <% } %>
+                                        <button data-page="<%= totalPages %>" class="pagination-btn pagination-link">
+                                            <%= totalPages %>
+                                        </button>
+                                    <% } %>
+
+                                    <% if (page < totalPages) { %>
+                                        <button data-page="<%= page + 1 %>" class="pagination-btn pagination-link">Next &raquo;</button>
+                                    <% } else { %>
+                                        <button class="pagination-btn disabled">Next &raquo;</button>
+                                    <% } %>
+                                </div>
+                            <% } %>
                         <% } %>
                     </div>
 
@@ -245,48 +289,6 @@
         </div>
     </main>
 
-    <script>
-        async function addStatus() {
-            const status = document.getElementById('newStatus').value;
-            if (status) {
-                const response = await fetch('/claims/statuses', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ name: status })
-                });
-
-                if (response.ok) {
-                    const option = document.createElement('option');
-                    option.value = status;
-                    option.textContent = status;
-                    document.getElementById('status').appendChild(option);
-                    document.getElementById('newStatus').value = '';
-                }
-            }
-        }
-
-        async function addDamageType() {
-            const damageType = document.getElementById('newDamageType').value;
-            if (damageType) {
-                const response = await fetch('/claims/damageTypes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ name: damageType })
-                });
-
-                if (response.ok) {
-                    const option = document.createElement('option');
-                    option.value = damageType;
-                    option.textContent = damageType;
-                    document.getElementById('damageType').appendChild(option);
-                    document.getElementById('newDamageType').value = '';
-                }
-            }
-        }
-    </script>
+    <script src="/js/claims-search.js"></script>
 </body>
 </html>

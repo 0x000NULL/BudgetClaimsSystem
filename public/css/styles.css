@@ -1322,3 +1322,105 @@ input[type="file"] {
     white-space: pre-wrap;
     word-wrap: break-word;
 }
+
+/* Add or update these styles */
+.pagination {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin: 20px 0;
+}
+
+.pagination-info {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #666;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pagination a, .pagination span {
+    padding: 8px 12px;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    margin: 0 2px;
+    color: #007bff;
+    border-radius: 4px;
+}
+
+.pagination a:hover:not(.disabled) {
+    background-color: #f0f0f0;
+}
+
+.pagination a.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination a.disabled {
+    color: #999;
+    pointer-events: none;
+    background-color: #f5f5f5;
+}
+
+.pagination span {
+    border: none;
+    color: #666;
+}
+
+/* Add these styles for the pagination buttons */
+.pagination-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background: none;
+    color: #007bff;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 0 2px;
+}
+
+.pagination-btn:hover:not(.disabled) {
+    background-color: #f0f0f0;
+}
+
+.pagination-btn.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination-btn.disabled {
+    color: #999;
+    pointer-events: none;
+    background-color: #f5f5f5;
+}
+
+.clear-option {
+    font-style: italic;
+    color: #666;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 4px;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    margin-left: 10px;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Style for when no options are selected */
+select[multiple] option:first-child:checked {
+    font-style: italic;
+    color: #666;
+}
