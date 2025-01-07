@@ -1,27 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
-    <title><%= title %></title> <!-- Title of the document, dynamically set -->
-    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS file for styling -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+
         .btn {
-            display: inline-block;
-            padding: 8px 12px;
-            margin: 5px;
+            display: block;
+            padding: 15px 20px;
             background-color: #007bff;
             color: white;
             text-align: center;
             text-decoration: none;
-            border-radius: 4px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            font-size: 1.1em;
         }
 
         .btn:hover {
             background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .recent-activity {
+            margin-top: 40px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .view-all {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .claims-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .claim-item {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            transition: transform 0.2s;
+        }
+
+        .claim-item:hover {
+            transform: translateX(5px);
+        }
+
+        .claim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .claim-details {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .claim-link {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 0.9em;
+            display: inline-block;
+        }
+
+        .claim-link:hover {
+            text-decoration: underline;
+        }
+
+        .no-claims-message {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .btn-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .btn-link:hover {
+            text-decoration: underline;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js library -->
 </head>
 <body>
     <header>
@@ -53,53 +173,70 @@
         </nav>
     </header>
     <main>
-        <h2>Dashboard Analytics</h2> <!-- Section heading -->
+        <h2>Dashboard Overview</h2>
 
-        <div class="stats">
-            <p>Total Claims: <%= totalClaims %></p> <!-- Display total claims -->
-            <p>Open Claims: <%= openClaims %></p> <!-- Display open claims -->
-            <p>In Progress Claims: <%= inProgressClaims %></p> <!-- Display in-progress claims -->
-            <p>Closed Claims: <%= closedClaims %></p> <!-- Display closed claims -->
-        </div>
-
-        <div class="chart-container">
-            <canvas id="claimsStatusChart"></canvas> <!-- Canvas for the claims status chart -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Claims</div>
+                <div class="stat-number"><%= totalClaims %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Open Claims</div>
+                <div class="stat-number"><%= openClaims %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">In Progress</div>
+                <div class="stat-number"><%= inProgressClaims %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Closed Claims</div>
+                <div class="stat-number"><%= closedClaims %></div>
+            </div>
         </div>
 
         <div class="quick-actions">
-            <button id="expressClaimButton" class="btn btn-primary">Express Claim</button>
-            <button id="newClaimButton" class="btn btn-primary">Add New Claim</button>
-            <button id="generateReportsButton" class="btn btn-secondary">Generate Reports</button>
+            <button id="expressClaimButton" class="btn">Express Claim</button>
+            <button id="newClaimButton" class="btn">Add New Claim</button>
+            <button id="generateReportsButton" class="btn">Generate Reports</button>
+        </div>
+
+        <div class="recent-activity">
+            <div class="activity-header">
+                <h3>Recent Activity</h3>
+                <a href="/claims/search" class="view-all">View All Claims →</a>
+            </div>
+            <div class="claims-list">
+                <% if (recentClaims && recentClaims.length > 0) { %>
+                    <% recentClaims.forEach(claim => { %>
+                        <div class="claim-item">
+                            <div class="claim-header">
+                                <strong>Claim #<%= claim.claimNumber %></strong>
+                                <span class="claim-status" style="
+                                    background-color: <%= claim.status.color %>;
+                                    color: <%= claim.status.textColor %>;
+                                    padding: 4px 8px;
+                                    border-radius: 4px;
+                                    font-size: 0.9em;
+                                ">
+                                    <%= claim.status.name %>
+                                </span>
+                            </div>
+                            <div class="claim-details">
+                                <span>Customer: <%= claim.customerName %></span>
+                                <span>Updated: <%= new Date(claim.updatedAt).toLocaleDateString() %></span>
+                            </div>
+                            <a href="/claims/<%= claim._id %>" class="claim-link">View Details →</a>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="no-claims-message">
+                        <p>No recent claims available. <a href="/claims/add" class="btn-link">Create a new claim</a></p>
+                    </div>
+                <% } %>
+            </div>
         </div>
     </main>
 
-    <script>
-        // Chart for Claims Status
-        const ctxStatus = document.getElementById('claimsStatusChart').getContext('2d');
-        const chartData = {
-            open: <%- openClaims %>,
-            inProgress: <%- inProgressClaims %>,
-            closed: <%- closedClaims %>
-        };
-        
-        const claimsStatusChart = new Chart(ctxStatus, {
-            type: 'bar',
-            data: {
-                labels: ['Open', 'In Progress', 'Closed'], // Labels for the chart
-                datasets: [{
-                    label: 'Claims Status',
-                    data: [chartData.open, chartData.inProgress, chartData.closed],
-                    backgroundColor: ['#007bff', '#ffc107', '#28a745']
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true } // Y-axis starts at zero
-                }
-            }
-        });
-    </script>
     <script src="/js/dashboard.js"></script>
 </body>
 </html>

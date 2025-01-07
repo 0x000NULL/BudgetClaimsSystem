@@ -164,9 +164,9 @@
                 <select id="status" name="status" multiple> <!-- Multiple select for statuses -->
                     <option value="" disabled class="clear-option">Clear selection</option>
                     <% statuses.forEach(status => { %>
-                        <option value="<%= status._id %>" 
+                        <option value="<%= status.name %>" 
                             <%= filter && filter.status && filter.status.$in && 
-                                filter.status.$in.includes(status._id.toString()) ? 'selected' : '' %>>
+                                filter.status.$in.includes(status.name) ? 'selected' : '' %>>
                             <%= status.name %>
                         </option>
                     <% }) %>

@@ -183,12 +183,8 @@ const logRequest = (req, message, extra = {}) => {
 };
 
 // Home page route
-router.get('/', (req, res) => {
-    logRequest(req, 'Home route accessed');
-    if (req.isAuthenticated()) {
-        return res.redirect('/dashboard');
-    }
-    res.render('index', { title: 'Welcome to Budget Claims System' }); // Render the home page with the title 'Welcome to Budget Claims System'
+router.get('/', ensureAuthenticated, (req, res) => {
+    res.redirect('/dashboard');
 });
 
 // Login page route
@@ -206,49 +202,117 @@ router.get('/register', (req, res) => {
 // Dashboard page route
 // Only accessible to authenticated users with 'admin' or 'manager' roles
 router.get('/dashboard', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    logRequest(req, 'Dashboard route accessed'); // Log route access
+    logRequest(req, 'Dashboard route accessed');
     try {
-        // Fetch total number of claims
-        const totalClaims = await Claim.countDocuments();
-        logRequest(req, 'Total Claims fetched', { totalClaims }); // Log total claims
+        // Get all statuses first
+        const statuses = await Status.find({}).lean();
+        
+        // Create a map of status names to their IDs
+        const statusMap = new Map(
+            statuses.map(s => [
+                s.name.toLowerCase(), 
+                { id: s._id, color: s.color, description: s.description }
+            ])
+        );
 
-        // Fetch number of claims by status
-        const openClaims = await Claim.countDocuments({ status: 'Open' });
-        logRequest(req, 'Open Claims fetched', { openClaims }); // Log open claims
+        // Get status IDs for counts
+        const openStatus = statusMap.get('open');
+        const inProgressStatus = statusMap.get('in progress');
+        const closedStatus = statusMap.get('closed');
 
-        const inProgressClaims = await Claim.countDocuments({ status: 'In Progress' });
-        logRequest(req, 'In Progress Claims fetched', { inProgressClaims }); // Log in progress claims
+        // Get counts and recent claims in parallel
+        const [
+            totalClaims,
+            openClaims,
+            inProgressClaims,
+            closedClaims,
+            recentClaims
+        ] = await Promise.all([
+            Claim.countDocuments(),
+            openStatus ? Claim.countDocuments({ status: openStatus.id }) : 0,
+            inProgressStatus ? Claim.countDocuments({ status: inProgressStatus.id }) : 0,
+            closedStatus ? Claim.countDocuments({ status: closedStatus.id }) : 0,
+            Claim.find()
+                .sort({ updatedAt: -1 })
+                .limit(5)
+                .populate('status')
+                .select('claimNumber customerName status updatedAt createdAt')
+                .lean()
+                .exec()
+        ]);
 
-        const closedClaims = await Claim.countDocuments({ status: 'Closed' });
-        logRequest(req, 'Closed Claims fetched', { closedClaims }); // Log closed claims
+        // Add debug logging
+        console.log('Recent Claims Debug:', {
+            count: recentClaims.length,
+            claims: recentClaims.map(claim => ({
+                id: claim._id,
+                claimNumber: claim.claimNumber,
+                updatedAt: claim.updatedAt,
+                status: claim.status?.name
+            }))
+        });
+
+        // Transform claims with better null handling
+        const transformedClaims = recentClaims.map(claim => ({
+            _id: claim._id,
+            claimNumber: claim.claimNumber || 'N/A',
+            customerName: claim.customerName || 'No Name Provided',
+            updatedAt: claim.updatedAt,
+            status: {
+                name: claim.status?.name || 'Pending',
+                color: claim.status?.color || '#6c757d',
+                description: claim.status?.description || 'Status pending',
+                textColor: claim.status?.color ? getContrastColor(claim.status.color) : '#ffffff'
+            }
+        }));
 
         // Calculate average resolution time
-        const closedClaimsWithResolutionTime = await Claim.find({ status: 'Closed' });
+        const closedClaimsWithResolutionTime = await Claim.find({ status: closedStatus?.id });
         let totalResolutionTime = 0;
         closedClaimsWithResolutionTime.forEach(claim => {
             const resolutionTime = (claim.updatedAt - claim.createdAt) / (1000 * 60 * 60 * 24); // Time in days
             totalResolutionTime += resolutionTime;
         });
         const avgResolutionTime = closedClaimsWithResolutionTime.length ? totalResolutionTime / closedClaimsWithResolutionTime.length : 0;
-        logRequest(req, 'Average Resolution Time calculated', { avgResolutionTime }); // Log average resolution time
 
-        // Render the dashboard view with the analytics data
+        // Prepare render data
         const renderData = {
             title: 'Dashboard - Budget Claims System',
             totalClaims,
             openClaims,
             inProgressClaims,
             closedClaims,
-            avgResolutionTime
+            avgResolutionTime,
+            recentClaims: transformedClaims,
+            user: req.user
         };
-        logRequest(req, 'Render data prepared for dashboard', { renderData }); // Log render data
 
-        res.render('dashboard', renderData); // Render the dashboard page with analytics data
+        logRequest(req, 'Render data prepared for dashboard', { 
+            renderData: {
+                ...renderData,
+                recentClaimsCount: transformedClaims.length
+            }
+        });
+
+        res.render('dashboard', renderData);
     } catch (err) {
-        logRequest(req, 'Error fetching dashboard data', { error: err.message }); // Log error
-        res.status(500).json({ error: err.message }); // Handle errors
+        logRequest(req, 'Error fetching dashboard data', { error: err.message });
+        res.status(500).render('error', {
+            message: 'Error loading dashboard',
+            error: process.env.NODE_ENV === 'development' ? err : {}
+        });
     }
 });
+
+// Helper function to determine text color based on background
+function getContrastColor(hexcolor) {
+    const hex = hexcolor.replace('#', '');
+    const r = parseInt(hex.substr(0,2),16);
+    const g = parseInt(hex.substr(2,2),16);
+    const b = parseInt(hex.substr(4,2),16);
+    const yiq = ((r*299)+(g*587)+(b*114))/1000;
+    return (yiq >= 128) ? '#000000' : '#ffffff';
+}
 
 // Help page route
 router.get('/help', (req, res) => {

@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.4.41] - 2024-01-06
+## [1.4.41] - 2024-01-06 (Commit: 29aed0e)
 
 ### Added
 - Added "Clear Filters" button to claims search page
@@ -20,6 +20,18 @@
 - Added Rentworks user mapping for imported notes
 - Added rentworksId field to User model
 - Added migration for rentworksId field
+- Added debug logging for recent claims in dashboard
+- Added enhanced status handling with automatic color contrast calculation
+- Added improved status badge styling in dashboard
+- Added better null handling for claim display values
+- Added detailed debug logging for dashboard data
+- Added comprehensive PDF export format with table of contents
+- Added section-based organization for PDF exports
+- Added page numbers for photos in PDF exports
+- Added "Not Provided" indicators for empty fields in PDF exports
+- Added automatic page breaks between photo sections
+- Added better file categorization in PDF exports
+- Added consistent image sizing and spacing in PDF exports
 
 ### Changed
 - Improved claims search UX with better filter management
@@ -36,6 +48,17 @@
 - Improved data mapping for Rentworks imports including summary notes
 - Enhanced note creation to link with mapped Rentworks users
 - Improved error handling for note creation
+- Enhanced timestamp handling in claim updates to ensure accurate recent activity display
+- Enhanced dashboard recent claims display with better visual hierarchy
+- Improved status color handling with automatic text contrast
+- Updated status query middleware to handle string values better
+- Enhanced error logging with Pino logger integration
+- Improved PDF export layout with better organization and readability
+- Enhanced photo display in PDF exports with one photo per page
+- Updated PDF margins and formatting for better presentation
+- Improved file attachment handling in PDF exports
+- Enhanced section headers with consistent formatting
+- Improved boolean value display in PDFs (Yes/No instead of true/false)
 
 ### Fixed
 - Fixed CSP violations in pagination controls
@@ -48,6 +71,19 @@
 - Fixed status mapping for non-standard statuses
 - Fixed createdBy validation errors in note imports
 - Fixed user mapping for Rentworks imported notes
+- Fixed recent activity not showing updated claims in dashboard
+- Fixed incorrect timestamp updates in claim modifications
+- Fixed claim model timestamps configuration
+- Fixed "Cast to ObjectId" errors in status queries
+- Fixed status reference handling in Claim model
+- Fixed empty status display in dashboard
+- Fixed status color contrast issues in UI
+- Fixed overlapping images in PDF exports
+- Fixed missing page breaks between sections in PDF exports
+- Fixed inconsistent formatting in PDF exports
+- Fixed image sizing issues in PDF exports
+- Fixed missing fields in PDF exports
+- Fixed PDF generation for claims with multiple file types
 
 ### Security
 - Removed inline JavaScript event handlers for better CSP compliance
@@ -55,6 +91,7 @@
 - Enhanced file upload validation
 - Added sanitization for imported data
 - Improved error handling to prevent data leaks
+- Enhanced status validation to prevent injection attacks
 
 ### Technical
 - Added support for Excel file formats (.xls, .xlsx)
@@ -66,22 +103,28 @@
 - Improved error reporting for failed imports
 - Added notes schema to Claim model with type categorization
 - Added support for source tracking in imported notes
+- Enhanced Mongoose schema configuration with strict mode and proper timestamps
+- Improved claim update process to properly track modification times
+- Added color contrast calculation utilities
+- Enhanced status middleware for better query handling
+- Improved Mongoose schema configuration
+- Added better type checking for status values
+- Enhanced PDFKit configuration for better document handling
+- Improved PDF generation with async/await pattern
+- Added helper functions for consistent PDF formatting
 
 ### Documentation
 - Added technical documentation for claim number generation
 - Updated API documentation for claim creation
 - Added migration script documentation
 - Added troubleshooting guides for claim number issues
+- Added documentation for timestamp handling in claims
+- Added documentation for status color handling
+- Updated dashboard component documentation
 
 ### Dependencies
 - No new dependencies added
 - Utilizing existing MongoDB features for atomic operations
-
-### Migration
-- Added initialize-claim-numbers.js migration script
-- Added safety checks in migration process
-- Added detailed logging for migration tracking
-- Added rollback capability for failed migrations
 
 ## [1.4.40] - 2025-1-06 (Commit: d33099f)
 

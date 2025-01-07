@@ -291,6 +291,9 @@ const ClaimSchema = new Schema({
             default: null
         }
     }]
+}, {
+    timestamps: true, // This should be true
+    strict: true // Enforce schema validation
 });
 
 // Add a pre-save middleware to generate sequential claim numbers
@@ -345,6 +348,106 @@ ClaimSchema.post('save', function(doc, next) {
         next();
     }
 });
+
+// Update the pre-save middleware for status conversion
+ClaimSchema.pre('save', async function(next) {
+    try {
+        // Skip if status is already an ObjectId
+        if (this.status instanceof mongoose.Types.ObjectId) {
+            return next();
+        }
+
+        const Status = mongoose.model('Status');
+        
+        // If status is a string, try to find matching status
+        if (typeof this.status === 'string') {
+            const status = await Status.findOne({ 
+                name: { $regex: new RegExp(`^${this.status}$`, 'i') }
+            });
+            
+            if (status) {
+                this.status = status._id;
+            } else {
+                // If no matching status found, use default 'Open' status
+                const openStatus = await Status.findOne({ name: 'Open' });
+                if (!openStatus) {
+                    throw new Error('Default Open status not found');
+                }
+                this.status = openStatus._id;
+            }
+        } else if (!this.status) {
+            // If no status set, use default 'Open' status
+            const openStatus = await Status.findOne({ name: 'Open' });
+            if (!openStatus) {
+                throw new Error('Default Open status not found');
+            }
+            this.status = openStatus._id;
+        }
+        
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Update the query middleware to handle string status values
+ClaimSchema.pre(['find', 'findOne', 'countDocuments'], async function(next) {
+    try {
+        // Only process if there's a status condition and it's a string
+        if (this._conditions.status && typeof this._conditions.status === 'string') {
+            const Status = mongoose.model('Status');
+            const status = await Status.findOne({ 
+                name: { $regex: new RegExp(`^${this._conditions.status}$`, 'i') }
+            });
+            
+            if (status) {
+                this._conditions.status = status._id;
+            } else {
+                // If no matching status found, use a non-existent ObjectId
+                // This ensures the query returns no results rather than throwing an error
+                this._conditions.status = new mongoose.Types.ObjectId();
+            }
+        }
+        next();
+    } catch (error) {
+        console.error('Error in status query middleware:', error);
+        next(error);
+    }
+});
+
+// Add virtual for status name
+ClaimSchema.virtual('statusName').get(async function() {
+    try {
+        if (this.status instanceof mongoose.Types.ObjectId) {
+            const Status = mongoose.model('Status');
+            const status = await Status.findById(this.status);
+            return status ? status.name : 'Unknown';
+        }
+        return typeof this.status === 'string' ? this.status : 'Unknown';
+    } catch (error) {
+        console.error('Error getting status name:', error);
+        return 'Unknown';
+    }
+});
+
+// Ensure virtuals are included in JSON
+ClaimSchema.set('toJSON', { virtuals: true });
+ClaimSchema.set('toObject', { virtuals: true });
+
+// Add this method to help with status conversion
+ClaimSchema.methods.getStatusName = async function() {
+    try {
+        if (this.status instanceof mongoose.Types.ObjectId) {
+            const Status = mongoose.model('Status');
+            const status = await Status.findById(this.status);
+            return status ? status.name : 'Unknown';
+        }
+        return typeof this.status === 'string' ? this.status : 'Unknown';
+    } catch (error) {
+        console.error('Error getting status name:', error);
+        return 'Unknown';
+    }
+};
 
 // Create a model from the schema
 const Claim = mongoose.model('Claim', ClaimSchema);

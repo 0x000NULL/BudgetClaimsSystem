@@ -128,118 +128,232 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
     logRequest(req, `Exporting claim to PDF with ID: ${claimId}`);
 
     try {
-        const claim = await Claim.findById(claimId);
+        const claim = await Claim.findById(claimId)
+            .populate('status')
+            .populate('rentingLocation')
+            .populate('damageType');
+
         if (!claim) {
             logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Claim not found' });
         }
 
-        const doc = new PDFDocument();
+        const doc = new PDFDocument({ autoFirstPage: true, margin: 50 });
         const filename = `claim_${claimId}.pdf`;
         res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.setHeader('Content-Type', 'application/pdf');
 
         doc.pipe(res);
 
-        doc.text('Claim Report', { align: 'center' });
-        doc.text(`MVA: ${claim.mva}`);
-        doc.text(`Customer Name: ${claim.customerName}`);
-        doc.text(`Customer Number: ${claim.customerNumber}`);
-        doc.text(`Customer Email: ${claim.customerEmail}`);
-        doc.text(`Customer Address: ${claim.customerAddress}`);
-        doc.text(`Customer Drivers License: ${claim.customerDriversLicense}`);
-        doc.text(`Car Make: ${claim.carMake}`);
-        doc.text(`Car Model: ${claim.carModel}`);
-        doc.text(`Car Year: ${claim.carYear}`);
-        doc.text(`Car Color: ${claim.carColor}`);
-        doc.text(`Car VIN: ${claim.carVIN}`);
-        doc.text(`Accident Date: ${claim.accidentDate ? new Date(claim.accidentDate).toLocaleDateString() : ''}`);
-        doc.text(`Billable: ${claim.billable}`);
-        doc.text(`Is Renter At Fault: ${claim.isRenterAtFault}`);
-        doc.text(`Damages Total: ${claim.damagesTotal}`);
-        doc.text(`Body Shop Name: ${claim.bodyShopName}`);
-        doc.text(`RA Number: ${claim.raNumber}`);
-        doc.text(`Insurance Carrier: ${claim.insuranceCarrier}`);
-        doc.text(`Insurance Agent: ${claim.insuranceAgent}`);
-        doc.text(`Insurance Phone Number: ${claim.insurancePhoneNumber}`);
-        doc.text(`Insurance Fax Number: ${claim.insuranceFaxNumber}`);
-        doc.text(`Insurance Address: ${claim.insuranceAddress}`);
-        doc.text(`Insurance Claim Number: ${claim.insuranceClaimNumber}`);
-        doc.text(`Third Party Name: ${claim.thirdPartyName}`);
-        doc.text(`Third Party Phone Number: ${claim.thirdPartyPhoneNumber}`);
-        doc.text(`Third Party Insurance Name: ${claim.thirdPartyInsuranceName}`);
-        doc.text(`Third Party Policy Number: ${claim.thirdPartyPolicyNumber}`);
-        doc.text(`Renting Location: ${claim.rentingLocation}`);
-        doc.text(`LDW Accepted: ${claim.ldwAccepted}`);
-        doc.text(`Police Department: ${claim.policeDepartment}`);
-        doc.text(`Police Report Number: ${claim.policeReportNumber}`);
-        doc.text(`Claim Close Date: ${claim.claimCloseDate ? new Date(claim.claimCloseDate).toLocaleDateString() : ''}`);
-        doc.text(`Vehicle Odometer: ${claim.vehicleOdometer}`);
-        doc.text(`Description: ${claim.description}`);
-        doc.text(`Damage Type: ${claim.damageType}`);
-        doc.text(`Status: ${claim.status}`);
-        doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
-        // New fields added to PDF export
-        doc.text(`Renters Liability Insurance: ${claim.rentersLiabilityInsurance}`);
-        doc.text(`Loss Damage Waiver: ${claim.lossDamageWaiver}`);
-        doc.moveDown();
-
-        // Ensure claim.files is defined
-        const files = claim.files || {};
-        /**
-         * An array of file category objects, each containing a title and an array of files.
-         * 
-         * @typedef {Object} FileCategory
-         * @property {string} title - The title of the file category.
-         * @property {Array} files - An array of files belonging to the category.
-         * 
-         * @type {FileCategory[]}
-         * @constant
-         * @default
-         * @example
-         * const fileCategories = [
-         *   { title: 'Incident Reports', files: [] },
-         *   { title: 'Correspondence', files: [] },
-         *   { title: 'Rental Agreement', files: [] },
-         *   { title: 'Police Report', files: [] },
-         *   { title: 'Invoices', files: [] },
-         *   { title: 'Photos', files: [] }
-         * ];
-         */
-        const fileCategories = [
-            { title: 'Incident Reports', files: files.incidentReports || [] },
-            { title: 'Correspondence', files: files.correspondence || [] },
-            { title: 'Rental Agreement', files: files.rentalAgreement || [] },
-            { title: 'Police Report', files: files.policeReport || [] },
-            { title: 'Invoices', files: files.invoices || [] },
-            { title: 'Photos', files: files.photos || [] }
-        ];
-
-        for (const category of fileCategories) {
-            doc.text(`${category.title}:`);
-            for (const file of category.files) {
-                doc.text(file);
-                const filePath = path.join(__dirname, '../public/uploads', file);
-                try {
-                    if (file.match(/\.(png|jpg|jpeg)$/i)) {
-                        doc.image(filePath, { fit: [250, 300], align: 'center' });
-                    } else if (file.match(/\.pdf$/i)) {
-                        doc.addPage().text(`Embedded PDF: ${file}`, { align: 'center' });
-                        doc.file(filePath);
-                        doc.fileAttachmentAnnotation(250, 300, 100, 50, filePath, { description: `Embedded PDF: ${file}` });
-                    } else {
-                        doc.text('Unsupported file format for embedding. Click link to access: ');
-                        doc.text(`${filePath}`, { link: filePath });
-                    }
-                } catch (error) {
-                    logRequest(req, 'Error adding file to PDF:', { error });
-                    doc.text('Error loading file.');
-                }
-                doc.moveDown();
+        // Helper function to add a field to the PDF
+        const addField = (label, value) => {
+            let displayValue = value;
+            if (value === undefined || value === null || value === '') {
+                displayValue = 'Not Provided';
+            } else if (typeof value === 'boolean') {
+                displayValue = value ? 'Yes' : 'No';
             }
+            doc.text(`${label}: ${displayValue}`, { continued: false });
+            doc.moveDown(0.5);
+        };
+
+        // Helper function to add a section header
+        const addSectionHeader = (title) => {
+            doc.moveDown();
+            doc.fontSize(16).text(title, { underline: true });
+            doc.moveDown();
+            doc.fontSize(12);
+        };
+
+        // Title Page
+        doc.fontSize(24).text('Claim Report', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(16).text(`Claim #${claim.claimNumber}`, { align: 'center' });
+        doc.moveDown();
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' });
+        doc.moveDown(2);
+
+        // Table of Contents
+        doc.fontSize(14).text('Table of Contents', { underline: true });
+        doc.moveDown();
+        doc.fontSize(12);
+        const sections = [
+            'Claim Overview',
+            'Customer Information',
+            'Vehicle Information',
+            'Accident Details',
+            'Insurance Information',
+            'Third Party Information',
+            'Financial Information',
+            'Notes and Comments',
+            'Attached Documents'
+        ];
+        sections.forEach((section, index) => {
+            doc.text(`${index + 1}. ${section}`);
+            doc.moveDown(0.5);
+        });
+
+        // Claim Overview
+        doc.addPage();
+        addSectionHeader('1. Claim Overview');
+        addField('Claim Number', claim.claimNumber);
+        addField('MVA', claim.mva);
+        addField('Status', claim.status ? claim.status.name : 'Not Set');
+        addField('Date Created', new Date(claim.date).toLocaleDateString());
+        addField('Claim Close Date', claim.claimCloseDate ? new Date(claim.claimCloseDate).toLocaleDateString() : 'Not Closed');
+        addField('Description', claim.description);
+
+        // Customer Information
+        doc.addPage();
+        addSectionHeader('2. Customer Information');
+        addField('Customer Name', claim.customerName);
+        addField('Customer Number', claim.customerNumber);
+        addField('Customer Email', claim.customerEmail);
+        addField('Customer Phone', claim.customerPhone);
+        addField('Customer Address', claim.customerAddress);
+        addField('Customer Drivers License', claim.customerDriversLicense);
+
+        // Vehicle Information
+        doc.addPage();
+        addSectionHeader('3. Vehicle Information');
+        addField('Car Make', claim.carMake);
+        addField('Car Model', claim.carModel);
+        addField('Car Year', claim.carYear);
+        addField('Car Color', claim.carColor);
+        addField('Car VIN', claim.carVIN);
+        addField('Vehicle Odometer', claim.vehicleOdometer);
+        addField('RA Number', claim.raNumber);
+        addField('Renting Location', claim.rentingLocation ? claim.rentingLocation.name : 'Not Specified');
+
+        // Accident Details
+        doc.addPage();
+        addSectionHeader('4. Accident Details');
+        addField('Accident Date', claim.accidentDate ? new Date(claim.accidentDate).toLocaleDateString() : 'Not Specified');
+        addField('Damage Type', claim.damageType ? claim.damageType.name : 'Not Specified');
+        addField('Police Department', claim.policeDepartment);
+        addField('Police Report Number', claim.policeReportNumber);
+        addField('Is Renter At Fault', claim.isRenterAtFault);
+        addField('Body Shop Name', claim.bodyShopName);
+        addField('Description of Damage', claim.description);
+
+        // Insurance Information
+        doc.addPage();
+        addSectionHeader('5. Insurance Information');
+        addField('Insurance Carrier', claim.insuranceCarrier);
+        addField('Insurance Agent', claim.insuranceAgent);
+        addField('Insurance Phone Number', claim.insurancePhoneNumber);
+        addField('Insurance Fax Number', claim.insuranceFaxNumber);
+        addField('Insurance Address', claim.insuranceAddress);
+        addField('Insurance Claim Number', claim.insuranceClaimNumber);
+        addField('Renters Liability Insurance', claim.rentersLiabilityInsurance);
+        addField('Loss Damage Waiver', claim.lossDamageWaiver);
+        addField('LDW Accepted', claim.ldwAccepted);
+
+        // Third Party Information
+        doc.addPage();
+        addSectionHeader('6. Third Party Information');
+        addField('Third Party Name', claim.thirdPartyName);
+        addField('Third Party Phone Number', claim.thirdPartyPhoneNumber);
+        addField('Third Party Insurance Name', claim.thirdPartyInsuranceName);
+        addField('Third Party Policy Number', claim.thirdPartyPolicyNumber);
+
+        // Financial Information
+        doc.addPage();
+        addSectionHeader('7. Financial Information');
+        addField('Billable', claim.billable);
+        addField('Damages Total', claim.damagesTotal ? `$${claim.damagesTotal}` : 'Not Specified');
+        if (claim.invoiceTotals && claim.invoiceTotals.length > 0) {
+            doc.moveDown();
+            doc.text('Invoice Totals:', { underline: true });
+            claim.invoiceTotals.forEach(invoice => {
+                doc.text(`- ${invoice.fileName}: $${invoice.total}`);
+            });
         }
 
+        // Notes and Comments
+        doc.addPage();
+        addSectionHeader('8. Notes and Comments');
+        if (claim.notes && claim.notes.length > 0) {
+            claim.notes.forEach((note, index) => {
+                doc.text(`Note ${index + 1}:`);
+                doc.text(`Date: ${new Date(note.createdAt).toLocaleString()}`);
+                doc.text(`Type: ${note.type}`);
+                doc.text(`Content: ${note.content}`);
+                doc.moveDown();
+            });
+        } else {
+            doc.text('No notes available');
+        }
+
+        // Attached Documents
+        doc.addPage();
+        addSectionHeader('9. Attached Documents');
+        const files = claim.files || {};
+        const fileCategories = [
+            { title: 'Photos', files: files.photos || [] },
+            { title: 'Documents', files: files.documents || [] },
+            { title: 'Invoices', files: files.invoices || [] },
+            { title: 'Police Reports', files: files.policeReports || [] },
+            { title: 'Rental Agreements', files: files.rentalAgreements || [] }
+        ];
+
+        fileCategories.forEach(category => {
+            if (category.files.length > 0) {
+                doc.moveDown();
+                doc.fontSize(16).text(category.title, { underline: true });
+                doc.fontSize(12);
+                
+                category.files.forEach((file, index) => {
+                    const filePath = path.join(__dirname, '../public/uploads', file);
+                    try {
+                        if (file.match(/\.(png|jpg|jpeg)$/i)) {
+                            // Start a new page for each image
+                            if (index > 0) {
+                                doc.addPage();
+                            }
+                            
+                            // Add image title
+                            doc.fontSize(14).text(file, { align: 'center' });
+                            doc.moveDown();
+                            
+                            // Add image with consistent sizing
+                            doc.image(filePath, {
+                                fit: [500, 600],
+                                align: 'center'
+                            });
+                            
+                            // Add page number for photos
+                            doc.fontSize(10)
+                                .text(
+                                    `Photo ${index + 1} of ${category.files.length}`,
+                                    { align: 'center' }
+                                );
+
+                            // Add a new page after the last photo in the category
+                            if (index === category.files.length - 1) {
+                                doc.addPage();
+                            }
+                        } else {
+                            // For non-image files
+                            doc.fontSize(12).text(`- ${file}`);
+                            doc.moveDown(0.5);
+                        }
+                    } catch (error) {
+                        doc.fontSize(12).text(`Error processing file: ${file}`);
+                        logRequest(req, 'Error processing file:', { error, file });
+                        doc.moveDown();
+                    }
+                });
+            } else {
+                doc.moveDown();
+                doc.fontSize(14).text(`${category.title}: No files attached`);
+                doc.fontSize(12);
+            }
+            doc.moveDown(2);
+        });
+
         doc.end();
+
     } catch (err) {
         logRequest(req, 'Error exporting claim to PDF:', { error: err });
         res.status(500).render('500', { message: 'Internal Server Error' });
@@ -333,11 +447,7 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
         const totalPages = Math.ceil(totalClaims / resultsPerPage);
 
         const claims = await Claim.find(filter)
-            .populate({
-                path: 'status',
-                model: 'Status',
-                select: 'name'
-            })
+            .populate('status')
             .skip(skip)
             .limit(resultsPerPage)
             .lean();
@@ -548,15 +658,15 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
             return res.render('500', { message: 'Claim not found' });
         }
 
-        const updateData = { ...req.body };
+        const updateData = { 
+            ...req.body,
+            updatedAt: new Date() // Explicitly set updatedAt to current time
+        };
         let notes = [];
 
         // Process existing notes
         if (claim.notes && claim.notes.length > 0) {
-            // Get array of deleted note IDs
             const deletedNotes = updateData.deletedNotes ? JSON.parse(updateData.deletedNotes) : [];
-            
-            // Keep notes that weren't deleted
             notes = claim.notes.filter(note => !deletedNotes.includes(note._id.toString()));
         }
 
@@ -575,7 +685,7 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
                         content: newNote.content,
                         type: newNote.type || 'user',
                         source: newNote.source || null,
-                        createdAt: new Date(newNote.createdAt || Date.now()),
+                        createdAt: new Date(), // Use current time for new note
                         createdBy: req.user ? req.user._id : null
                     });
                 }
@@ -593,15 +703,24 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
         delete updateData['newNotes[]'];
         delete updateData.deletedNotes;
 
-        // Update the claim
+        // Update the claim with timestamps option
         const updatedClaim = await Claim.findByIdAndUpdate(
             claimId,
             updateData,
-            { new: true }
+            { 
+                new: true,
+                timestamps: true // Ensure timestamps are updated
+            }
         );
 
+        // Log the update
+        logger.info('Claim updated:', {
+            claimId: updatedClaim._id,
+            updatedAt: updatedClaim.updatedAt,
+            status: updatedClaim.status
+        });
+
         await notifyClaimStatusUpdate(req.user.email, updatedClaim);
-        logger.info('Claim updated successfully:', updatedClaim._id);
         
         // Redirect back to the claim view
         res.redirect(`/claims/${updatedClaim._id}`);
