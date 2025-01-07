@@ -145,7 +145,7 @@ mongoose.connect(process.env.MONGO_URI, {})
 
 // Middleware setup
 app.use(express.json()); // Parse incoming JSON requests
-app.use(express.urlencoded({ extended: false })); // Parse URL-encoded bodies
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 app.use(cors()); // Enable CORS
 app.use(fileUpload({
     createParentPath: true,
@@ -327,6 +327,12 @@ app.use('/import', (req, res, next) => {
     pinoLogger.info('Accessing import route');
     next();
 }, require('./routes/import')); // Import functionality routes
+
+// Add this for debugging
+app.use((req, res, next) => {
+    console.log('Request received:', req.method, req.url);
+    next();
+});
 
 // Start the server and listen on the specified port
 const PORT = process.env.PORT || 5000; // Use the port from environment variables or default to 5000

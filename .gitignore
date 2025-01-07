@@ -16,6 +16,8 @@ public/uploads
 # Exports directory
 exports/
 
+#Temp files
+_TEMP/
 # .env file
 .env
 
