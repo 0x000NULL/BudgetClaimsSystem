@@ -90,23 +90,25 @@ router.get('/dashboard', ensureAuthenticated, async (req, res) => {
             ])
         );
 
-        // Get status IDs for counts
-        const openStatus = statusMap.get('open');
-        const inProgressStatus = statusMap.get('in progress');
-        const closedStatus = statusMap.get('closed');
+        // Get status IDs for different categories
+        const openStatusId = statusMap.get('open')?.id;
+        const closedStatusId = statusMap.get('closed')?.id;
+        const cancelledStatusId = statusMap.get('cancelled')?.id;
+        const deniedStatusId = statusMap.get('denied')?.id;
+
+        // Create arrays for status groupings
+        const closedStatuses = [closedStatusId, cancelledStatusId, deniedStatusId].filter(Boolean);
 
         // Get counts and recent claims in parallel
         const [
             totalClaims,
             openClaims,
-            inProgressClaims,
             closedClaims,
             recentClaims
         ] = await Promise.all([
             Claim.countDocuments(),
-            openStatus ? Claim.countDocuments({ status: openStatus.id }) : 0,
-            inProgressStatus ? Claim.countDocuments({ status: inProgressStatus.id }) : 0,
-            closedStatus ? Claim.countDocuments({ status: closedStatus.id }) : 0,
+            openStatusId ? Claim.countDocuments({ status: openStatusId }) : 0,
+            closedStatuses.length > 0 ? Claim.countDocuments({ status: { $in: closedStatuses } }) : 0,
             Claim.find()
                 .sort({ updatedAt: -1 })
                 .limit(5)
@@ -114,6 +116,14 @@ router.get('/dashboard', ensureAuthenticated, async (req, res) => {
                 .lean()
                 .exec()
         ]);
+
+        // Ensure we have valid numbers for calculations
+        const validOpenClaims = Number(openClaims) || 0;
+        const validClosedClaims = Number(closedClaims) || 0;
+        const validTotalClaims = Number(totalClaims) || 0;
+
+        // Calculate pending claims (all claims that are not open or closed)
+        const pendingClaims = Math.max(0, validTotalClaims - (validOpenClaims + validClosedClaims));
 
         // Transform claims with better null handling
         const transformedClaims = recentClaims.map(claim => ({
@@ -123,26 +133,28 @@ router.get('/dashboard', ensureAuthenticated, async (req, res) => {
             updatedAt: claim.updatedAt,
             status: {
                 name: claim.status?.name || 'Pending',
-                color: claim.status?.color || '#6c757d', // Default gray color
+                color: claim.status?.color || '#6c757d',
                 description: claim.status?.description || 'Status pending',
                 textColor: claim.status?.color ? getContrastColor(claim.status.color) : '#ffffff'
             }
         }));
 
-        // Add debug logging to help troubleshoot
+        // Add debug logging
         pinoLogger.debug({
-            message: 'Dashboard recent claims',
-            recentClaimsCount: recentClaims.length,
-            transformedClaimsCount: transformedClaims.length,
-            sampleClaim: transformedClaims[0]
+            message: 'Dashboard statistics',
+            totalClaims: validTotalClaims,
+            openClaims: validOpenClaims,
+            pendingClaims,
+            closedClaims: validClosedClaims,
+            recentClaimsCount: recentClaims.length
         });
 
         res.render('dashboard', {
             title: 'Dashboard',
-            totalClaims,
-            openClaims,
-            inProgressClaims,
-            closedClaims,
+            totalClaims: validTotalClaims,
+            openClaims: validOpenClaims,
+            pendingClaims,
+            closedClaims: validClosedClaims,
             recentClaims: transformedClaims,
             user: req.user
         });

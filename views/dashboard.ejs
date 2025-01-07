@@ -185,8 +185,8 @@
                 <div class="stat-number"><%= openClaims %></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">In Progress</div>
-                <div class="stat-number"><%= inProgressClaims %></div>
+                <div class="stat-label">Pending Claims</div>
+                <div class="stat-number"><%= typeof pendingClaims !== 'undefined' ? pendingClaims : 0 %></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Closed Claims</div>
