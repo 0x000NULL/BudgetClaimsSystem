@@ -52,6 +52,7 @@ const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
 const pdfkit = require('pdfkit'); // Import PDFKit for PDF export
 const csv = require('csv-express'); // Import csv-express for CSV export
 const pinoLogger = require('../logger'); // Import Pino logger
+const ReportTemplate = require('../models/ReportTemplate');
 
 const router = express.Router(); // Create a new router
 
@@ -167,6 +168,97 @@ router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']),
     } catch (err) {
         logRequest(req, 'Error generating report:', { error: err });
         res.status(500).json({ error: err.message }); // Respond with an error for any exceptions
+    }
+});
+
+// Add new route for custom report templates
+router.get('/templates', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const templates = await ReportTemplate.find({
+            $or: [
+                { 'accessControl.roles': { $in: req.user.roles } },
+                { 'accessControl.users': req.user._id },
+                { creator: req.user._id }
+            ]
+        }).populate('creator', 'email name');
+        
+        res.render('report_templates', { 
+            templates,
+            title: 'Report Templates - Budget Claims System'
+        });
+    } catch (err) {
+        logRequest(req, 'Error fetching report templates:', { error: err });
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add new route for the template builder interface
+router.get('/builder', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
+    res.render('report_builder', { 
+        title: 'Report Builder - Budget Claims System'
+    });
+});
+
+// Add API endpoint to save report template
+router.post('/templates', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const template = new ReportTemplate({
+            ...req.body,
+            creator: req.user._id,
+            updatedAt: new Date()
+        });
+        
+        await template.save();
+        logRequest(req, 'Report template created:', { templateId: template._id });
+        res.json(template);
+    } catch (err) {
+        logRequest(req, 'Error creating report template:', { error: err });
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a report template
+router.delete('/templates/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const template = await ReportTemplate.findById(req.params.id);
+        
+        // Check if user has permission to delete the template
+        if (!template) {
+            return res.status(404).json({ error: 'Template not found' });
+        }
+        
+        if (template.creator.toString() !== req.user._id.toString() && 
+            !req.user.roles.includes('admin')) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+        
+        await template.remove();
+        logRequest(req, 'Report template deleted:', { templateId: req.params.id });
+        res.json({ message: 'Template deleted successfully' });
+    } catch (err) {
+        logRequest(req, 'Error deleting report template:', { error: err });
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Generate a report from a template
+router.post('/generate/:templateId', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const template = await ReportTemplate.findById(req.params.templateId);
+        if (!template) {
+            return res.status(404).json({ error: 'Template not found' });
+        }
+
+        // Generate the report based on the template configuration
+        // This is where you'd implement the actual report generation logic
+        // using the template's fields, charts, and conditions
+
+        const format = req.query.format || 'pdf';
+        // ... existing report generation logic ...
+
+    } catch (err) {
+        logRequest(req, 'Error generating report from template:', { error: err });
+        res.status(500).json({ error: err.message });
     }
 });
 
