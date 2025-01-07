@@ -524,36 +524,73 @@ router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res
 // POST /claims - Add a new claim
 router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, res) => {
     try {
-        // Log the incoming request data (excluding sensitive info)
-        logger.info('Creating new claim with data:', {
-            ...req.body,
-            // Exclude any sensitive fields if present
-            customerDriversLicense: req.body.customerDriversLicense ? '[REDACTED]' : undefined,
-            // Add other sensitive fields to redact as needed
+        // Clean and validate the data before creating claim
+        const cleanedData = { ...req.body };
+
+        // Handle damagesTotal - convert "unknown" to null or remove if invalid
+        if (cleanedData.damagesTotal) {
+            if (cleanedData.damagesTotal === 'unknown' || isNaN(cleanedData.damagesTotal)) {
+                delete cleanedData.damagesTotal; // Remove the field if it's invalid
+            } else {
+                cleanedData.damagesTotal = Number(cleanedData.damagesTotal); // Convert to number
+            }
+        }
+
+        // Find or create the "Open" status
+        let openStatus = await Status.findOne({ name: 'Open' });
+        if (!openStatus) {
+            openStatus = await Status.create({ name: 'Open' });
+            logger.info('Created default Open status:', { statusId: openStatus._id });
+        }
+
+        // Handle status - if it's an array, take the first value
+        let statusToUse;
+        if (cleanedData.status) {
+            const statusName = Array.isArray(cleanedData.status) ? cleanedData.status[0] : cleanedData.status;
+            const foundStatus = await Status.findOne({ name: statusName });
+            statusToUse = foundStatus ? foundStatus._id : openStatus._id;
+        } else {
+            statusToUse = openStatus._id;
+        }
+
+        logger.info('Status to be used:', {
+            providedStatus: cleanedData.status,
+            resolvedStatus: statusToUse
         });
 
-        // Create new claim without specifying claim number
-        const newClaim = new Claim({
-            ...req.body,
-            createdBy: req.user._id
+        const claimData = {
+            ...cleanedData,
+            status: statusToUse,
+            createdBy: req.user._id,
+            files: initializeFileCategories(),
+            notes: []
+        };
+
+        // Remove any invalid or unnecessary fields
+        ['status', 'damagesTotal'].forEach(field => {
+            if (claimData[field] === 'unknown' || claimData[field] === '') {
+                delete claimData[field];
+            }
         });
+
+        // Log the complete claim data before creation
+        logger.info('Attempting to create claim with data:', {
+            ...filterSensitiveData(claimData),
+            status: claimData.status
+        });
+
+        // Create new claim
+        const newClaim = new Claim(claimData);
         
-        // Save the claim (claim number will be generated automatically)
-        try {
-            await newClaim.save();
-            logger.info('New claim created successfully:', { 
-                claimId: newClaim._id,
-                claimNumber: newClaim.claimNumber
-            });
-        } catch (saveError) {
-            logger.error('Error saving new claim:', {
-                error: saveError.message,
-                stack: saveError.stack,
-                validationErrors: saveError.errors
-            });
-            throw saveError; // Re-throw to be caught by outer try-catch
-        }
+        // Save the claim
+        await newClaim.save();
         
+        logger.info('New claim created successfully:', { 
+            claimId: newClaim._id,
+            claimNumber: newClaim.claimNumber,
+            status: newClaim.status
+        });
+
         // Send notification
         try {
             await notifyNewClaim(req.user.email, newClaim);
@@ -582,7 +619,7 @@ router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, r
         logger.error('Error in claim creation:', {
             error: error.message,
             stack: error.stack,
-            body: req.body
+            body: filterSensitiveData(req.body)
         });
 
         // If this is an API request, send JSON error response
@@ -593,9 +630,13 @@ router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, r
                 details: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         } else {
-            // For regular form submissions, render error page
+            // For regular form submissions, render error page with appropriate message
+            const errorMessage = error.name === 'ValidationError' 
+                ? 'Please fill in all required fields'
+                : 'Error creating claim';
+                
             res.status(500).render('500', {
-                message: 'Error creating claim',
+                message: errorMessage,
                 error: process.env.NODE_ENV === 'development' ? error.message : undefined,
                 stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
