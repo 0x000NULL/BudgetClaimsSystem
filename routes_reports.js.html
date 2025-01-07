@@ -26,7 +26,7 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/**
+            <pre class="prettyprint source linenums"><code>    /**
  * @fileoverview This module defines routes for generating and downloading reports in various formats (CSV, Excel, PDF) 
  * for the Budget Claims System. It includes middleware for authentication, role-checking, and activity logging.
  * 
@@ -92,7 +92,7 @@ router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, re
 
 router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     try {
-        console.log('Report generation started');
+        console.log('\n=== Report Generation Started ===');
         console.log('Request body:', req.body);
         
         const { reportType, dateRange, startDate, endDate } = req.body;
@@ -109,52 +109,62 @@ router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']),
         console.log('MongoDB query:', query);
 
         // Fetch claims based on query
-        console.log('Fetching claims from database...');
+        console.log('\n=== Fetching Claims ===');
         const claims = await Claim.find(query)
-            .populate('status', 'name')
+            .populate({
+                path: 'status',
+                select: 'name color'
+            })
             .sort({ createdAt: -1 });
-        console.log(`Found ${claims.length} claims`);
         
-        // Log first claim as sample
+        console.log('\n=== Claims Data ===');
+        console.log('Total claims found:', claims.length);
+        
         if (claims.length > 0) {
-            console.log('Sample claim data:', {
-                mva: claims[0].mva,
-                customerName: claims[0].customerName,
-                description: claims[0].description,
-                status: claims[0].status,
-                date: claims[0].date,
-                damagesTotal: claims[0].damagesTotal
-            });
+            const firstClaim = claims[0];
+            console.log('\nFirst Claim Details:');
+            console.log('- Full claim:', JSON.stringify(firstClaim, null, 2));
+            console.log('- Status field:', firstClaim.status);
+            console.log('- Status type:', typeof firstClaim.status);
+            console.log('- Status name:', firstClaim.status?.name);
+            console.log('- Status ID:', firstClaim.status?._id);
+            
+            // Test if status is populated
+            console.log('\nStatus Population Check:');
+            console.log('- Is status defined?:', !!firstClaim.status);
+            console.log('- Is status an object?:', typeof firstClaim.status === 'object');
+            console.log('- Is status null?:', firstClaim.status === null);
+            console.log('- Status constructor:', firstClaim.status?.constructor?.name);
         }
 
-        // Define columns to match existing format
-        const columns = [
-            { header: 'mva', key: 'mva' },
-            { header: 'customerName', key: 'customerName' },
-            { header: 'description', key: 'description' },
-            { header: 'status', key: 'status._id' },
-            { header: 'date', key: 'date' },
-            { header: 'amount', key: 'damagesTotal' }
-        ];
-        console.log('Using columns:', columns);
+        // Helper function to format currency
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(amount || 0);
+        };
+
+        // Helper function to format notes more concisely
+        const formatNotes = (notes) => {
+            if (!notes || !Array.isArray(notes)) return '';
+            // Get the most recent note only
+            const latestNote = notes.sort((a, b) => b.createdAt - a.createdAt)[0];
+            return latestNote ? latestNote.content : '';
+        };
 
         switch (reportType) {
             case 'csv':
                 console.log('Generating CSV report...');
-                const csvData = claims.map(claim => {
-                    const row = {
-                        mva: claim.mva || '',
-                        customerName: claim.customerName || '',
-                        description: claim.description || '',
-                        status: claim.status?._id || '',
-                        date: claim.date ? new Date(claim.date).toLocaleDateString() : '',
-                        amount: claim.damagesTotal || 0
-                    };
-                    return row;
-                });
-                console.log('CSV data sample:', csvData[0]);
+                const csvData = claims.map(claim => ({
+                    'MVA #': claim.mva || '',
+                    'Customer Name': claim.customerName || '',
+                    'Latest Note': formatNotes(claim.notes),
+                    'Status': claim.status?.name || 'Unknown',
+                    'Date': claim.date ? new Date(claim.date).toLocaleDateString() : '',
+                    'Amount': formatCurrency(claim.damagesTotal)
+                }));
                 res.csv(csvData, true);
-                console.log('CSV report sent successfully');
                 break;
 
             case 'excel':
@@ -162,68 +172,106 @@ router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']),
                 const workbook = new ExcelJS.Workbook();
                 const worksheet = workbook.addWorksheet('Claims');
                 
-                // Add headers
-                worksheet.columns = columns.map(col => ({
-                    header: col.header,
-                    key: col.key,
-                    width: 15
-                }));
-                console.log('Excel headers added');
+                // Style the headers
+                worksheet.columns = [
+                    { header: 'MVA #', key: 'mva', width: 15 },
+                    { header: 'Customer Name', key: 'customerName', width: 25 },
+                    { header: 'Latest Note', key: 'notes', width: 40 },
+                    { header: 'Status', key: 'status', width: 15 },
+                    { header: 'Date', key: 'date', width: 15 },
+                    { header: 'Amount', key: 'amount', width: 15 }
+                ];
+
+                // Style the header row
+                worksheet.getRow(1).font = { bold: true };
+                worksheet.getRow(1).fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFE0E0E0' }
+                };
 
                 // Add data
-                claims.forEach((claim, index) => {
-                    const row = {
+                claims.forEach(claim => {
+                    worksheet.addRow({
                         mva: claim.mva || '',
                         customerName: claim.customerName || '',
-                        description: claim.description || '',
-                        status: claim.status?._id || '',
+                        notes: formatNotes(claim.notes),
+                        status: claim.status?.name || 'Unknown',
                         date: claim.date ? new Date(claim.date).toLocaleDateString() : '',
-                        amount: claim.damagesTotal || 0
-                    };
-                    worksheet.addRow(row);
-                    if (index === 0) console.log('First Excel row:', row);
+                        amount: formatCurrency(claim.damagesTotal)
+                    });
                 });
-                console.log(`Added ${claims.length} rows to Excel`);
+
+                // Auto-fit columns
+                worksheet.columns.forEach(column => {
+                    column.alignment = { wrapText: true };
+                });
 
                 res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
                 res.setHeader('Content-Disposition', 'attachment; filename=claims-report.xlsx');
                 await workbook.xlsx.write(res);
-                console.log('Excel report sent successfully');
                 break;
 
             case 'pdf':
                 console.log('Generating PDF report...');
-                const doc = new PDFDocument();
+                const doc = new PDFDocument({ margin: 50 });
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', 'attachment; filename=claims-report.pdf');
                 doc.pipe(res);
 
                 // Add title
-                doc.fontSize(16).text('Claims Report', { align: 'center' });
-                doc.moveDown();
-                console.log('PDF title added');
+                doc.fontSize(18).text('Claims Report', { align: 'center' });
+                doc.moveDown(2);
 
-                // Add headers
-                const headers = columns.map(col => col.header);
-                doc.fontSize(10).text(headers.join(', '));
-                doc.moveDown();
-                console.log('PDF headers added');
+                // Define table layout
+                const tableTop = 150;
+                const rowHeight = 30;
+                let currentY = tableTop;
 
-                // Add each claim
+                // Draw table headers
+                doc.fontSize(10).font('Helvetica-Bold');
+                const headers = ['MVA #', 'Customer Name', 'Latest Note', 'Status', 'Date', 'Amount'];
+                const colWidths = [60, 100, 180, 70, 70, 70];
+                let currentX = 50;
+
+                headers.forEach((header, i) => {
+                    doc.text(header, currentX, currentY, { width: colWidths[i] });
+                    currentX += colWidths[i];
+                });
+
+                // Draw rows
+                currentY += rowHeight;
+                doc.font('Helvetica');
+
                 claims.forEach((claim, index) => {
-                    const row = [
+                    if (currentY > 700) { // Start new page if near bottom
+                        doc.addPage();
+                        currentY = 50;
+                    }
+
+                    currentX = 50;
+                    const rowData = [
                         claim.mva || '',
                         claim.customerName || '',
-                        claim.description || '',
-                        claim.status?._id || '',
+                        formatNotes(claim.notes),
+                        claim.status?.name || 'Unknown',
                         claim.date ? new Date(claim.date).toLocaleDateString() : '',
-                        claim.damagesTotal || 0
+                        formatCurrency(claim.damagesTotal)
                     ];
-                    doc.text(row.join(', '));
-                    if (index === 0) console.log('First PDF row:', row);
+
+                    rowData.forEach((text, i) => {
+                        doc.text(text, currentX, currentY, {
+                            width: colWidths[i],
+                            height: rowHeight,
+                            ellipsis: true
+                        });
+                        currentX += colWidths[i];
+                    });
+
+                    currentY += rowHeight;
                 });
-                console.log(`Added ${claims.length} rows to PDF`);
 
                 doc.end();
-                console.log('PDF report sent successfully');
                 break;
 
             default:
@@ -255,7 +303,7 @@ module.exports = router;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Jan 07 2025 18:57:20 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Jan 07 2025 19:39:20 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
