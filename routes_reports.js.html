@@ -72,225 +72,173 @@
  * @param {Object} res - The Express response object.
  * @returns {Promise&lt;void>}
  */
-const express = require('express'); // Import Express to create a router
-const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
-const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
-const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
-const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
-const pdfkit = require('pdfkit'); // Import PDFKit for PDF export
-const csv = require('csv-express'); // Import csv-express for CSV export
-const pinoLogger = require('../logger'); // Import Pino logger
-const ReportTemplate = require('../models/ReportTemplate');
+const express = require('express');
+const router = express.Router();
+const Claim = require('../models/Claim');
+const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
+const multer = require('multer');
+const upload = multer();
+const csv = require('csv-express');
+const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
 
-const router = express.Router(); // Create a new router
-
-// Define sensitive fields that should not be logged
-const sensitiveFields = ['password', 'token', 'ssn'];
-
-// Function to filter out sensitive fields from the request body
-const filterSensitiveData = (data) => {
-    if (!data || typeof data !== 'object') {
-        return data;
-    }
-    
-    return Object.keys(data).reduce((filteredData, key) => {
-        if (sensitiveFields.includes(key)) {
-            filteredData[key] = '***REDACTED***'; // Mask the sensitive field
-        } else if (typeof data[key] === 'object') {
-            filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
-        } else {
-            filteredData[key] = data[key];
-        }
-        return filteredData;
-    }, {});
-};
-
-// Helper function to log requests with user and session info
-const logRequest = (req, message, extra = {}) => {
-    const { method, originalUrl, headers, body } = req;
-    const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
-
-    pinoLogger.info({
-        message, // Log message
-        user: req.user ? req.user.email : 'Unauthenticated', // Log user
-        ip: req.ip, // Log IP address
-        sessionId: req.sessionID, // Log session ID
-        timestamp: new Date().toISOString(), // Add a timestamp
-        method, // Log HTTP method
-        url: originalUrl, // Log originating URL
-        requestBody: filteredBody, // Log the filtered request body
-        headers // Log request headers
-    });
-};
-
-// Route to render the reports page
-// Only accessible to authenticated users with 'admin' or 'manager' roles
+// GET /reports - Render reports page
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
-    logRequest(req, 'Reports route accessed');
-    res.render('reports', { title: 'Reports - Budget Claims System' }); // Render the reports page
-});
-
-// Route to generate and download reports in various formats (CSV, Excel, PDF)
-// Only accessible to authenticated users with 'admin' or 'manager' roles
-router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    const { format, startDate, endDate } = req.body; // Extract report parameters from the request body
-    logRequest(req, 'Generating report with parameters:', { format, startDate, endDate });
-
-    // Build a filter object based on the provided date range
-    let filter = {};
-    if (startDate || endDate) {
-        filter.date = {};
-        if (startDate) filter.date.$gte = new Date(startDate); // Set the start date filter
-        if (endDate) filter.date.$lte = new Date(endDate); // Set the end date filter
-    }
-
-    try {
-        // Fetch claims from the database based on the filter
-        const claims = await Claim.find(filter).exec();
-        logRequest(req, 'Claims fetched for report:', { claims });
-
-        if (format === 'csv') {
-            // Export claims to CSV
-            logRequest(req, 'Exporting claims to CSV');
-            res.csv(claims, true); // Send CSV response
-        } else if (format === 'excel') {
-            // Export claims to Excel
-            logRequest(req, 'Exporting claims to Excel');
-            const workbook = new ExcelJS.Workbook(); // Create a new workbook
-            const worksheet = workbook.addWorksheet('Claims'); // Add a worksheet to the workbook
-            worksheet.columns = [
-                { header: 'MVA', key: 'mva', width: 10 },
-                { header: 'Customer Name', key: 'customerName', width: 30 },
-                { header: 'Description', key: 'description', width: 50 },
-                { header: 'Status', key: 'status', width: 10 },
-                { header: 'Date', key: 'date', width: 15 }
-            ]; // Define worksheet columns
-            claims.forEach(claim => {
-                worksheet.addRow(claim); // Add each claim as a row in the worksheet
-            });
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            res.setHeader('Content-Disposition', 'attachment; filename=claims.xlsx');
-            await workbook.xlsx.write(res); // Write the workbook to the response
-            res.end(); // End the response
-        } else if (format === 'pdf') {
-            // Export claims to PDF
-            logRequest(req, 'Exporting claims to PDF');
-            const doc = new pdfkit(); // Create a new PDF document
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', 'attachment; filename=claims.pdf');
-            doc.pipe(res); // Pipe the PDF document to the response
-            doc.text('Claims Report', { align: 'center' }); // Add a title to the PDF
-            claims.forEach(claim => {
-                doc.text(`MVA: ${claim.mva}`);
-                doc.text(`Customer Name: ${claim.customerName}`);
-                doc.text(`Description: ${claim.description}`);
-                doc.text(`Status: ${claim.status}`);
-                doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
-                doc.moveDown(); // Add space between claims
-            });
-            doc.end(); // Finalize the PDF document
-        } else {
-            logRequest(req, 'Invalid report format:', { format });
-            res.status(400).json({ msg: 'Invalid format' }); // Respond with an error for invalid formats
-        }
-    } catch (err) {
-        logRequest(req, 'Error generating report:', { error: err });
-        res.status(500).json({ error: err.message }); // Respond with an error for any exceptions
-    }
-});
-
-// Add new route for custom report templates
-router.get('/templates', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    try {
-        const templates = await ReportTemplate.find({
-            $or: [
-                { 'accessControl.roles': { $in: req.user.roles } },
-                { 'accessControl.users': req.user._id },
-                { creator: req.user._id }
-            ]
-        }).populate('creator', 'email name');
-        
-        res.render('report_templates', { 
-            templates,
-            title: 'Report Templates - Budget Claims System'
-        });
-    } catch (err) {
-        logRequest(req, 'Error fetching report templates:', { error: err });
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Add new route for the template builder interface
-router.get('/builder', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
-    res.render('report_builder', { 
-        title: 'Report Builder - Budget Claims System'
+    res.render('reports', { 
+        title: 'Reports',
+        user: req.user
     });
 });
 
-// Add API endpoint to save report template
-router.post('/templates', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     try {
-        const template = new ReportTemplate({
-            ...req.body,
-            creator: req.user._id,
-            updatedAt: new Date()
-        });
+        console.log('Report generation started');
+        console.log('Request body:', req.body);
         
-        await template.save();
-        logRequest(req, 'Report template created:', { templateId: template._id });
-        res.json(template);
-    } catch (err) {
-        logRequest(req, 'Error creating report template:', { error: err });
-        res.status(500).json({ error: err.message });
+        const { reportType, dateRange, startDate, endDate } = req.body;
+        console.log('Parameters:', { reportType, dateRange, startDate, endDate });
+        
+        // Build query based on date range
+        let query = {};
+        if (dateRange === 'custom') {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+        console.log('MongoDB query:', query);
+
+        // Fetch claims based on query
+        console.log('Fetching claims from database...');
+        const claims = await Claim.find(query)
+            .populate('status', 'name')
+            .sort({ createdAt: -1 });
+        console.log(`Found ${claims.length} claims`);
+        
+        // Log first claim as sample
+        if (claims.length > 0) {
+            console.log('Sample claim data:', {
+                mva: claims[0].mva,
+                customerName: claims[0].customerName,
+                description: claims[0].description,
+                status: claims[0].status,
+                date: claims[0].date,
+                damagesTotal: claims[0].damagesTotal
+            });
+        }
+
+        // Define columns to match existing format
+        const columns = [
+            { header: 'mva', key: 'mva' },
+            { header: 'customerName', key: 'customerName' },
+            { header: 'description', key: 'description' },
+            { header: 'status', key: 'status._id' },
+            { header: 'date', key: 'date' },
+            { header: 'amount', key: 'damagesTotal' }
+        ];
+        console.log('Using columns:', columns);
+
+        switch (reportType) {
+            case 'csv':
+                console.log('Generating CSV report...');
+                const csvData = claims.map(claim => {
+                    const row = {
+                        mva: claim.mva || '',
+                        customerName: claim.customerName || '',
+                        description: claim.description || '',
+                        status: claim.status?._id || '',
+                        date: claim.date ? new Date(claim.date).toLocaleDateString() : '',
+                        amount: claim.damagesTotal || 0
+                    };
+                    return row;
+                });
+                console.log('CSV data sample:', csvData[0]);
+                res.csv(csvData, true);
+                console.log('CSV report sent successfully');
+                break;
+
+            case 'excel':
+                console.log('Generating Excel report...');
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Claims');
+                
+                // Add headers
+                worksheet.columns = columns.map(col => ({
+                    header: col.header,
+                    key: col.key,
+                    width: 15
+                }));
+                console.log('Excel headers added');
+
+                // Add data
+                claims.forEach((claim, index) => {
+                    const row = {
+                        mva: claim.mva || '',
+                        customerName: claim.customerName || '',
+                        description: claim.description || '',
+                        status: claim.status?._id || '',
+                        date: claim.date ? new Date(claim.date).toLocaleDateString() : '',
+                        amount: claim.damagesTotal || 0
+                    };
+                    worksheet.addRow(row);
+                    if (index === 0) console.log('First Excel row:', row);
+                });
+                console.log(`Added ${claims.length} rows to Excel`);
+
+                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                res.setHeader('Content-Disposition', 'attachment; filename=claims-report.xlsx');
+                await workbook.xlsx.write(res);
+                console.log('Excel report sent successfully');
+                break;
+
+            case 'pdf':
+                console.log('Generating PDF report...');
+                const doc = new PDFDocument();
+                doc.pipe(res);
+
+                // Add title
+                doc.fontSize(16).text('Claims Report', { align: 'center' });
+                doc.moveDown();
+                console.log('PDF title added');
+
+                // Add headers
+                const headers = columns.map(col => col.header);
+                doc.fontSize(10).text(headers.join(', '));
+                doc.moveDown();
+                console.log('PDF headers added');
+
+                // Add each claim
+                claims.forEach((claim, index) => {
+                    const row = [
+                        claim.mva || '',
+                        claim.customerName || '',
+                        claim.description || '',
+                        claim.status?._id || '',
+                        claim.date ? new Date(claim.date).toLocaleDateString() : '',
+                        claim.damagesTotal || 0
+                    ];
+                    doc.text(row.join(', '));
+                    if (index === 0) console.log('First PDF row:', row);
+                });
+                console.log(`Added ${claims.length} rows to PDF`);
+
+                doc.end();
+                console.log('PDF report sent successfully');
+                break;
+
+            default:
+                console.error('Invalid report type:', reportType);
+                throw new Error('Invalid report type');
+        }
+
+    } catch (error) {
+        console.error('Report generation error:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).send('Error generating report');
     }
 });
 
-// Delete a report template
-router.delete('/templates/:id', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    try {
-        const template = await ReportTemplate.findById(req.params.id);
-        
-        // Check if user has permission to delete the template
-        if (!template) {
-            return res.status(404).json({ error: 'Template not found' });
-        }
-        
-        if (template.creator.toString() !== req.user._id.toString() &amp;&amp; 
-            !req.user.roles.includes('admin')) {
-            return res.status(403).json({ error: 'Unauthorized' });
-        }
-        
-        await template.remove();
-        logRequest(req, 'Report template deleted:', { templateId: req.params.id });
-        res.json({ message: 'Template deleted successfully' });
-    } catch (err) {
-        logRequest(req, 'Error deleting report template:', { error: err });
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Generate a report from a template
-router.post('/generate/:templateId', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    try {
-        const template = await ReportTemplate.findById(req.params.templateId);
-        if (!template) {
-            return res.status(404).json({ error: 'Template not found' });
-        }
-
-        // Generate the report based on the template configuration
-        // This is where you'd implement the actual report generation logic
-        // using the template's fields, charts, and conditions
-
-        const format = req.query.format || 'pdf';
-        // ... existing report generation logic ...
-
-    } catch (err) {
-        logRequest(req, 'Error generating report from template:', { error: err });
-        res.status(500).json({ error: err.message });
-    }
-});
-
-module.exports = router; // Export the router
+module.exports = router;
 </code></pre>
         </article>
     </section>
@@ -301,13 +249,13 @@ module.exports = router; // Export the router
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_customers.html">routes/customers</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_customers.html">routes/customers</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li><li><a href="global.html#toggleDateInputs">toggleDateInputs</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Jan 07 2025 04:54:18 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Jan 07 2025 18:57:20 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

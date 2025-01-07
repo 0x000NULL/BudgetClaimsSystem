@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: routes/users</title>
+    <title>JSDoc: Source: public/js/reports.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,134 +17,58 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: routes/users</h1>
+    <h1 class="page-title">Source: public/js/reports.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-        
-            
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description"><p>This module defines routes for user management in the Budget Claims System.
-It includes routes for user registration, login, logout, and user management (accessible only by admin).
-It also configures Passport.js for local authentication and integrates Pino logger for request logging.</p></div>
-        
-
-        
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="routes_users.js.html">routes/users.js</a>, <a href="routes_users.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-    
-    </div>
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Toggles the visibility of date input fields based on the selected date range
+ */
+function toggleDateInputs() {
+    const dateRange = document.getElementById('dateRange');
+    const dateInputs = document.getElementById('dateInputs');
+    dateInputs.style.display = dateRange.value === 'custom' ? 'block' : 'none';
+}
+
+/**
+ * Initialize the reports page functionality
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up initial state of date inputs
+    toggleDateInputs();
+
+    // Add form submission handler
+    const reportForm = document.querySelector('.report-form');
+    if (reportForm) {
+        reportForm.addEventListener('submit', function(e) {
+            const dateRange = document.getElementById('dateRange');
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+
+            if (dateRange.value === 'custom') {
+                // Validate date inputs
+                if (!startDate.value || !endDate.value) {
+                    e.preventDefault();
+                    alert('Please select both start and end dates for custom date range');
+                    return;
+                }
+
+                if (new Date(startDate.value) > new Date(endDate.value)) {
+                    e.preventDefault();
+                    alert('Start date must be before or equal to end date');
+                    return;
+                }
+            }
+        });
+    }
+}); </code></pre>
+        </article>
+    </section>
 
 
 
