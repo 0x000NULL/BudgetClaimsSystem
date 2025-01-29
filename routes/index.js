@@ -183,8 +183,15 @@ const logRequest = (req, message, extra = {}) => {
 };
 
 // Home page route
-router.get('/', ensureAuthenticated, (req, res) => {
-    res.redirect('/dashboard');
+router.get('/', (req, res) => {
+    logRequest(req, 'Landing page accessed');
+    res.render('landing', { title: 'Welcome - Budget Claims System' });
+});
+
+// Add landing page route explicitly as well
+router.get('/landing', (req, res) => {
+    logRequest(req, 'Landing page accessed');
+    res.render('landing', { title: 'Welcome - Budget Claims System' });
 });
 
 // Login page route

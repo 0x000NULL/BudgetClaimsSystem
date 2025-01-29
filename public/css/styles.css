@@ -1571,3 +1571,35 @@ select[multiple] option:first-child:checked {
 #dateInputs {
     margin-top: 1rem;
 }
+
+.landing-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 300px;
+    margin: 40px auto;
+}
+
+.landing-btn {
+    padding: 20px;
+    font-size: 1.2rem;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.landing-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.customer-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.employee-btn {
+    background-color: #28a745;
+    color: white;
+}
