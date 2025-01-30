@@ -90,6 +90,7 @@ const crypto = require('crypto'); // Module for generating cryptographic hash va
 const Settings = require('./models/Settings');
 const https = require('https');
 const fs = require('fs');
+const customerRoutes = require('./routes/customers');
 
 // Load environment variables from a .env file
 require('dotenv').config();
@@ -295,10 +296,7 @@ app.use('/feedback', (req, res, next) => {
     pinoLogger.info('Accessing feedback route');
     next();
 }, require('./routes/feedback')); // Feedback routes
-app.use('/customers', (req, res, next) => {
-    pinoLogger.info('Accessing customers route');
-    next();
-}, require('./routes/customers')); // Customer-related routes
+app.use('/customer', customerRoutes);
 app.use('/employee', (req, res, next) => {
     pinoLogger.info('Accessing employee route');
     next();

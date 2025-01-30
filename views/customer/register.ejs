@@ -4,31 +4,182 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Registration - Budget Claims System</title>
-    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <header>
-        <!-- Budget logo and navigation -->
+        <!-- Budget logo and page title -->
         <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
-        <h1>Customer Registration</h1>
+        <h1>Budget Claims System</h1>
     </header>
     <main>
-        <form action="/customer/register" method="POST">
-            <div>
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" required>
+        <h2>Customer Registration</h2>
+
+        <!-- Registration form -->
+        <form action="/customer/register" method="POST" class="registration-form">
+            <% if (typeof error !== 'undefined' && error.length > 0) { %>
+                <div class="error-message"><%= error[0] %></div>
+            <% } %>
+
+            <!-- Personal Information Section -->
+            <fieldset>
+                <legend>Personal Information</legend>
+                
+                <div class="form-group">
+                    <label for="firstName">First Name:</label>
+                    <input 
+                        type="text" 
+                        id="firstName" 
+                        name="firstName" 
+                        required 
+                        minlength="2"
+                        value="<%= typeof formData !== 'undefined' ? formData.firstName : '' %>"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="lastName">Last Name:</label>
+                    <input 
+                        type="text" 
+                        id="lastName" 
+                        name="lastName" 
+                        required 
+                        minlength="2"
+                        value="<%= typeof formData !== 'undefined' ? formData.lastName : '' %>"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        required
+                        pattern="^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$"
+                        title="Please enter a valid email address"
+                        value="<%= typeof formData !== 'undefined' ? formData.email : '' %>"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number:</label>
+                    <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone" 
+                        required
+                        pattern="^\+?[\d\s-]{10,}$"
+                        title="Please enter a valid phone number"
+                        value="<%= typeof formData !== 'undefined' ? formData.phone : '' %>"
+                    >
+                </div>
+            </fieldset>
+
+            <!-- Address Section -->
+            <fieldset>
+                <legend>Address Information</legend>
+
+                <div class="form-group">
+                    <label for="address">Street Address:</label>
+                    <input 
+                        type="text" 
+                        id="address" 
+                        name="address" 
+                        required
+                        value="<%= typeof formData !== 'undefined' ? formData.address : '' %>"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="city">City:</label>
+                    <input 
+                        type="text" 
+                        id="city" 
+                        name="city" 
+                        required
+                        value="<%= typeof formData !== 'undefined' ? formData.city : '' %>"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="state">State:</label>
+                    <select id="state" name="state" required>
+                        <option value="">Select a State</option>
+                        <!-- US States -->
+                        <option value="AL">Alabama</option>
+                        <option value="AK">Alaska</option>
+                        <!-- Add all other states -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="zipCode">ZIP Code:</label>
+                    <input 
+                        type="text" 
+                        id="zipCode" 
+                        name="zipCode" 
+                        required
+                        pattern="^\d{5}(-\d{4})?$"
+                        title="Please enter a valid ZIP code (e.g., 12345 or 12345-6789)"
+                        value="<%= typeof formData !== 'undefined' ? formData.zipCode : '' %>"
+                    >
+                </div>
+            </fieldset>
+
+            <!-- Password Section -->
+            <fieldset>
+                <legend>Security</legend>
+
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required
+                        minlength="8"
+                        pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+                        title="Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password:</label>
+                    <input 
+                        type="password" 
+                        id="confirmPassword" 
+                        name="confirmPassword" 
+                        required
+                        minlength="8"
+                    >
+                </div>
+            </fieldset>
+
+            <!-- Terms and Conditions -->
+            <div class="form-group checkbox">
+                <input type="checkbox" id="terms" name="terms" required>
+                <label for="terms">I agree to the <a href="/terms" target="_blank">Terms and Conditions</a></label>
             </div>
-            <div>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            <div>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit">Register</button><!-- Submit button for the form -->
+
+            <button type="submit" class="submit-button">Register</button>
         </form>
-        <p>Already have an account? <a href="/customer/login">Login here</a></p>
+
+        <p class="login-link">Already have an account? <a href="/customer/login">Login here</a></p>
     </main>
+
+    <script>
+        // Client-side password validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirmPassword');
+
+            if (password.value !== confirmPassword.value) {
+                e.preventDefault();
+                alert('Passwords do not match!');
+                return false;
+            }
+        });
+    </script>
 </body>
 </html>

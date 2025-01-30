@@ -91,11 +91,45 @@ const ensureRoles = function (roles) {
     };
 };
 
+/**
+ * Middleware to check if user is authenticated as a customer
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+const isCustomerAuthenticated = (req, res, next) => {
+    pinoLogger.info({
+        message: "isCustomerAuthenticated called",
+        user: req.user ? req.user.email : 'Unauthenticated',
+        ip: req.ip,
+        sessionId: req.sessionID
+    });
+
+    if (req.isAuthenticated() && req.user.role === 'customer') {
+        pinoLogger.info({
+            message: "Customer authenticated successfully",
+            user: req.user.email,
+            ip: req.ip,
+            sessionId: req.sessionID
+        });
+        return next();
+    }
+
+    pinoLogger.warn({
+        message: "Customer authentication failed",
+        ip: req.ip,
+        sessionId: req.sessionID
+    });
+    req.flash('error', 'Please log in to access this page');
+    res.redirect('/customer/login');
+};
+
 // Export the middleware functions
 module.exports = {
     ensureAuthenticated,
     ensureRole,
-    ensureRoles
+    ensureRoles,
+    isCustomerAuthenticated
 };
 
 pinoLogger.info("Auth middleware loaded"); // Log message indicating the middleware has been loaded

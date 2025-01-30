@@ -456,4 +456,10 @@ router.get('/settings', ensureAuthenticated, ensureRole('admin'), async (req, re
     }
 });
 
+// Terms and Conditions page route
+router.get('/terms', (req, res) => {
+    logRequest(req, 'Terms and Conditions page accessed'); // Log route access
+    res.render('terms', { title: 'Terms and Conditions - Budget Claims System' }); // Render the terms page
+});
+
 module.exports = router; // Export the router
