@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: models/Customer.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: models/Customer.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const pinoLogger = require('../logger');
+
+/**
+ * Customer Schema
+ * @typedef {Object} Customer
+ * @property {string} email - Customer's email address
+ * @property {string} password - Hashed password
+ * @property {string} firstName - Customer's first name
+ * @property {string} lastName - Customer's last name
+ * @property {string} phone - Customer's phone number
+ * @property {string} address - Customer's address
+ * @property {string} city - Customer's city
+ * @property {string} state - Customer's state
+ * @property {string} zipCode - Customer's ZIP code
+ * @property {string} role - User role (always 'customer')
+ * @property {Date} createdAt - Account creation date
+ * @property {Date} lastLogin - Last login date
+ * @property {boolean} isActive - Account status
+ */
+const CustomerSchema = new mongoose.Schema({
+    email: {
+        type: String,
+        required: [true, 'Email is required'],
+        unique: true,
+        lowercase: true,
+        trim: true,
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    },
+    password: {
+        type: String,
+        required: [true, 'Password is required'],
+        minlength: [8, 'Password must be at least 8 characters long']
+    },
+    firstName: {
+        type: String,
+        required: [true, 'First name is required'],
+        trim: true
+    },
+    lastName: {
+        type: String,
+        required: [true, 'Last name is required'],
+        trim: true
+    },
+    phone: {
+        type: String,
+        required: [true, 'Phone number is required'],
+        match: [/^\+?[\d\s-]{10,}$/, 'Please enter a valid phone number']
+    },
+    address: {
+        type: String,
+        required: [true, 'Address is required'],
+        trim: true
+    },
+    city: {
+        type: String,
+        required: [true, 'City is required'],
+        trim: true
+    },
+    state: {
+        type: String,
+        required: [true, 'State is required'],
+        trim: true,
+        uppercase: true,
+        minlength: 2,
+        maxlength: 2
+    },
+    zipCode: {
+        type: String,
+        required: [true, 'ZIP code is required'],
+        match: [/^\d{5}(-\d{4})?$/, 'Please enter a valid ZIP code']
+    },
+    role: {
+        type: String,
+        default: 'customer',
+        immutable: true
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+        immutable: true
+    },
+    lastLogin: {
+        type: Date,
+        default: Date.now
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
+}, {
+    timestamps: true
+});
+
+// Pre-save middleware to hash password
+CustomerSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) return next();
+    
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        pinoLogger.error({
+            message: 'Error hashing password',
+            error: error.message,
+            customerId: this._id
+        });
+        next(error);
+    }
+});
+
+// Method to compare password for login
+CustomerSchema.methods.comparePassword = async function(candidatePassword) {
+    try {
+        return await bcrypt.compare(candidatePassword, this.password);
+    } catch (error) {
+        pinoLogger.error({
+            message: 'Error comparing password',
+            error: error.message,
+            customerId: this._id
+        });
+        throw error;
+    }
+};
+
+// Method to update last login
+CustomerSchema.methods.updateLastLogin = async function() {
+    try {
+        this.lastLogin = new Date();
+        await this.save();
+    } catch (error) {
+        pinoLogger.error({
+            message: 'Error updating last login',
+            error: error.message,
+            customerId: this._id
+        });
+        throw error;
+    }
+};
+
+// Virtual for full name
+CustomerSchema.virtual('fullName').get(function() {
+    return `${this.firstName} ${this.lastName}`;
+});
+
+// Virtual for full address
+CustomerSchema.virtual('fullAddress').get(function() {
+    return `${this.address}, ${this.city}, ${this.state} ${this.zipCode}`;
+});
+
+// Ensure virtuals are included in JSON output
+CustomerSchema.set('toJSON', { virtuals: true });
+CustomerSchema.set('toObject', { virtuals: true });
+
+const Customer = mongoose.model('Customer', CustomerSchema);
+
+module.exports = Customer; </code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#isCustomerAuthenticated">isCustomerAuthenticated</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li><li><a href="global.html#toggleDateInputs">toggleDateInputs</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jan 30 2025 17:37:41 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
