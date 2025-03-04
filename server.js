@@ -322,9 +322,15 @@ app.use('/export', (req, res, next) => {
     next();
 }, exportRoutes); // Export functionality routes
 app.use('/import', (req, res, next) => {
-    pinoLogger.info('Accessing import route');
+    res.locals.nonce = crypto.randomBytes(16).toString('hex');
     next();
-}, require('./routes/import')); // Import functionality routes
+}, require('./routes/import'));
+
+// Add claim templates routes
+app.use('/claim-templates', (req, res, next) => {
+    res.locals.nonce = crypto.randomBytes(16).toString('hex');
+    next();
+}, require('./routes/claimTemplates'));
 
 // Add this for debugging
 app.use((req, res, next) => {

@@ -36,6 +36,9 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="/claims/search">Search Claims</a></li>
                             <li><a class="dropdown-item" href="/claims/add">Add Claim</a></li>
+                            <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'manager' || user.role === 'employee')) { %>
+                                <li><a class="dropdown-item" href="/claim-templates">Claim Templates</a></li>
+                            <% } %>
                         </ul>
                     </li>
                     <li class="nav-item">

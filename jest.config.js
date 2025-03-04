@@ -1,17 +1,33 @@
+/**
+ * @fileoverview Jest configuration for testing Budget Claims System
+ */
+
 module.exports = {
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['./jest.setup.js'],
-  modulePathIgnorePatterns: ['<rootDir>/dist/'],
+  testMatch: ['**/__tests__/**/*.test.js'],
   collectCoverage: true,
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov'],
-  testTimeout: 30000,
-  clearMocks: true,
-  resetMocks: true,
+  collectCoverageFrom: [
+    'routes/**/*.js',
+    'models/**/*.js',
+    'middleware/**/*.js',
+    '!**/node_modules/**',
+    '!**/vendor/**'
+  ],
+  coverageThreshold: {
+    global: {
+      statements: 80,
+      branches: 70,
+      functions: 80,
+      lines: 80
+    }
+  },
+  verbose: true,
+  testTimeout: 10000,
+  moduleFileExtensions: ['js', 'json'],
   restoreMocks: true,
-  moduleNameMapper: {
-    '^cache-manager-redis-store$': '<rootDir>/__mocks__/cache-manager-redis-store.js',
-    '^cache-manager$': '<rootDir>/__mocks__/cache-manager.js'
-  }
+  clearMocks: true,
+  resetMocks: false,
+  setupFilesAfterEnv: ['./__tests__/setup.js']
 };
   

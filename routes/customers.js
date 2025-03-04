@@ -4,7 +4,7 @@ const passport = require('passport');
 const { isCustomerAuthenticated } = require('../middleware/auth');
 const Customer = require('../models/Customer');
 const bcrypt = require('bcryptjs');
-const pinoLogger = require('..logger');
+const pinoLogger = require('../logger');
 const Claim = require('../models/Claim');
 
 /**

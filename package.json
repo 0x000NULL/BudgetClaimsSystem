@@ -18,7 +18,14 @@
     "test:integration": "jest --testMatch='**/*.integration.test.js'",
     "test:coverage": "jest --coverage --coverageReporters='text-summary'",
     "test:clear": "jest --clearCache",
-    "migrate:status": "node migrations/status-migration.js"
+    "migrate:status": "node migrations/status-migration.js",
+    "test:routes": "jest --testMatch='**/__tests__/routes/**/*.test.js'",
+    "test:routes:users": "jest --testMatch='**/__tests__/routes/users.test.js'",
+    "test:routes:claims": "jest --testMatch='**/__tests__/routes/claims.test.js'",
+    "test:routes:dashboard": "jest --testMatch='**/__tests__/routes/dashboard.test.js'",
+    "test:routes:api": "jest --testMatch='**/__tests__/routes/api.test.js'",
+    "test:routes:export": "jest --testMatch='**/__tests__/routes/export.test.js'",
+    "test:routes:customers": "jest --testMatch='**/__tests__/routes/customers.test.js'"
   },
   "dependencies": {
     "archiver": "^7.0.1",

@@ -1,4 +1,4 @@
-    /**
+/**
  * @fileoverview This module defines routes for generating and downloading reports in various formats (CSV, Excel, PDF) 
  * for the Budget Claims System. It includes middleware for authentication, role-checking, and activity logging.
  * 
@@ -54,21 +54,86 @@ const csv = require('csv-express');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 
-// GET /reports - Render reports page
+// GET /reports - Render reports dashboard page
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
-    res.render('reports', { 
-        title: 'Reports',
+    res.render('reports/index', { 
+        title: 'Reports Dashboard',
         user: req.user
     });
 });
 
+// GET /reports/status - Render status report page
+router.get('/status', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const claims = await Claim.find()
+            .populate('status')
+            .sort({ createdAt: -1 });
+            
+        res.render('reports/status', { 
+            title: 'Status Reports',
+            claims,
+            user: req.user
+        });
+    } catch (error) {
+        res.status(500).render('error', {
+            message: 'Error generating status report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
+});
+
+// GET /reports/financial - Render financial report page
+router.get('/financial', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const claims = await Claim.find()
+            .populate('status')
+            .sort({ damagesTotal: -1 });
+            
+        res.render('reports/financial', { 
+            title: 'Financial Reports',
+            claims,
+            user: req.user
+        });
+    } catch (error) {
+        res.status(500).render('error', {
+            message: 'Error generating financial report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
+});
+
+// GET /reports/monthly - Render monthly report page
+router.get('/monthly', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const currentYear = new Date().getFullYear();
+        const claims = await Claim.find({
+            createdAt: {
+                $gte: new Date(`${currentYear}-01-01`),
+                $lte: new Date(`${currentYear}-12-31`)
+            }
+        }).populate('status');
+            
+        res.render('reports/monthly', { 
+            title: 'Monthly Reports',
+            claims,
+            user: req.user
+        });
+    } catch (error) {
+        res.status(500).render('error', {
+            message: 'Error generating monthly report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
+});
+
+// POST /reports/generate - Generate custom report
 router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     try {
         console.log('\n=== Report Generation Started ===');
         console.log('Request body:', req.body);
         
-        const { reportType, dateRange, startDate, endDate } = req.body;
-        console.log('Parameters:', { reportType, dateRange, startDate, endDate });
+        const { reportType, dateRange, startDate, endDate, type, format } = req.body;
+        console.log('Parameters:', { reportType, dateRange, startDate, endDate, type, format });
         
         // Build query based on date range
         let query = {};
@@ -125,136 +190,57 @@ router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']),
             return latestNote ? latestNote.content : '';
         };
 
-        switch (reportType) {
-            case 'csv':
-                console.log('Generating CSV report...');
-                const csvData = claims.map(claim => ({
-                    'MVA #': claim.mva || '',
-                    'Customer Name': claim.customerName || '',
-                    'Latest Note': formatNotes(claim.notes),
-                    'Status': claim.status?.name || 'Unknown',
-                    'Date': claim.date ? new Date(claim.date).toLocaleDateString() : '',
-                    'Amount': formatCurrency(claim.damagesTotal)
-                }));
-                res.csv(csvData, true);
-                break;
-
-            case 'excel':
-                console.log('Generating Excel report...');
-                const workbook = new ExcelJS.Workbook();
-                const worksheet = workbook.addWorksheet('Claims');
-                
-                // Style the headers
-                worksheet.columns = [
-                    { header: 'MVA #', key: 'mva', width: 15 },
-                    { header: 'Customer Name', key: 'customerName', width: 25 },
-                    { header: 'Latest Note', key: 'notes', width: 40 },
-                    { header: 'Status', key: 'status', width: 15 },
-                    { header: 'Date', key: 'date', width: 15 },
-                    { header: 'Amount', key: 'amount', width: 15 }
-                ];
-
-                // Style the header row
-                worksheet.getRow(1).font = { bold: true };
-                worksheet.getRow(1).fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFE0E0E0' }
-                };
-
-                // Add data
-                claims.forEach(claim => {
-                    worksheet.addRow({
-                        mva: claim.mva || '',
-                        customerName: claim.customerName || '',
-                        notes: formatNotes(claim.notes),
-                        status: claim.status?.name || 'Unknown',
-                        date: claim.date ? new Date(claim.date).toLocaleDateString() : '',
-                        amount: formatCurrency(claim.damagesTotal)
-                    });
-                });
-
-                // Auto-fit columns
-                worksheet.columns.forEach(column => {
-                    column.alignment = { wrapText: true };
-                });
-
-                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-                res.setHeader('Content-Disposition', 'attachment; filename=claims-report.xlsx');
-                await workbook.xlsx.write(res);
-                break;
-
-            case 'pdf':
-                console.log('Generating PDF report...');
-                const doc = new PDFDocument({ margin: 50 });
-                res.setHeader('Content-Type', 'application/pdf');
-                res.setHeader('Content-Disposition', 'attachment; filename=claims-report.pdf');
-                doc.pipe(res);
-
-                // Add title
-                doc.fontSize(18).text('Claims Report', { align: 'center' });
-                doc.moveDown(2);
-
-                // Define table layout
-                const tableTop = 150;
-                const rowHeight = 30;
-                let currentY = tableTop;
-
-                // Draw table headers
-                doc.fontSize(10).font('Helvetica-Bold');
-                const headers = ['MVA #', 'Customer Name', 'Latest Note', 'Status', 'Date', 'Amount'];
-                const colWidths = [60, 100, 180, 70, 70, 70];
-                let currentX = 50;
-
-                headers.forEach((header, i) => {
-                    doc.text(header, currentX, currentY, { width: colWidths[i] });
-                    currentX += colWidths[i];
-                });
-
-                // Draw rows
-                currentY += rowHeight;
-                doc.font('Helvetica');
-
-                claims.forEach((claim, index) => {
-                    if (currentY > 700) { // Start new page if near bottom
-                        doc.addPage();
-                        currentY = 50;
-                    }
-
-                    currentX = 50;
-                    const rowData = [
-                        claim.mva || '',
-                        claim.customerName || '',
-                        formatNotes(claim.notes),
-                        claim.status?.name || 'Unknown',
-                        claim.date ? new Date(claim.date).toLocaleDateString() : '',
-                        formatCurrency(claim.damagesTotal)
-                    ];
-
-                    rowData.forEach((text, i) => {
-                        doc.text(text, currentX, currentY, {
-                            width: colWidths[i],
-                            height: rowHeight,
-                            ellipsis: true
-                        });
-                        currentX += colWidths[i];
-                    });
-
-                    currentY += rowHeight;
-                });
-
-                doc.end();
-                break;
-
-            default:
-                console.error('Invalid report type:', reportType);
-                throw new Error('Invalid report type');
-        }
+        // Render the reports/result view with the generated report data
+        return res.render('reports/result', {
+            title: 'Report Results',
+            claims,
+            type: type || reportType,
+            format: format || 'table',
+            user: req.user
+        });
 
     } catch (error) {
-        console.error('Report generation error:', error);
-        console.error('Error stack:', error.stack);
-        res.status(500).send('Error generating report');
+        console.error('Error generating report:', error);
+        return res.status(500).render('error', { 
+            message: 'Error generating report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
+});
+
+// Export formats logic
+router.post('/export', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const { format, dataType } = req.body;
+        
+        // Get claims data for export
+        const claims = await Claim.find()
+            .populate('status')
+            .sort({ createdAt: -1 });
+
+        // Rest of export implementation...
+        
+        // For CSV
+        if (format === 'csv') {
+            const csvData = claims.map(claim => ({
+                'MVA #': claim.mva || '',
+                'Customer Name': claim.customerName || '',
+                'Status': claim.status?.name || 'Unknown',
+                'Date': claim.date ? new Date(claim.date).toLocaleDateString() : '',
+                'Amount': claim.damagesTotal ? `$${claim.damagesTotal.toFixed(2)}` : '$0.00'
+            }));
+            
+            return res.csv(csvData, true);
+        }
+        
+        // Fallback if format not handled
+        res.redirect('/reports');
+        
+    } catch (error) {
+        res.status(500).render('error', {
+            message: 'Error exporting report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
     }
 });
 

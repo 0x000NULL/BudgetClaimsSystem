@@ -18,202 +18,208 @@ const ClaimSchema = new Schema({
     // Field for the MVA number
     mva: {
         type: String, // Data type is String
-        required: false // This field is not required
+        required: true,
+        trim: true
     },
     // Field for the customer's name
     customerName: {
         type: String, // Data type is String
-        required: false // This field is not required
+        required: true,
+        trim: true
     },
     // Field for the customer's number
     customerNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the customer's email
     customerEmail: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true,
+        lowercase: true
     },
     // Field for the customer's address
     customerAddress: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the customer's driver's license number
     customerDriversLicense: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the car make
     carMake: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the car model
     carModel: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the car year
     carYear: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the car color
     carColor: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the car VIN number
     carVIN: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the accident date
     accidentDate: {
         type: Date, // Data type is Date
-        required: false // This field is not required
     },
     // Field for whether the claim is billable
     billable: {
-        type: String, // Data type is Boolean
-        required: false // This field is not required
+        type: Boolean, // Data type is Boolean
+        default: false
     },
     // Field for whether the renter is at fault
     isRenterAtFault: {
-        type: String, // Data type is Boolean
-        required: false // This field is not required
+        type: Boolean, // Data type is Boolean
+        default: false
     },
     // Field for the total damages
     damagesTotal: {
         type: Number, // Data type is Number
-        required: false // This field is not required
+        required: true,
+        min: 0
     },
     // Field for the body shop name
     bodyShopName: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the RA number
     raNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the insurance carrier
     insuranceCarrier: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the insurance adjuster
     insuranceAdjuster: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the insurance email
     insuranceEmail: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true,
+        lowercase: true
     },
     // Field for the insurance phone number
     insurancePhoneNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the insurance fax number
     insuranceFaxNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the insurance address
     insuranceAddress: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the insurance policy number
     insurancePolicyNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the insurance claim number
     insuranceClaimNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the third party's name
     thirdPartyName: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the third party's address
     thirdPartyAddress: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the third party's phone number
     thirdPartyPhoneNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the third party's insurance name
     thirdPartyInsuranceName: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the third party's adjuster name
     thirdPartyAdjusterName: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the third party's policy number
     thirdPartyPolicyNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the third party's claim number
     thirdPartyClaimNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the renting location
     rentingLocation: {
-        type: String, // Data type is String
-        required: false // This field is not required
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Location',
+        required: true
     },
     // Field for whether LDW was accepted
     ldwAccepted: {
-        type: String, // Data type is Boolean
-        required: false // This field is not required
+        type: Boolean, // Data type is Boolean
+        default: false
     },
     // Field for the police department
     policeDepartment: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the police report number
     policeReportNumber: {
         type: String, // Data type is String
-        required: false // This field is not required
+        trim: true
     },
     // Field for the claim close date
     claimCloseDate: {
         type: Date, // Data type is Date
-        required: false // This field is not required
     },
     // Field for the vehicle odometer reading
     vehicleOdometer: {
         type: Number, // Data type is Number
-        required: false // This field is not required
+        min: 0
     },
     // Field for the description of the claim
     description: {
         type: String, // Data type is String
-        required: false // This field is not required
+        required: true,
+        trim: true
     },
     // Field for the damage type
     damageType: {
-        type: [String], // Data type is an array of strings
-        required: false // This field is not required
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DamageType',
+        required: true
     },
     // Field for the claim status
     status: {
@@ -244,7 +250,7 @@ const ClaimSchema = new Schema({
     }],
     // Field for storing different versions of the claim
     versions: {
-        type: [Object] // Data type is an array of objects
+        type: [Schema.Types.Mixed] // Data type is an array of objects
     },
     // Field for the date the claim was created
     date: {
@@ -258,13 +264,13 @@ const ClaimSchema = new Schema({
     },
     // New field: Was Renters Liability Insurance purchased?
     rentersLiabilityInsurance: {
-        type: String, // Data type is String
-        required: false // This field is not required
+        type: Boolean, // Data type is Boolean
+        default: false
     },
     // New field: Was Loss Damage Waiver purchased?
     lossDamageWaiver: {
-        type: String, // Data type is String
-        required: false // This field is not required
+        type: Boolean, // Data type is Boolean
+        default: false
     },
     // Field for storing notes and summaries
     notes: [{
@@ -290,7 +296,16 @@ const ClaimSchema = new Schema({
             ref: 'User',
             default: null
         }
-    }]
+    }],
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    assignedTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }
 }, {
     timestamps: true, // This should be true
     strict: true // Enforce schema validation
@@ -329,11 +344,9 @@ ClaimSchema.pre('save', async function(next) {
             // Ensure the number is at least INITIAL_CLAIM_NUMBER
             const claimNumber = Math.max(settings.value, INITIAL_CLAIM_NUMBER);
             this.claimNumber = claimNumber.toString().padStart(8, '0');
-            console.log('Generated claim number:', this.claimNumber);
         }
         next();
     } catch (error) {
-        console.error('Error in claim pre-save middleware:', error);
         next(error);
     }
 });
@@ -341,91 +354,50 @@ ClaimSchema.pre('save', async function(next) {
 // Add a post-save hook to verify claim number was generated
 ClaimSchema.post('save', function(doc, next) {
     if (!doc.claimNumber) {
-        console.error('Claim saved without claim number:', doc._id);
         next(new Error('Claim number was not generated properly'));
     } else {
-        console.log('Claim saved successfully with number:', doc.claimNumber);
         next();
-    }
-});
-
-// Update the pre-save middleware for status conversion
-ClaimSchema.pre('save', async function(next) {
-    try {
-        // Skip if status is already an ObjectId
-        if (this.status instanceof mongoose.Types.ObjectId) {
-            return next();
-        }
-
-        const Status = mongoose.model('Status');
-        
-        // If status is a string, try to find matching status
-        if (typeof this.status === 'string') {
-            const status = await Status.findOne({ 
-                name: { $regex: new RegExp(`^${this.status}$`, 'i') }
-            });
-            
-            if (status) {
-                this.status = status._id;
-            } else {
-                // If no matching status found, use default 'Open' status
-                const openStatus = await Status.findOne({ name: 'Open' });
-                if (!openStatus) {
-                    throw new Error('Default Open status not found');
-                }
-                this.status = openStatus._id;
-            }
-        } else if (!this.status) {
-            // If no status set, use default 'Open' status
-            const openStatus = await Status.findOne({ name: 'Open' });
-            if (!openStatus) {
-                throw new Error('Default Open status not found');
-            }
-            this.status = openStatus._id;
-        }
-        
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Update the query middleware to handle string status values
-ClaimSchema.pre(['find', 'findOne', 'countDocuments'], async function(next) {
-    try {
-        // Only process if there's a status condition and it's a string
-        if (this._conditions.status && typeof this._conditions.status === 'string') {
-            const Status = mongoose.model('Status');
-            const status = await Status.findOne({ 
-                name: { $regex: new RegExp(`^${this._conditions.status}$`, 'i') }
-            });
-            
-            if (status) {
-                this._conditions.status = status._id;
-            } else {
-                // If no matching status found, use a non-existent ObjectId
-                // This ensures the query returns no results rather than throwing an error
-                this._conditions.status = new mongoose.Types.ObjectId();
-            }
-        }
-        next();
-    } catch (error) {
-        console.error('Error in status query middleware:', error);
-        next(error);
     }
 });
 
 // Add virtual for status name
 ClaimSchema.virtual('statusName').get(async function() {
     try {
-        if (this.status instanceof mongoose.Types.ObjectId) {
+        if (this.status) {
             const Status = mongoose.model('Status');
             const status = await Status.findById(this.status);
             return status ? status.name : 'Unknown';
         }
-        return typeof this.status === 'string' ? this.status : 'Unknown';
+        return 'Unknown';
     } catch (error) {
-        console.error('Error getting status name:', error);
+        return 'Unknown';
+    }
+});
+
+// Add virtual for damage type name
+ClaimSchema.virtual('damageTypeName').get(async function() {
+    try {
+        if (this.damageType) {
+            const DamageType = mongoose.model('DamageType');
+            const damageType = await DamageType.findById(this.damageType);
+            return damageType ? damageType.name : 'Unknown';
+        }
+        return 'Unknown';
+    } catch (error) {
+        return 'Unknown';
+    }
+});
+
+// Add virtual for location name
+ClaimSchema.virtual('locationName').get(async function() {
+    try {
+        if (this.rentingLocation) {
+            const Location = mongoose.model('Location');
+            const location = await Location.findById(this.rentingLocation);
+            return location ? location.name : 'Unknown';
+        }
+        return 'Unknown';
+    } catch (error) {
         return 'Unknown';
     }
 });
@@ -434,19 +406,19 @@ ClaimSchema.virtual('statusName').get(async function() {
 ClaimSchema.set('toJSON', { virtuals: true });
 ClaimSchema.set('toObject', { virtuals: true });
 
-// Add this method to help with status conversion
+// Helper method to get status name
 ClaimSchema.methods.getStatusName = async function() {
-    try {
-        if (this.status instanceof mongoose.Types.ObjectId) {
-            const Status = mongoose.model('Status');
-            const status = await Status.findById(this.status);
-            return status ? status.name : 'Unknown';
-        }
-        return typeof this.status === 'string' ? this.status : 'Unknown';
-    } catch (error) {
-        console.error('Error getting status name:', error);
-        return 'Unknown';
-    }
+    return this.statusName;
+};
+
+// Helper method to get damage type name
+ClaimSchema.methods.getDamageTypeName = async function() {
+    return this.damageTypeName;
+};
+
+// Helper method to get location name
+ClaimSchema.methods.getLocationName = async function() {
+    return this.locationName;
 };
 
 // Create a model from the schema
