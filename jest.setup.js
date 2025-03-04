@@ -1,5 +1,5 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 const path = require('path');
 
 // Mock Redis client
@@ -29,50 +29,24 @@ jest.mock('connect-mongo', () => {
     };
 });
 
-let mongoServer;
+let mongod;
 
 beforeAll(async () => {
-    try {
-        // Create MongoDB Memory Server
-        mongoServer = await MongoMemoryServer.create();
-        const mongoUri = mongoServer.getUri();
-        
-        // Connect to MongoDB with optimized settings
-        await mongoose.connect(mongoUri, {
-            serverSelectionTimeoutMS: 5000,
-            socketTimeoutMS: 45000,
-        });
-    } catch (error) {
-        console.error('Error in test setup:', error);
-        throw error;
-    }
-});
-
-afterEach(async () => {
-    if (mongoose.connection.readyState !== 0) {
-        try {
-            // More efficient way to clear collections
-            const collections = mongoose.connection.collections;
-            await Promise.all(
-                Object.values(collections).map(collection => 
-                    collection.deleteMany({}, { timeout: false })
-                )
-            );
-        } catch (error) {
-            console.error('Error in collection cleanup:', error);
-        }
-    }
+    mongod = await MongoMemoryServer.create();
+    const uri = mongod.getUri();
+    await mongoose.connect(uri);
 });
 
 afterAll(async () => {
-    try {
-        // Cleanup in parallel
-        await Promise.all([
-            mongoose.connection.readyState !== 0 ? mongoose.disconnect() : Promise.resolve(),
-            mongoServer ? mongoServer.stop() : Promise.resolve()
-        ]);
-    } catch (error) {
-        console.error('Error in test teardown:', error);
+    await mongoose.connection.close();
+    await mongod.stop();
+});
+
+afterEach(async () => {
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+        const collection = collections[key];
+        await collection.deleteMany();
     }
 });
 

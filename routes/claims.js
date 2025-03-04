@@ -104,7 +104,7 @@ router.get('/:id', ensureAuthenticated, async (req, res) => {
 });
 
 // GET /claims/:id/edit - Display edit form
-router.get('/:id/edit', ensureAuthenticated, async (req, res) => {
+router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('view_claim_edit'), async (req, res) => {
     try {
         const [claim, statuses, locations, damageTypes] = await Promise.all([
             Claim.findById(req.params.id)
@@ -112,16 +112,23 @@ router.get('/:id/edit', ensureAuthenticated, async (req, res) => {
                 .populate('rentingLocation')
                 .populate('damageType')
                 .exec(),
-            Status.find(),
-            Location.find(),
-            DamageType.find()
+            Status.find().sort({ name: 1 }),
+            Location.find().sort({ name: 1 }),
+            DamageType.find().sort({ name: 1 })
         ]);
 
         if (!claim) {
             return res.status(404).render('404', { message: 'Claim not found' });
         }
 
-        res.render('claims/edit', { claim, statuses, locations, damageTypes });
+        res.render('claims/edit', {
+            claim,
+            statuses,
+            locations,
+            damageTypes,
+            rentingLocations: locations,
+            errors: {}
+        });
     } catch (err) {
         logger.error('Error loading edit form:', err);
         res.status(500).render('error', { error: err });

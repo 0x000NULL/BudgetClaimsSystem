@@ -14,10 +14,12 @@ const locationSchema = new mongoose.Schema({
 
 // Add a pre-save hook to convert name to uppercase
 locationSchema.pre('save', function(next) {
-    if (this.name) {
+    // Explicitly check for null and undefined
+    if (this.name !== null && this.name !== undefined) {
         this.name = this.name.toUpperCase();
     }
     next();
 });
 
-module.exports = mongoose.model('Location', locationSchema);
+const Location = mongoose.model('Location', locationSchema);
+module.exports = { Location };

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose'); // Import Mongoose to interact with MongoDB
-const Schema = mongoose.Schema; // Use Schema to define the structure of documents in the collection
+const { Schema, Types } = mongoose; // Use Schema and Types from mongoose
 const { ClaimSettings, INITIAL_CLAIM_NUMBER } = require('./ClaimSettings');
 
 // Define the schema for a Claim
@@ -10,21 +10,18 @@ const ClaimSchema = new Schema({
         unique: true,
         index: true,
         immutable: true, // This prevents the field from being changed after creation
-        required: function() { 
-            // Only require claimNumber after the document is saved
-            return !this.isNew;
-        }
+        sparse: true // Allow null values since we'll generate it in the pre-save hook
     },
     // Field for the MVA number
     mva: {
         type: String, // Data type is String
-        required: true,
+        required: [true, 'MVA number is required'],
         trim: true
     },
     // Field for the customer's name
     customerName: {
         type: String, // Data type is String
-        required: true,
+        required: [true, 'Customer name is required'],
         trim: true
     },
     // Field for the customer's number
@@ -90,8 +87,8 @@ const ClaimSchema = new Schema({
     // Field for the total damages
     damagesTotal: {
         type: Number, // Data type is Number
-        required: true,
-        min: 0
+        required: [true, 'Damages total is required'],
+        min: [0, 'Damages total cannot be negative']
     },
     // Field for the body shop name
     bodyShopName: {
@@ -181,9 +178,9 @@ const ClaimSchema = new Schema({
     },
     // Field for the renting location
     rentingLocation: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Types.ObjectId,
         ref: 'Location',
-        required: true
+        required: [true, 'Renting location is required']
     },
     // Field for whether LDW was accepted
     ldwAccepted: {
@@ -207,50 +204,82 @@ const ClaimSchema = new Schema({
     // Field for the vehicle odometer reading
     vehicleOdometer: {
         type: Number, // Data type is Number
-        min: 0
+        min: [0, 'Vehicle odometer reading cannot be negative']
     },
     // Field for the description of the claim
     description: {
         type: String, // Data type is String
-        required: true,
+        required: [true, 'Description is required'],
         trim: true
     },
     // Field for the damage type
     damageType: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Types.ObjectId,
         ref: 'DamageType',
-        required: true
+        required: [true, 'Damage type is required']
     },
     // Field for the claim status
     status: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Types.ObjectId,
         ref: 'Status',
-        required: true
+        required: [true, 'Status is required']
     },
     // Field for the files associated with the claim
     files: {
-        incidentReports: [String], // Array of strings for incident reports
-        correspondence: [String], // Array of strings for correspondence
-        rentalAgreement: [String], // Array of strings for rental agreements
-        policeReport: [String], // Array of strings for police reports
-        invoices: [String], // Array of strings for invoices
-        photos: [String] // Array of strings for photos
+        type: {
+            incidentReports: {
+                type: [String],
+                default: []
+            },
+            correspondence: {
+                type: [String],
+                default: []
+            },
+            rentalAgreement: {
+                type: [String],
+                default: []
+            },
+            policeReport: {
+                type: [String],
+                default: []
+            },
+            invoices: {
+                type: [String],
+                default: []
+            },
+            photos: {
+                type: [String],
+                default: []
+            }
+        },
+        default: {
+            incidentReports: [],
+            correspondence: [],
+            rentalAgreement: [],
+            policeReport: [],
+            invoices: [],
+            photos: []
+        }
     },
     // New field: Invoice totals
-    invoiceTotals: [{
-        fileName: {
-            type: String,
-            required: true
-        },
-        total: {
-            type: Number,
-            required: true,
-            default: 0
-        }
-    }],
+    invoiceTotals: {
+        type: [{
+            fileName: {
+                type: String,
+                required: true
+            },
+            total: {
+                type: Number,
+                required: true,
+                default: 0
+            }
+        }],
+        default: []
+    },
     // Field for storing different versions of the claim
     versions: {
-        type: [Schema.Types.Mixed] // Data type is an array of objects
+        type: Array,
+        default: []
     },
     // Field for the date the claim was created
     date: {
@@ -292,58 +321,42 @@ const ClaimSchema = new Schema({
             default: Date.now
         },
         createdBy: {
-            type: mongoose.Schema.Types.ObjectId,
+            type: Types.ObjectId,
             ref: 'User',
             default: null
         }
     }],
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Types.ObjectId,
         ref: 'User',
-        required: true
+        required: [true, 'Created by user is required']
     },
     assignedTo: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Types.ObjectId,
         ref: 'User'
     }
 }, {
-    timestamps: true, // This should be true
-    strict: true // Enforce schema validation
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
-// Add a pre-save middleware to generate sequential claim numbers
+// Pre-save hook to generate claim number
 ClaimSchema.pre('save', async function(next) {
     try {
         if (this.isNew && !this.claimNumber) {
-            // Find and update the last claim number atomically with retries
-            let attempts = 3;
-            let settings = null;
-            
-            while (attempts > 0 && !settings) {
-                try {
-                    settings = await ClaimSettings.findOneAndUpdate(
-                        { type: 'lastClaimNumber' },
-                        { $inc: { value: 1 } },
-                        { 
-                            upsert: true, 
-                            new: true,
-                            setDefaultsOnInsert: true
-                        }
-                    );
-                } catch (err) {
-                    attempts--;
-                    if (attempts === 0) throw err;
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-            }
-
+            const settings = await ClaimSettings.findOne({ type: 'lastClaimNumber' });
             if (!settings) {
-                throw new Error('Failed to generate claim number - settings not found');
+                await ClaimSettings.create({
+                    type: 'lastClaimNumber',
+                    value: INITIAL_CLAIM_NUMBER - 1
+                });
+                this.claimNumber = INITIAL_CLAIM_NUMBER.toString().padStart(8, '0');
+            } else {
+                settings.value = Math.max(settings.value + 1, INITIAL_CLAIM_NUMBER);
+                await settings.save();
+                this.claimNumber = settings.value.toString().padStart(8, '0');
             }
-
-            // Ensure the number is at least INITIAL_CLAIM_NUMBER
-            const claimNumber = Math.max(settings.value, INITIAL_CLAIM_NUMBER);
-            this.claimNumber = claimNumber.toString().padStart(8, '0');
         }
         next();
     } catch (error) {
@@ -360,69 +373,44 @@ ClaimSchema.post('save', function(doc, next) {
     }
 });
 
-// Add virtual for status name
-ClaimSchema.virtual('statusName').get(async function() {
-    try {
-        if (this.status) {
-            const Status = mongoose.model('Status');
-            const status = await Status.findById(this.status);
-            return status ? status.name : 'Unknown';
-        }
-        return 'Unknown';
-    } catch (error) {
-        return 'Unknown';
-    }
-});
-
-// Add virtual for damage type name
-ClaimSchema.virtual('damageTypeName').get(async function() {
-    try {
-        if (this.damageType) {
-            const DamageType = mongoose.model('DamageType');
-            const damageType = await DamageType.findById(this.damageType);
-            return damageType ? damageType.name : 'Unknown';
-        }
-        return 'Unknown';
-    } catch (error) {
-        return 'Unknown';
-    }
-});
-
-// Add virtual for location name
-ClaimSchema.virtual('locationName').get(async function() {
-    try {
-        if (this.rentingLocation) {
-            const Location = mongoose.model('Location');
-            const location = await Location.findById(this.rentingLocation);
-            return location ? location.name : 'Unknown';
-        }
-        return 'Unknown';
-    } catch (error) {
-        return 'Unknown';
-    }
-});
-
-// Ensure virtuals are included in JSON
-ClaimSchema.set('toJSON', { virtuals: true });
-ClaimSchema.set('toObject', { virtuals: true });
-
 // Helper method to get status name
 ClaimSchema.methods.getStatusName = async function() {
-    return this.statusName;
+    try {
+        if (!this.populated('status') && this.status) {
+            await this.populate('status');
+        }
+        return this.status ? this.status.name : 'Unknown';
+    } catch (error) {
+        return 'Unknown';
+    }
 };
 
 // Helper method to get damage type name
 ClaimSchema.methods.getDamageTypeName = async function() {
-    return this.damageTypeName;
+    try {
+        if (!this.populated('damageType') && this.damageType) {
+            await this.populate('damageType');
+        }
+        return this.damageType ? this.damageType.name : 'Unknown';
+    } catch (error) {
+        return 'Unknown';
+    }
 };
 
 // Helper method to get location name
 ClaimSchema.methods.getLocationName = async function() {
-    return this.locationName;
+    try {
+        if (!this.populated('rentingLocation') && this.rentingLocation) {
+            await this.populate('rentingLocation');
+        }
+        return this.rentingLocation ? this.rentingLocation.name : 'Unknown';
+    } catch (error) {
+        return 'Unknown';
+    }
 };
 
 // Create a model from the schema
 const Claim = mongoose.model('Claim', ClaimSchema);
 
 // Export the model
-module.exports = Claim;
+module.exports = { Claim };
