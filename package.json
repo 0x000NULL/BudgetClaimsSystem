@@ -1,13 +1,13 @@
 {
   "name": "budget-claims-system",
-  "version": "1.4.41",
+  "version": "1.4.42",
   "description": "A system to manage vehicle claims.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
     "dev:insecure": "cross-env DEBUG=app:import NODE_ENV=development nodemon server.js",
-    "test": "jest --coverage --detectOpenHandles --forceExit",
+    "test": "cross-env NODE_ENV=test jest --coverage --detectOpenHandles --forceExit",
     "test:watch": "jest --watchAll",
     "test:ci": "jest --ci --coverage --detectOpenHandles --forceExit",
     "lint": "eslint .",
@@ -71,6 +71,7 @@
     "mongodb-memory-server": "^9.5.0",
     "nodemon": "^3.1.0",
     "prettier": "^3.2.5",
+    "rewire": "^7.0.0",
     "supertest": "^6.3.4"
   },
   "engines": {

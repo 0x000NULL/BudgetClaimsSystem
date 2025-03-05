@@ -295,10 +295,6 @@ app.use('/feedback', (req, res, next) => {
     pinoLogger.info('Accessing feedback route');
     next();
 }, require('./routes/feedback')); // Feedback routes
-app.use('/customers', (req, res, next) => {
-    pinoLogger.info('Accessing customers route');
-    next();
-}, require('./routes/customers')); // Customer-related routes
 app.use('/employee', (req, res, next) => {
     pinoLogger.info('Accessing employee route');
     next();

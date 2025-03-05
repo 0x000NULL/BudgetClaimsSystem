@@ -54,6 +54,26 @@ const cache = cacheManager.caching({
 
 // Helper function to validate file
 const validateFile = (file, category) => {
+    // Check if file and category are provided
+    if (!file || !category) {
+        return ['Invalid file or category provided'];
+    }
+    
+    // Check if file has name and size properties
+    if (!file.name || typeof file.size !== 'number') {
+        return ['Invalid file object provided'];
+    }
+    
+    // Check if category is valid
+    if (!['photos', 'documents', 'invoices'].includes(category)) {
+        return [`Invalid category: ${category}. Must be one of: photos, documents, invoices`];
+    }
+    
+    // Check if global settings exist
+    if (!global.ALLOWED_FILE_TYPES || !global.MAX_FILE_SIZES) {
+        return ['File validation settings not configured'];
+    }
+    
     const ext = path.extname(file.name).toLowerCase();
     const allowedTypes = category === 'photos' ? global.ALLOWED_FILE_TYPES.photos :
                         category === 'invoices' ? global.ALLOWED_FILE_TYPES.invoices :
@@ -86,24 +106,51 @@ const validateFile = (file, category) => {
 
 // Helper function to sanitize filename
 const sanitizeFilename = (filename) => {
-    return filename.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
+    if (!filename) {
+        return `unnamed_file_${Date.now()}`;
+    }
+    
+    // Extract file extension
+    const extension = path.extname(filename);
+    const nameWithoutExt = path.basename(filename, extension);
+    
+    // Sanitize the filename by replacing invalid characters with underscores
+    const sanitized = nameWithoutExt.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    
+    // Add timestamp for uniqueness and keep original extension
+    return `${sanitized}_${Date.now()}${extension.toLowerCase()}`;
 };
 
 const router = express.Router(); // Create a new router
 
-// Define sensitive fields that should not be logged
-const sensitiveFields = ['password', 'token', 'ssn'];
-
 // Function to filter out sensitive fields from the request body
 const filterSensitiveData = (data) => {
-    const filtered = { ...data };
-    const sensitiveFields = ['password', 'token', 'ssn', 'creditCard'];
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
     
-    sensitiveFields.forEach(field => {
-        if (filtered[field]) {
-            filtered[field] = '[REDACTED]';
+    // List of sensitive field names that should be redacted
+    const sensitiveFields = ['password', 'token', 'ssn', 'creditCard', 
+                           'customerDriversLicense', 'securityQuestion', 'securityAnswer'];
+    
+    // Handle arrays
+    if (Array.isArray(data)) {
+        return data.map(item => filterSensitiveData(item));
+    }
+    
+    // Handle objects
+    const filtered = { ...data };
+    
+    for (const [key, value] of Object.entries(filtered)) {
+        // Check if this key should be redacted
+        if (sensitiveFields.some(field => key.toLowerCase().includes(field.toLowerCase()))) {
+            filtered[key] = '[REDACTED]';
+        } 
+        // Recursively filter nested objects and arrays
+        else if (value && typeof value === 'object') {
+            filtered[key] = filterSensitiveData(value);
         }
-    });
+    }
     
     return filtered;
 };
@@ -382,7 +429,8 @@ router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
             nonce: res.locals.nonce
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error('Error loading add claim form:', error);
+        res.status(500).render('500', { message: 'Error loading add claim form' });
     }
 });
 
@@ -436,7 +484,7 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
 
         // Add debug logging for statuses
         const allStatuses = await Status.find().sort({ name: 1 });
-        console.log('Available statuses:', allStatuses.map(s => ({ id: s._id, name: s.name })));
+        logger.info('Available statuses:', allStatuses.map(s => ({ id: s._id, name: s.name })));
 
         // Get pagination parameters and fetch claims
         const page = parseInt(req.query.page) || 1;
@@ -497,7 +545,7 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
             queryString: queryString ? `&${queryString}` : ''
         });
     } catch (err) {
-        console.error('Search route error:', err);
+        logger.error('Search route error:', err);
         if (req.xhr || req.headers.accept.includes('application/json')) {
             return res.status(500).json({ error: err.message });
         }
@@ -611,7 +659,8 @@ router.post('/locations', ensureAuthenticated, ensureRoles(['admin', 'manager'])
         await newLocation.save();
         res.status(201).json({ message: 'Location added successfully' });
     } catch (error) {
-        res.render('500', { message: 'Error adding location' });
+        logger.error('Error adding location:', error);
+        res.status(500).render('500', { message: 'Error adding location' });
     }
 });
 
@@ -649,7 +698,7 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
 router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req, res) => {
     try {
         const claimId = req.params.id;
-        console.log('Incoming request body:', req.body);
+        logger.info('Incoming request body:', req.body);
 
         const claim = await Claim.findById(claimId);
         
@@ -690,7 +739,7 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
                     });
                 }
             } catch (e) {
-                console.error('Error parsing new note:', e);
+                logger.error('Error parsing new note:', e);
             }
         }
 
@@ -741,7 +790,7 @@ router.delete('/:id', ensureAuthenticated, logActivity('delete claim'), async (r
         if (!claim) {
             return res.status(404).json({ error: 'Claim not found' });
         }
-        await claim.remove();
+        await claim.deleteOne();
         res.status(200).json({ msg: 'Claim deleted' });
     } catch (error) {
         logger.error('Error deleting claim:', error);
@@ -878,7 +927,7 @@ router.post('/location/add', ensureAuthenticated, ensureRoles(['admin', 'manager
     } catch (error) {
         res.render('500', { message: 'Error adding location' });
     }
-})
+});
 
 // Fetch all statuses
 router.get('/statuses', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
@@ -1010,7 +1059,7 @@ router.get('/settings', ensureAuthenticated, ensureRole('admin'), async (req, re
             dbSettings: settingsObj
         });
     } catch (error) {
-        console.error('Error fetching settings data:', error);
+        logger.error('Error fetching settings data:', error);
         res.render('500', { 
             message: 'Error loading settings page'
         });
@@ -1024,20 +1073,24 @@ router.post('/api/settings/:type', ensureAuthenticated, ensureRole('admin'), asy
 
     try {
         let result;
+        let message;
         switch (type.toLowerCase()) {
             case 'location':
                 result = await Location.create({ name });
+                message = 'location added successfully';
                 break;
             case 'status':
                 result = await Status.create({ name });
+                message = 'status added successfully';
                 break;
             case 'damagetype':
                 result = await DamageType.create({ name });
+                message = 'damage type added successfully';
                 break;
             default:
                 return res.status(400).json({ success: false, message: 'Invalid type' });
         }
-        res.json({ success: true, data: result });
+        res.json({ success: true, data: result, message });
     } catch (error) {
         res.render('500', { message: 'Error adding setting' });
     }
@@ -1101,7 +1154,7 @@ router.put('/:id/invoice-total', ensureAuthenticated, ensureRoles(['admin', 'man
         // Find the claim
         const claim = await Claim.findById(claimId);
         if (!claim) {
-            console.error(`Claim not found with ID: ${claimId}`);
+            logger.error(`Claim not found with ID: ${claimId}`);
             return res.status(404).json({ 
                 success: false, 
                 message: 'Claim not found' 
@@ -1112,7 +1165,7 @@ router.put('/:id/invoice-total', ensureAuthenticated, ensureRoles(['admin', 'man
         const invoiceIndex = claim.invoiceTotals.findIndex(inv => inv.fileName === fileName);
         if (invoiceIndex !== -1) {
             // Log the update
-            console.log(`Updating invoice total for ${fileName}:`, {
+            logger.info(`Updating invoice total for ${fileName}:`, {
                 oldTotal: claim.invoiceTotals[invoiceIndex].total,
                 newTotal: total
             });
@@ -1130,21 +1183,50 @@ router.put('/:id/invoice-total', ensureAuthenticated, ensureRoles(['admin', 'man
                 }
             });
         } else {
-            console.error(`Invoice not found: ${fileName} in claim ${claimId}`);
+            logger.error(`Invoice not found: ${fileName} in claim ${claimId}`);
             res.status(404).json({ 
                 success: false, 
                 message: 'Invoice not found' 
             });
         }
     } catch (error) {
-        console.error('Error updating invoice total:', error);
-        res.render('500', { message: 'Error updating invoice total' });
+        logger.error('Error updating invoice total:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error updating invoice total',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
-// Helper function to calculate admin fee
+// Helper function to calculate admin fee based on total invoice amount
 function calculateAdminFee(invoiceTotals) {
-    const totalInvoices = invoiceTotals.reduce((sum, invoice) => sum + (invoice.total || 0), 0);
+    // Handle edge cases - if invoiceTotals is null, undefined, or not an array
+    if (!invoiceTotals || !Array.isArray(invoiceTotals)) {
+        logger.warn('Invalid invoiceTotals provided to calculateAdminFee:', invoiceTotals);
+        return 0;
+    }
+    
+    // Calculate total by summing all invoice totals
+    // Handle cases where total might be non-numeric or missing
+    const totalInvoices = invoiceTotals.reduce((sum, invoice) => {
+        // Skip invalid invoices
+        if (!invoice || typeof invoice !== 'object') {
+            return sum;
+        }
+        
+        // Parse the total as a float (handles both string and number types)
+        const invoiceTotal = parseFloat(invoice.total) || 0;
+        
+        // Make sure we have a valid number
+        return sum + (isNaN(invoiceTotal) ? 0 : invoiceTotal);
+    }, 0);
+    
+    // Define fee tiers
+    // For amounts under $100, no fee
+    // For $100-$499.99, $50 fee
+    // For $500-$1499.99, $100 fee
+    // For $1500+, $150 fee
     let adminFee = 0;
     
     if (totalInvoices >= 100 && totalInvoices < 500) {

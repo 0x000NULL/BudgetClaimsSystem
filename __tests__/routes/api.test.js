@@ -1,0 +1,1034 @@
+/**
+ * @file __tests__/routes/api.test.js
+ * @description Test suite for the API routes in the Budget Claims System
+ */
+
+const request = require('supertest');
+const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
+const express = require('express');
+const path = require('path');
+const bcrypt = require('bcryptjs');
+
+// Import models
+const Claim = require('../../models/Claim');
+const Customer = require('../../models/Customer');
+const Settings = require('../../models/Settings');
+const Location = require('../../models/Location');
+const Status = require('../../models/Status');
+const DamageType = require('../../models/DamageType');
+const User = require('../../models/User');
+
+// Import the API routes
+const apiRoutes = require('../../routes/api');
+
+// Mock dependencies
+jest.mock('../../logger', () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn()
+}));
+
+// Mock authentication middleware
+jest.mock('../../middleware/auth', () => ({
+  ensureAuthenticated: (req, res, next) => {
+    req.user = req.user || { _id: 'mockUserId', email: 'test@example.com', role: 'admin' };
+    next();
+  },
+  ensureRole: (role) => (req, res, next) => {
+    req.user = req.user || { _id: 'mockUserId', email: 'test@example.com', role: 'admin' };
+    next();
+  }
+}));
+
+// Setup Express app for testing
+const app = express();
+app.use(express.json());
+app.use('/api', apiRoutes);
+
+// Global variables
+let adminUser;
+let regularUser;
+let testClaim;
+let testCustomer;
+
+/**
+ * Connect to the in-memory database before tests
+ */
+beforeAll(async () => {
+  // We no longer need to create or connect to the MongoDB Memory Server
+  // since this is handled in jest.setup.js
+  
+  // Create test users
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash('testpassword', salt);
+  
+  adminUser = await User.create({
+    email: 'admin@example.com',
+    password: hashedPassword,
+    name: 'Admin User',
+    role: 'admin'
+  });
+  
+  regularUser = await User.create({
+    email: 'user@example.com',
+    password: hashedPassword,
+    name: 'Regular User',
+    role: 'employee'
+  });
+
+  // Initialize global constants
+  global.ALLOWED_FILE_TYPES = {
+    photos: ['.jpg', '.jpeg', '.png'],
+    documents: ['.pdf', '.doc', '.docx'],
+    invoices: ['.pdf', '.jpg', '.jpeg', '.png']
+  };
+
+  global.MAX_FILE_SIZES = {
+    photos: 50 * 1024 * 1024,
+    documents: 20 * 1024 * 1024,
+    invoices: 20 * 1024 * 1024
+  };
+
+  global.MAX_FILES_PER_CATEGORY = {
+    photos: 10,
+    documents: 5,
+    invoices: 5
+  };
+});
+
+/**
+ * Clear database collections between tests
+ */
+afterEach(async () => {
+  jest.clearAllMocks();
+  
+  // Clear collections but preserve users
+  const collections = mongoose.connection.collections;
+  const userCollection = collections['users'];
+  
+  for (const key in collections) {
+    if (key !== 'users') {
+      await collections[key].deleteMany({});
+    }
+  }
+});
+
+/**
+ * Disconnect and close the database after tests
+ */
+afterAll(async () => {
+  // We don't need to disconnect here as it's handled in jest.setup.js
+  // Just clean up resources specific to this test file
+});
+
+/**
+ * Helper function to create a test claim
+ */
+async function createTestClaim() {
+  // Create a test status
+  const status = await Status.create({ name: 'Test Status' });
+  
+  // Create a test claim
+  return await Claim.create({
+    mva: 'TEST12345',
+    customerName: 'Test Customer',
+    description: 'Test Description',
+    status: status._id,
+    files: []
+  });
+}
+
+/**
+ * Helper function to create a test customer
+ */
+async function createTestCustomer() {
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash('testpassword', salt);
+  
+  return await Customer.create({
+    name: 'Test Customer',
+    email: 'customer@example.com',
+    password: hashedPassword
+  });
+}
+
+describe('API Routes', () => {
+  
+  describe('Claims Routes', () => {
+    beforeEach(async () => {
+      testClaim = await createTestClaim();
+    });
+
+    describe('GET /api/claims', () => {
+      it('should return all claims', async () => {
+        const response = await request(app)
+          .get('/api/claims')
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data).toBeInstanceOf(Array);
+        expect(response.body.data.length).toBeGreaterThan(0);
+        expect(response.body.message).toBe('Claims fetched successfully');
+      });
+
+      it('should handle errors', async () => {
+        // Mock Claim.find to throw an error
+        jest.spyOn(Claim, 'find').mockImplementationOnce(() => {
+          throw new Error('Database error');
+        });
+
+        const response = await request(app)
+          .get('/api/claims')
+          .expect('Content-Type', /json/)
+          .expect(500);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Error fetching claims');
+        
+        // Restore the original implementation
+        Claim.find.mockRestore();
+      });
+    });
+
+    describe('GET /api/claims/:id', () => {
+      it('should return a specific claim by ID', async () => {
+        const response = await request(app)
+          .get(`/api/claims/${testClaim._id}`)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data._id).toBe(testClaim._id.toString());
+        expect(response.body.data.mva).toBe(testClaim.mva);
+        expect(response.body.message).toBe('Claim fetched successfully');
+      });
+
+      it('should return 404 if claim not found', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        
+        const response = await request(app)
+          .get(`/api/claims/${nonExistentId}`)
+          .expect('Content-Type', /json/)
+          .expect(404);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Claim not found');
+      });
+
+      it('should handle invalid ID format', async () => {
+        const response = await request(app)
+          .get('/api/claims/invalid-id')
+          .expect('Content-Type', /json/)
+          .expect(500);
+
+        expect(response.body.success).toBe(false);
+      });
+    });
+
+    describe('PUT /api/claims/:id', () => {
+      it('should update an existing claim with valid data', async () => {
+        const updateData = {
+          description: 'Updated Description'
+        };
+
+        const response = await request(app)
+          .put(`/api/claims/${testClaim._id}`)
+          .send(updateData)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.description).toBe(updateData.description);
+        expect(response.body.message).toBe('Claim updated successfully');
+        
+        // Verify the claim was updated in the database
+        const updatedClaim = await Claim.findById(testClaim._id);
+        expect(updatedClaim.description).toBe(updateData.description);
+      });
+
+      it('should return 404 if claim not found', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        
+        const response = await request(app)
+          .put(`/api/claims/${nonExistentId}`)
+          .send({ description: 'Update Non-existent Claim' })
+          .expect('Content-Type', /json/)
+          .expect(404);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Claim not found');
+      });
+
+      it('should handle validation errors', async () => {
+        // Mock findByIdAndUpdate to throw a validation error
+        jest.spyOn(Claim, 'findByIdAndUpdate').mockImplementationOnce(() => {
+          const error = new Error('Validation error');
+          error.name = 'ValidationError';
+          throw error;
+        });
+
+        const response = await request(app)
+          .put(`/api/claims/${testClaim._id}`)
+          .send({ description: 'Invalid Update' })
+          .expect('Content-Type', /json/)
+          .expect(500);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Error updating claim');
+        
+        // Restore the original implementation
+        Claim.findByIdAndUpdate.mockRestore();
+      });
+    });
+
+    describe('DELETE /api/claims/:id', () => {
+      it('should delete an existing claim', async () => {
+        const response = await request(app)
+          .delete(`/api/claims/${testClaim._id}`)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.message).toBe('Claim deleted successfully');
+        
+        // Verify the claim was deleted from the database
+        const deletedClaim = await Claim.findById(testClaim._id);
+        expect(deletedClaim).toBeNull();
+      });
+
+      it('should return 404 if claim not found', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        
+        const response = await request(app)
+          .delete(`/api/claims/${nonExistentId}`)
+          .expect('Content-Type', /json/)
+          .expect(404);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Claim not found');
+      });
+
+      it('should handle errors during deletion', async () => {
+        // Mock findByIdAndDelete to throw an error
+        jest.spyOn(Claim, 'findByIdAndDelete').mockImplementationOnce(() => {
+          throw new Error('Database error');
+        });
+
+        const response = await request(app)
+          .delete(`/api/claims/${testClaim._id}`)
+          .expect('Content-Type', /json/)
+          .expect(500);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Error deleting claim');
+        
+        // Restore the original implementation
+        Claim.findByIdAndDelete.mockRestore();
+      });
+    });
+  });
+
+  describe('Customers Routes', () => {
+    beforeEach(async () => {
+      testCustomer = await createTestCustomer();
+    });
+
+    describe('GET /api/customers', () => {
+      it('should return all customers without passwords', async () => {
+        const response = await request(app)
+          .get('/api/customers')
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data).toBeInstanceOf(Array);
+        expect(response.body.data.length).toBeGreaterThan(0);
+        expect(response.body.message).toBe('Customers fetched successfully');
+        
+        // Verify password is not included
+        const customer = response.body.data.find(c => c._id === testCustomer._id.toString());
+        expect(customer).toBeDefined();
+        expect(customer.password).toBeUndefined();
+      });
+
+      it('should handle errors', async () => {
+        // Mock Customer.find to throw an error
+        jest.spyOn(Customer, 'find').mockImplementationOnce(() => {
+          throw new Error('Database error');
+        });
+
+        const response = await request(app)
+          .get('/api/customers')
+          .expect('Content-Type', /json/)
+          .expect(500);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Error fetching customers');
+        
+        // Restore the original implementation
+        Customer.find.mockRestore();
+      });
+    });
+
+    describe('GET /api/customers/:id', () => {
+      it('should return a specific customer by ID without password', async () => {
+        const response = await request(app)
+          .get(`/api/customers/${testCustomer._id}`)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data._id).toBe(testCustomer._id.toString());
+        expect(response.body.data.name).toBe(testCustomer.name);
+        expect(response.body.data.email).toBe(testCustomer.email);
+        expect(response.body.data.password).toBeUndefined();
+        expect(response.body.message).toBe('Customer fetched successfully');
+      });
+
+      it('should return 404 if customer not found', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        
+        const response = await request(app)
+          .get(`/api/customers/${nonExistentId}`)
+          .expect('Content-Type', /json/)
+          .expect(404);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Customer not found');
+      });
+
+      it('should handle invalid ID format', async () => {
+        const response = await request(app)
+          .get('/api/customers/invalid-id')
+          .expect('Content-Type', /json/)
+          .expect(500);
+
+        expect(response.body.success).toBe(false);
+      });
+    });
+
+    describe('POST /api/customers', () => {
+      it('should create a new customer with valid data', async () => {
+        const newCustomerData = {
+          name: 'New Customer',
+          email: 'new.customer@example.com',
+          password: 'securepassword'
+        };
+
+        const response = await request(app)
+          .post('/api/customers')
+          .send(newCustomerData)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.name).toBe(newCustomerData.name);
+        expect(response.body.data.email).toBe(newCustomerData.email);
+        expect(response.body.data.password).toBeUndefined();
+        expect(response.body.message).toBe('Customer created successfully');
+        
+        // Verify the customer was saved to the database
+        const savedCustomer = await Customer.findById(response.body.data._id);
+        expect(savedCustomer).not.toBeNull();
+        expect(savedCustomer.name).toBe(newCustomerData.name);
+        
+        // Verify password was hashed
+        expect(savedCustomer.password).not.toBe(newCustomerData.password);
+        const passwordMatches = await bcrypt.compare(newCustomerData.password, savedCustomer.password);
+        expect(passwordMatches).toBe(true);
+      });
+
+      it('should return 400 for missing required fields', async () => {
+        const invalidCustomerData = {
+          name: 'Missing Fields Customer'
+          // missing email and password
+        };
+
+        const response = await request(app)
+          .post('/api/customers')
+          .send(invalidCustomerData)
+          .expect('Content-Type', /json/)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toContain('Missing required fields');
+      });
+
+      it('should return 400 if email already exists', async () => {
+        const duplicateEmailData = {
+          name: 'Duplicate Email Customer',
+          email: testCustomer.email, // Using existing customer email
+          password: 'password123'
+        };
+
+        const response = await request(app)
+          .post('/api/customers')
+          .send(duplicateEmailData)
+          .expect('Content-Type', /json/)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Email already in use');
+      });
+
+      it('should handle validation errors from Mongoose', async () => {
+        // Mock Customer.prototype.save to throw a validation error
+        jest.spyOn(Customer.prototype, 'save').mockImplementationOnce(() => {
+          const error = new Error('Validation error');
+          error.name = 'ValidationError';
+          throw error;
+        });
+
+        const newCustomerData = {
+          name: 'Error Customer',
+          email: 'error.customer@example.com',
+          password: 'password123'
+        };
+
+        const response = await request(app)
+          .post('/api/customers')
+          .send(newCustomerData)
+          .expect('Content-Type', /json/)
+          .expect(500);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Error creating customer');
+        
+        // Restore the original implementation
+        Customer.prototype.save.mockRestore();
+      });
+    });
+
+    describe('PUT /api/customers/:id', () => {
+      it('should update an existing customer with valid data', async () => {
+        const updateData = {
+          name: 'Updated Customer Name'
+        };
+
+        const response = await request(app)
+          .put(`/api/customers/${testCustomer._id}`)
+          .send(updateData)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.name).toBe(updateData.name);
+        expect(response.body.data.email).toBe(testCustomer.email); // Should remain unchanged
+        expect(response.body.data.password).toBeUndefined();
+        expect(response.body.message).toBe('Customer updated successfully');
+        
+        // Verify the customer was updated in the database
+        const updatedCustomer = await Customer.findById(testCustomer._id);
+        expect(updatedCustomer.name).toBe(updateData.name);
+      });
+
+      it('should update password and hash it properly', async () => {
+        const updateData = {
+          password: 'newSecurePassword'
+        };
+
+        const response = await request(app)
+          .put(`/api/customers/${testCustomer._id}`)
+          .send(updateData)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.password).toBeUndefined();
+        
+        // Verify the password was updated and hashed in the database
+        const updatedCustomer = await Customer.findById(testCustomer._id);
+        const passwordMatches = await bcrypt.compare(updateData.password, updatedCustomer.password);
+        expect(passwordMatches).toBe(true);
+      });
+
+      it('should return 400 if email already exists for a different customer', async () => {
+        // Create another customer with a different email
+        const anotherCustomer = await Customer.create({
+          name: 'Another Customer',
+          email: 'another.customer@example.com',
+          password: 'anotherpassword'
+        });
+
+        // Try to update testCustomer to use anotherCustomer's email
+        const updateData = {
+          email: anotherCustomer.email
+        };
+
+        const response = await request(app)
+          .put(`/api/customers/${testCustomer._id}`)
+          .send(updateData)
+          .expect('Content-Type', /json/)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Email already in use by another customer');
+      });
+
+      it('should return 404 if customer not found', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        
+        const response = await request(app)
+          .put(`/api/customers/${nonExistentId}`)
+          .send({ name: 'Update Non-existent Customer' })
+          .expect('Content-Type', /json/)
+          .expect(404);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Customer not found');
+      });
+    });
+
+    describe('DELETE /api/customers/:id', () => {
+      it('should delete an existing customer', async () => {
+        // Create a customer with no associated claims
+        const customerToDelete = await Customer.create({
+          name: 'Customer To Delete',
+          email: 'delete.me@example.com',
+          password: 'password123'
+        });
+
+        const response = await request(app)
+          .delete(`/api/customers/${customerToDelete._id}`)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.message).toBe('Customer deleted successfully');
+        
+        // Verify the customer was deleted from the database
+        const deletedCustomer = await Customer.findById(customerToDelete._id);
+        expect(deletedCustomer).toBeNull();
+      });
+
+      it('should return 400 if customer has associated claims', async () => {
+        // Mock Claim.exists to return true (customer has claims)
+        jest.spyOn(Claim, 'exists').mockImplementationOnce(() => Promise.resolve(true));
+
+        const response = await request(app)
+          .delete(`/api/customers/${testCustomer._id}`)
+          .expect('Content-Type', /json/)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Cannot delete customer with associated claims');
+        
+        // Restore the original implementation
+        Claim.exists.mockRestore();
+      });
+
+      it('should return 404 if customer not found', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        
+        const response = await request(app)
+          .delete(`/api/customers/${nonExistentId}`)
+          .expect('Content-Type', /json/)
+          .expect(404);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Customer not found');
+      });
+    });
+  });
+
+  describe('Settings Routes', () => {
+    describe('File Count Settings', () => {
+      it('should update file count settings with valid data', async () => {
+        const fileCountSettings = {
+          photos: 15,
+          documents: 10,
+          invoices: 8
+        };
+
+        const response = await request(app)
+          .post('/api/settings/file-count')
+          .send(fileCountSettings)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.message).toBe('File count settings updated successfully');
+        
+        // Verify the global constant was updated
+        expect(global.MAX_FILES_PER_CATEGORY.photos).toBe(fileCountSettings.photos);
+        expect(global.MAX_FILES_PER_CATEGORY.documents).toBe(fileCountSettings.documents);
+        expect(global.MAX_FILES_PER_CATEGORY.invoices).toBe(fileCountSettings.invoices);
+        
+        // Verify the settings were saved to the database
+        const savedSettings = await Settings.findOne({ type: 'fileCount' });
+        expect(savedSettings).not.toBeNull();
+        expect(savedSettings.settings.photos).toBe(fileCountSettings.photos);
+      });
+
+      it('should return 400 for invalid file count values', async () => {
+        const invalidSettings = {
+          photos: -5, // Negative value
+          documents: 'ten', // Not a number
+          invoices: 8
+        };
+
+        const response = await request(app)
+          .post('/api/settings/file-count')
+          .send(invalidSettings)
+          .expect('Content-Type', /json/)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toContain('Invalid values');
+      });
+
+      it('should handle errors during settings update', async () => {
+        // Mock Settings.updateSettings or findOneAndUpdate to throw an error
+        jest.spyOn(Settings, 'findOneAndUpdate').mockImplementationOnce(() => {
+          throw new Error('Database error');
+        });
+
+        const fileCountSettings = {
+          photos: 15,
+          documents: 10,
+          invoices: 8
+        };
+
+        const response = await request(app)
+          .post('/api/settings/file-count')
+          .send(fileCountSettings)
+          .expect('Content-Type', /json/)
+          .expect(500);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Failed to update file count settings');
+        
+        // Restore the original implementation
+        Settings.findOneAndUpdate.mockRestore();
+      });
+    });
+
+    describe('File Size Settings', () => {
+      it('should update file size settings with valid data', async () => {
+        const fileSizeSettings = {
+          photos: 45, // in MB
+          documents: 25,
+          invoices: 15
+        };
+
+        const response = await request(app)
+          .post('/api/settings/file-sizes')
+          .send(fileSizeSettings)
+          .expect('Content-Type', /json/)
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.message).toBe('File size settings updated successfully');
+        
+        // Verify the global constant was updated (converted to bytes)
+        expect(global.MAX_FILE_SIZES.photos).toBe(fileSizeSettings.photos * 1024 * 1024);
+        expect(global.MAX_FILE_SIZES.documents).toBe(fileSizeSettings.documents * 1024 * 1024);
+        expect(global.MAX_FILE_SIZES.invoices).toBe(fileSizeSettings.invoices * 1024 * 1024);
+        
+        // Verify the settings were saved to the database
+        const savedSettings = await Settings.findOne({ type: 'fileSize' });
+        expect(savedSettings).not.toBeNull();
+        expect(savedSettings.settings.photos).toBe(fileSizeSettings.photos * 1024 * 1024);
+      });
+
+      it('should return 400 for invalid file size values', async () => {
+        const invalidSettings = {
+          photos: 0, // Zero is invalid
+          documents: 'twenty', // Not a number
+          invoices: -10 // Negative value
+        };
+
+        const response = await request(app)
+          .post('/api/settings/file-sizes')
+          .send(invalidSettings)
+          .expect('Content-Type', /json/)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toContain('Invalid values');
+      });
+    });
+
+    describe('File Type Settings', () => {
+      it('should return 400 if a category is missing file types', async () => {
+        const invalidSettings = {
+          photos: ['.jpg', '.png'],
+          documents: [], // Empty array
+          invoices: ['.pdf']
+        };
+
+        const response = await request(app)
+          .post('/api/settings/file-types')
+          .send(invalidSettings)
+          .expect('Content-Type', /json/)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toContain('Each file category must have at least one allowed file type');
+      });
+
+      it('should return 400 if file types are not in correct format', async () => {
+        const invalidSettings = {
+          photos: ['.jpg', 'png'], // Missing dot
+          documents: ['.pdf', '.doc'],
+          invoices: ['.pdf']
+        };
+
+        const response = await request(app)
+          .post('/api/settings/file-types')
+          .send(invalidSettings)
+          .expect('Content-Type', /json/)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toContain('Invalid file type format');
+      });
+    });
+
+    describe('Settings Management - Location, Status, DamageType', () => {
+      describe('POST /api/settings/:type - Adding items', () => {
+        it('should add a new location with valid data', async () => {
+          const newLocation = {
+            name: 'New Test Location'
+          };
+
+          const response = await request(app)
+            .post('/api/settings/location')
+            .send(newLocation)
+            .expect('Content-Type', /json/)
+            .expect(200);
+
+          expect(response.body.success).toBe(true);
+          expect(response.body.data.name).toBe(newLocation.name);
+          expect(response.body.message).toBe('location added successfully');
+          
+          // Verify the location was saved to the database
+          const savedLocation = await Location.findById(response.body.data._id);
+          expect(savedLocation).not.toBeNull();
+          expect(savedLocation.name).toBe(newLocation.name);
+        });
+
+        it('should add a new status with valid data', async () => {
+          const newStatus = {
+            name: 'New Test Status'
+          };
+
+          const response = await request(app)
+            .post('/api/settings/status')
+            .send(newStatus)
+            .expect('Content-Type', /json/)
+            .expect(200);
+
+          expect(response.body.success).toBe(true);
+          expect(response.body.data.name).toBe(newStatus.name);
+          expect(response.body.message).toBe('status added successfully');
+        });
+
+        it('should add a new damage type with valid data', async () => {
+          const newDamageType = {
+            name: 'New Test Damage Type'
+          };
+
+          const response = await request(app)
+            .post('/api/settings/damagetype')
+            .send(newDamageType)
+            .expect('Content-Type', /json/)
+            .expect(200);
+
+          expect(response.body.success).toBe(true);
+          expect(response.body.data.name).toBe(newDamageType.name);
+          expect(response.body.message).toBe('damagetype added successfully');
+        });
+
+        it('should return 400 for missing name field', async () => {
+          const invalidData = {
+            // missing name field
+          };
+
+          const response = await request(app)
+            .post('/api/settings/location')
+            .send(invalidData)
+            .expect('Content-Type', /json/)
+            .expect(400);
+
+          expect(response.body.success).toBe(false);
+          expect(response.body.message).toBe('Name is required');
+        });
+
+        it('should return 400 for duplicate location name', async () => {
+          // First create a location
+          const existingLocation = await Location.create({ name: 'Existing Location' });
+          
+          // Then try to create another with the same name
+          const duplicateData = {
+            name: existingLocation.name
+          };
+
+          const response = await request(app)
+            .post('/api/settings/location')
+            .send(duplicateData)
+            .expect('Content-Type', /json/)
+            .expect(400);
+
+          expect(response.body.success).toBe(false);
+          expect(response.body.message).toBe(`Location "${existingLocation.name}" already exists`);
+        });
+
+        it('should return 400 for invalid type', async () => {
+          const response = await request(app)
+            .post('/api/settings/invalidtype')
+            .send({ name: 'Test' })
+            .expect('Content-Type', /json/)
+            .expect(400);
+
+          expect(response.body.success).toBe(false);
+          expect(response.body.message).toBe('Invalid type');
+        });
+      });
+
+      describe('PUT /api/settings/:type/:id - Updating items', () => {
+        it('should update an existing location', async () => {
+          // Create a location to update
+          const location = await Location.create({ name: 'Location To Update' });
+          
+          const updateData = {
+            name: 'Updated Location Name'
+          };
+
+          const response = await request(app)
+            .put(`/api/settings/location/${location._id}`)
+            .send(updateData)
+            .expect('Content-Type', /json/)
+            .expect(200);
+
+          expect(response.body.success).toBe(true);
+          expect(response.body.data.name).toBe(updateData.name);
+          expect(response.body.message).toBe('location updated successfully');
+          
+          // Verify the location was updated in the database
+          const updatedLocation = await Location.findById(location._id);
+          expect(updatedLocation.name).toBe(updateData.name);
+        });
+
+        it('should return 400 for duplicate name on update', async () => {
+          // Create two locations
+          const location1 = await Location.create({ name: 'First Location' });
+          const location2 = await Location.create({ name: 'Second Location' });
+          
+          // Try to update location2 to use location1's name
+          const updateData = {
+            name: location1.name
+          };
+
+          const response = await request(app)
+            .put(`/api/settings/location/${location2._id}`)
+            .send(updateData)
+            .expect('Content-Type', /json/)
+            .expect(400);
+
+          expect(response.body.success).toBe(false);
+          expect(response.body.message).toBe(`Location "${location1.name}" already exists`);
+        });
+
+        it('should return 404 if item does not exist', async () => {
+          const nonExistentId = new mongoose.Types.ObjectId();
+          
+          const response = await request(app)
+            .put(`/api/settings/status/${nonExistentId}`)
+            .send({ name: 'Updated Name' })
+            .expect('Content-Type', /json/)
+            .expect(404);
+
+          expect(response.body.success).toBe(false);
+          expect(response.body.message).toBe('status not found');
+        });
+
+        it('should return 400 for missing name field on update', async () => {
+          const status = await Status.create({ name: 'Status To Update' });
+          
+          const invalidData = {
+            // missing name field
+          };
+
+          const response = await request(app)
+            .put(`/api/settings/status/${status._id}`)
+            .send(invalidData)
+            .expect('Content-Type', /json/)
+            .expect(400);
+
+          expect(response.body.success).toBe(false);
+          expect(response.body.message).toBe('Name is required');
+        });
+      });
+
+      describe('DELETE /api/settings/:type/:id - Deleting items', () => {
+        it('should delete an existing location', async () => {
+          // Create a location to delete
+          const location = await Location.create({ name: 'Location To Delete' });
+          
+          const response = await request(app)
+            .delete(`/api/settings/location/${location._id}`)
+            .expect('Content-Type', /json/)
+            .expect(200);
+
+          expect(response.body.success).toBe(true);
+          expect(response.body.message).toBe('location deleted successfully');
+          
+          // Verify the location was deleted from the database
+          const deletedLocation = await Location.findById(location._id);
+          expect(deletedLocation).toBeNull();
+        });
+
+        it('should return 400 if location is in use by claims', async () => {
+          // Create a location
+          const location = await Location.create({ name: 'In-Use Location' });
+          
+          // Mock Claim.findOne to return a claim that uses this location
+          jest.spyOn(Claim, 'findOne').mockImplementationOnce(() => {
+            return Promise.resolve({ _id: 'mockClaimId' });
+          });
+
+          const response = await request(app)
+            .delete(`/api/settings/location/${location._id}`)
+            .expect('Content-Type', /json/)
+            .expect(400);
+
+          expect(response.body.success).toBe(false);
+          expect(response.body.message).toBe('Cannot delete location as it is being used by existing claims');
+          
+          // Restore the original implementation
+          Claim.findOne.mockRestore();
+        });
+
+        it('should return 404 if item to delete does not exist', async () => {
+          const nonExistentId = new mongoose.Types.ObjectId();
+          
+          const response = await request(app)
+            .delete(`/api/settings/status/${nonExistentId}`)
+            .expect('Content-Type', /json/)
+            .expect(404);
+
+          expect(response.body.success).toBe(false);
+          expect(response.body.message).toBe('status not found');
+        });
+
+        it('should return 400 for invalid type', async () => {
+          const mockId = new mongoose.Types.ObjectId();
+          
+          const response = await request(app)
+            .delete(`/api/settings/invalidtype/${mockId}`)
+            .expect('Content-Type', /json/)
+            .expect(400);
+
+          expect(response.body.success).toBe(false);
+          expect(response.body.message).toBe('Invalid type');
+        });
+      });
+    });
+  });
+
+  // More test suites will follow...
+}); 

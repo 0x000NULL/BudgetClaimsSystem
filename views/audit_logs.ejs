@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
     <title>Audit Logs - Budget Claims System</title> <!-- Title of the document -->
     <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS for styling -->
+    <!-- Add datepicker CSS for filtering by date -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
     <header>
@@ -38,6 +40,54 @@
     <main>
         <h2>Audit Logs</h2> <!-- Section heading -->
 
+        <!-- Filter form -->
+        <div class="filter-section">
+            <h3>Filter Logs</h3>
+            <form id="filter-form" action="/audit-logs" method="GET">
+                <div class="form-group">
+                    <label for="userId">User ID:</label>
+                    <input type="text" id="userId" name="userId" value="<%= filters.userId %>" placeholder="Filter by user ID">
+                </div>
+                
+                <div class="form-group">
+                    <label for="action">Action:</label>
+                    <select id="action" name="action">
+                        <option value="">All Actions</option>
+                        <% if (filters.uniqueActions && filters.uniqueActions.length) { %>
+                            <% filters.uniqueActions.forEach(action => { %>
+                                <option value="<%= action %>" <%= filters.action === action ? 'selected' : '' %>><%= action %></option>
+                            <% }) %>
+                        <% } %>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="startDate">Start Date:</label>
+                    <input type="date" id="startDate" name="startDate" value="<%= filters.startDate %>" class="datepicker">
+                </div>
+                
+                <div class="form-group">
+                    <label for="endDate">End Date:</label>
+                    <input type="date" id="endDate" name="endDate" value="<%= filters.endDate %>" class="datepicker">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <button type="button" id="clearFilters" class="btn btn-secondary">Clear Filters</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Export options -->
+        <div class="export-section">
+            <h3>Export Logs</h3>
+            <div class="export-buttons">
+                <a href="/audit-logs/export/csv<%= Object.keys(filters).filter(key => filters[key] && key !== 'uniqueActions').map((key, index) => `${index === 0 ? '?' : '&'}${key}=${filters[key]}`).join('') %>" class="btn btn-export">Export as CSV</a>
+                <a href="/audit-logs/export/excel<%= Object.keys(filters).filter(key => filters[key] && key !== 'uniqueActions').map((key, index) => `${index === 0 ? '?' : '&'}${key}=${filters[key]}`).join('') %>" class="btn btn-export">Export as Excel</a>
+                <a href="/audit-logs/export/pdf<%= Object.keys(filters).filter(key => filters[key] && key !== 'uniqueActions').map((key, index) => `${index === 0 ? '?' : '&'}${key}=${filters[key]}`).join('') %>" class="btn btn-export">Export as PDF</a>
+            </div>
+        </div>
+
         <!-- Table to display audit logs -->
         <table>
             <thead>
@@ -52,7 +102,7 @@
                 <% if (logs && logs.length) { %> <!-- Check if logs are available -->
                     <% logs.forEach(log => { %> <!-- Iterate over each log -->
                         <tr>
-                            <td><%= log.user.username %></td> <!-- Display username -->
+                            <td><%= log.user && log.user.username ? log.user.username : 'Unknown' %></td> <!-- Display username safely -->
                             <td><%= log.action %></td> <!-- Display action -->
                             <td><%= log.details %></td> <!-- Display details -->
                             <td><%= new Date(log.timestamp).toLocaleString() %></td> <!-- Display timestamp -->
@@ -65,6 +115,63 @@
                 <% } %>
             </tbody>
         </table>
+
+        <!-- Pagination controls -->
+        <% if (pagination && pagination.totalPages > 1) { %>
+            <div class="pagination">
+                <% if (pagination.page > 1) { %>
+                    <a href="/audit-logs?page=<%= pagination.page - 1 %><%= Object.keys(filters).filter(key => filters[key] && key !== 'uniqueActions').map(key => `&${key}=${filters[key]}`).join('') %>&limit=<%= pagination.limit %>" class="btn btn-pagination">&laquo; Previous</a>
+                <% } %>
+                
+                <% 
+                // Calculate range of page numbers to show
+                let startPage = Math.max(1, pagination.page - 2);
+                let endPage = Math.min(pagination.totalPages, pagination.page + 2);
+                
+                // Show first page if not in range
+                if (startPage > 1) { %>
+                    <a href="/audit-logs?page=1<%= Object.keys(filters).filter(key => filters[key] && key !== 'uniqueActions').map(key => `&${key}=${filters[key]}`).join('') %>&limit=<%= pagination.limit %>" class="btn btn-pagination">1</a>
+                    <% if (startPage > 2) { %><span class="pagination-ellipsis">...</span><% } %>
+                <% } %>
+                
+                <% // Display page numbers
+                for (let i = startPage; i <= endPage; i++) { %>
+                    <a href="/audit-logs?page=<%= i %><%= Object.keys(filters).filter(key => filters[key] && key !== 'uniqueActions').map(key => `&${key}=${filters[key]}`).join('') %>&limit=<%= pagination.limit %>" 
+                       class="btn btn-pagination <%= i === pagination.page ? 'btn-pagination-active' : '' %>"><%= i %></a>
+                <% } %>
+                
+                <% // Show last page if not in range
+                if (endPage < pagination.totalPages) { %>
+                    <% if (endPage < pagination.totalPages - 1) { %><span class="pagination-ellipsis">...</span><% } %>
+                    <a href="/audit-logs?page=<%= pagination.totalPages %><%= Object.keys(filters).filter(key => filters[key] && key !== 'uniqueActions').map(key => `&${key}=${filters[key]}`).join('') %>&limit=<%= pagination.limit %>" class="btn btn-pagination"><%= pagination.totalPages %></a>
+                <% } %>
+                
+                <% if (pagination.page < pagination.totalPages) { %>
+                    <a href="/audit-logs?page=<%= pagination.page + 1 %><%= Object.keys(filters).filter(key => filters[key] && key !== 'uniqueActions').map(key => `&${key}=${filters[key]}`).join('') %>&limit=<%= pagination.limit %>" class="btn btn-pagination">Next &raquo;</a>
+                <% } %>
+                
+                <span class="pagination-info">Page <%= pagination.page %> of <%= pagination.totalPages %> (Total: <%= pagination.totalLogs %> logs)</span>
+            </div>
+        <% } %>
     </main>
+
+    <!-- Add JavaScript for datepicker and filter functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        // Initialize datepickers
+        flatpickr('.datepicker', {
+            dateFormat: "Y-m-d",
+            allowInput: true
+        });
+        
+        // Clear filters button functionality
+        document.getElementById('clearFilters').addEventListener('click', function() {
+            document.getElementById('userId').value = '';
+            document.getElementById('action').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('filter-form').submit();
+        });
+    </script>
 </body>
 </html>
