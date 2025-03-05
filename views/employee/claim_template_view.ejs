@@ -1,0 +1,194 @@
+<%- include('../partials/header') %>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><%= template.name %></h1>
+        <div>
+            <form action="/claim-templates/<%= template._id %>/use" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-success" 
+                    <%= (template.requiresApproval && template.approvalStatus !== 'approved') ? 'disabled' : '' %>>
+                    <i class="fas fa-play"></i> Use Template
+                </button>
+            </form>
+            <% if (template.createdBy._id.toString() === user.id || user.role === 'admin') { %>
+                <a href="/claim-templates/<%= template._id %>/edit" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <form action="/claim-templates/<%= template._id %>?_method=DELETE" method="POST" class="d-inline delete-form">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </form>
+            <% } %>
+            <a href="/claim-templates" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Templates
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Template Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3 font-weight-bold">Name:</div>
+                        <div class="col-md-9"><%= template.name %></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 font-weight-bold">Category:</div>
+                        <div class="col-md-9"><%= template.category || 'Uncategorized' %></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 font-weight-bold">Description:</div>
+                        <div class="col-md-9"><%= template.description || 'No description provided' %></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 font-weight-bold">Version:</div>
+                        <div class="col-md-9"><%= template.version %></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 font-weight-bold">Shared:</div>
+                        <div class="col-md-9"><%= template.isShared ? 'Yes' : 'No' %></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 font-weight-bold">Requires Approval:</div>
+                        <div class="col-md-9"><%= template.requiresApproval ? 'Yes' : 'No' %></div>
+                    </div>
+                    <% if (template.requiresApproval) { %>
+                        <div class="row mb-3">
+                            <div class="col-md-3 font-weight-bold">Approval Status:</div>
+                            <div class="col-md-9">
+                                <% if (template.approvalStatus === 'approved') { %>
+                                    <span class="badge badge-success">Approved</span>
+                                <% } else if (template.approvalStatus === 'rejected') { %>
+                                    <span class="badge badge-danger">Rejected</span>
+                                <% } else { %>
+                                    <span class="badge badge-warning">Pending Approval</span>
+                                <% } %>
+                            </div>
+                        </div>
+                        <% if (template.approvedBy) { %>
+                            <div class="row mb-3">
+                                <div class="col-md-3 font-weight-bold">Approved By:</div>
+                                <div class="col-md-9"><%= template.approvedBy.name %></div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-3 font-weight-bold">Approved At:</div>
+                                <div class="col-md-9"><%= new Date(template.approvedAt).toLocaleString() %></div>
+                            </div>
+                        <% } %>
+                    <% } %>
+                    <div class="row mb-3">
+                        <div class="col-md-3 font-weight-bold">Created By:</div>
+                        <div class="col-md-9"><%= template.createdBy.name %></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 font-weight-bold">Created At:</div>
+                        <div class="col-md-9"><%= new Date(template.createdAt).toLocaleString() %></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 font-weight-bold">Last Updated:</div>
+                        <div class="col-md-9"><%= new Date(template.updatedAt).toLocaleString() %></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Default Values</h5>
+                </div>
+                <div class="card-body">
+                    <% if (Object.keys(template.defaultValues).length === 0) { %>
+                        <p class="text-muted">No default values set for this template.</p>
+                    <% } else { %>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Field</th>
+                                        <th>Default Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% Object.entries(template.defaultValues).forEach(([field, value]) => { %>
+                                        <% if (value && value.toString().trim() !== '') { %>
+                                            <tr>
+                                                <td><%= field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()) %></td>
+                                                <td><%= value %></td>
+                                            </tr>
+                                        <% } %>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Required Fields</h5>
+                </div>
+                <div class="card-body">
+                    <% if (template.requiredFields.length === 0) { %>
+                        <p class="text-muted">No required fields set for this template.</p>
+                    <% } else { %>
+                        <ul class="list-group">
+                            <% template.requiredFields.forEach(field => { %>
+                                <li class="list-group-item">
+                                    <%= field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()) %>
+                                </li>
+                            <% }); %>
+                        </ul>
+                    <% } %>
+                </div>
+            </div>
+
+            <% if ((user.role === 'admin' || user.role === 'manager') && 
+                   template.requiresApproval && 
+                   template.approvalStatus === 'pending') { %>
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Approval Required</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>This template requires approval before it can be used.</p>
+                        <div class="d-flex justify-content-between">
+                            <form action="/claim-templates/<%= template._id %>/approve" method="POST">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                            </form>
+                            <form action="/claim-templates/<%= template._id %>/reject" method="POST">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Confirm delete
+        const deleteForm = document.querySelector('.delete-form');
+        if (deleteForm) {
+            deleteForm.addEventListener('submit', function(e) {
+                if (!confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+</script>
+
+<%- include('../partials/footer') %> 

@@ -19,7 +19,7 @@ const logActivity = (action) => {
         });
 
         // Check if the user is authenticated
-        if (req.isAuthenticated()) {
+        if (req.isAuthenticated && req.isAuthenticated()) {
             // Create a new activity log entry
             const log = new ActivityLog({
                 user: req.user._id, // The ID of the authenticated user performing the action
@@ -49,8 +49,8 @@ const logActivity = (action) => {
                     sessionId: req.sessionID,
                     timestamp: new Date().toISOString()
                 });
-                next(err);
-                return;
+                // Don't pass the error to next() to avoid breaking the request chain
+                console.error('Error saving activity log:', err);
             }
         } else {
             // Log that the user is not authenticated
@@ -69,4 +69,6 @@ const logActivity = (action) => {
 };
 
 // Export the logActivity middleware function
-module.exports = logActivity;
+module.exports = {
+    logActivity
+};

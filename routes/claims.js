@@ -3,54 +3,38 @@
  * It includes routes for exporting claims as PDF, adding new claims, searching for claims,
  * fetching all claims, and updating existing claims. The routes are protected by authentication
  * and role-based access control middleware.
- * 
- * @requires express
- * @requires ../models/Claim
- * @requires path
- * @requires ../middleware/auth
- * @requires ../middleware/activityLogger
- * @requires ../notifications/notify
- * @requires csv-express
- * @requires exceljs
- * @requires pdfkit
- * @requires fs
- * @requires cache-manager
- * @requires cache-manager-redis-store
- * @requires ../logger
- * @requires ../models/Status
- * @requires ../models/Location
- * @requires ../models/DamageType
  */
 
-const express = require('express'); // Import Express to create a router
-const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
-const path = require('path'); // Import Path to handle file and directory paths
-const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth'); // Import authentication and role-checking middleware
-const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
-const { notifyNewClaim, notifyClaimStatusUpdate, notifyClaimAssigned, notifyClaimUpdated } = require('../notifications/notify'); // Import notification functions
-const csv = require('csv-express'); // Import csv-express for CSV export
-const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
-const PDFDocument = require('pdfkit'); // Import PDFKit for PDF export
-const fs = require('fs'); // Import File System to handle file operations
-const cacheManager = require('cache-manager'); // Import cache manager for caching
-const redisStore = require('cache-manager-redis-store'); // Import Redis store for cache manager
-const pinoLogger = require('../logger'); // Import Pino logger
-const Status = require('../models/Status'); // Import Status model
-const Location = require('../models/Location'); // Import Location model
-const DamageType = require('../models/DamageType'); // Import DamageType model
+const express = require('express');
+const Claim = require('../models/Claim');
+const path = require('path');
+const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth');
+const { logActivity } = require('../middleware/activityLogger');
+const { notifyNewClaim, notifyClaimStatusUpdate, notifyClaimAssigned, notifyClaimUpdated } = require('../notifications/notify');
+const csv = require('csv-express');
+const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const cacheManager = require('cache-manager');
+const redisStore = require('cache-manager-redis-store');
+const pinoLogger = require('../logger');
+const Status = require('../models/Status');
+const Location = require('../models/Location');
+const DamageType = require('../models/DamageType');
 const fileUpload = require('express-fileupload');
-const Settings = require('../models/Settings'); // Import Settings model
+const Settings = require('../models/Settings');
 const uploadsPath = require('../config/settings');
-const logRequest = require('../middleware/auditLogger');
 const logger = require('../logger');
 
-// Setup cache manager with Redis
-const cache = cacheManager.caching({
-    store: redisStore,
-    host: process.env.REDIS_HOST || '127.0.0.1',
-    port: process.env.REDIS_PORT || 6379,
-    ttl: 600 // Time-to-live for cached data (in seconds)
-});
+const router = express.Router();
+
+// Middleware for file uploads
+router.use(fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    useTempFiles: true,
+    tempFileDir: '/tmp/',
+    debug: process.env.NODE_ENV === 'development'
+}));
 
 // Helper function to validate file
 const validateFile = (file, category) => {
@@ -175,240 +159,80 @@ router.get('/:id/export', ensureAuthenticated, ensureRoles(['admin', 'manager', 
     logRequest(req, `Exporting claim to PDF with ID: ${claimId}`);
 
     try {
-        const claim = await Claim.findById(claimId)
+        const claim = await Claim.findById(req.params.id)
             .populate('status')
             .populate('rentingLocation')
-            .populate('damageType');
+            .populate('damageType')
+            .exec();
 
         if (!claim) {
-            logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Claim not found' });
         }
 
-        const doc = new PDFDocument({ autoFirstPage: true, margin: 50 });
-        const filename = `claim_${claimId}.pdf`;
-        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-        res.setHeader('Content-Type', 'application/pdf');
-
-        doc.pipe(res);
-
-        // Helper function to add a field to the PDF
-        const addField = (label, value) => {
-            let displayValue = value;
-            if (value === undefined || value === null || value === '') {
-                displayValue = 'Not Provided';
-            } else if (typeof value === 'boolean') {
-                displayValue = value ? 'Yes' : 'No';
-            }
-            doc.text(`${label}: ${displayValue}`, { continued: false });
-            doc.moveDown(0.5);
-        };
-
-        // Helper function to add a section header
-        const addSectionHeader = (title) => {
-            doc.moveDown();
-            doc.fontSize(16).text(title, { underline: true });
-            doc.moveDown();
-            doc.fontSize(12);
-        };
-
-        // Title Page
-        doc.fontSize(24).text('Claim Report', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(16).text(`Claim #${claim.claimNumber}`, { align: 'center' });
-        doc.moveDown();
-        doc.text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' });
-        doc.moveDown(2);
-
-        // Table of Contents
-        doc.fontSize(14).text('Table of Contents', { underline: true });
-        doc.moveDown();
-        doc.fontSize(12);
-        const sections = [
-            'Claim Overview',
-            'Customer Information',
-            'Vehicle Information',
-            'Accident Details',
-            'Insurance Information',
-            'Third Party Information',
-            'Financial Information',
-            'Notes and Comments',
-            'Attached Documents'
-        ];
-        sections.forEach((section, index) => {
-            doc.text(`${index + 1}. ${section}`);
-            doc.moveDown(0.5);
-        });
-
-        // Claim Overview
-        doc.addPage();
-        addSectionHeader('1. Claim Overview');
-        addField('Claim Number', claim.claimNumber);
-        addField('MVA', claim.mva);
-        addField('Status', claim.status ? claim.status.name : 'Not Set');
-        addField('Date Created', new Date(claim.date).toLocaleDateString());
-        addField('Claim Close Date', claim.claimCloseDate ? new Date(claim.claimCloseDate).toLocaleDateString() : 'Not Closed');
-        addField('Description', claim.description);
-
-        // Customer Information
-        doc.addPage();
-        addSectionHeader('2. Customer Information');
-        addField('Customer Name', claim.customerName);
-        addField('Customer Number', claim.customerNumber);
-        addField('Customer Email', claim.customerEmail);
-        addField('Customer Phone', claim.customerPhone);
-        addField('Customer Address', claim.customerAddress);
-        addField('Customer Drivers License', claim.customerDriversLicense);
-
-        // Vehicle Information
-        doc.addPage();
-        addSectionHeader('3. Vehicle Information');
-        addField('Car Make', claim.carMake);
-        addField('Car Model', claim.carModel);
-        addField('Car Year', claim.carYear);
-        addField('Car Color', claim.carColor);
-        addField('Car VIN', claim.carVIN);
-        addField('Vehicle Odometer', claim.vehicleOdometer);
-        addField('RA Number', claim.raNumber);
-        addField('Renting Location', claim.rentingLocation ? claim.rentingLocation.name : 'Not Specified');
-
-        // Accident Details
-        doc.addPage();
-        addSectionHeader('4. Accident Details');
-        addField('Accident Date', claim.accidentDate ? new Date(claim.accidentDate).toLocaleDateString() : 'Not Specified');
-        addField('Damage Type', claim.damageType ? claim.damageType.name : 'Not Specified');
-        addField('Police Department', claim.policeDepartment);
-        addField('Police Report Number', claim.policeReportNumber);
-        addField('Is Renter At Fault', claim.isRenterAtFault);
-        addField('Body Shop Name', claim.bodyShopName);
-        addField('Description of Damage', claim.description);
-
-        // Insurance Information
-        doc.addPage();
-        addSectionHeader('5. Insurance Information');
-        addField('Insurance Carrier', claim.insuranceCarrier);
-        addField('Insurance Agent', claim.insuranceAgent);
-        addField('Insurance Phone Number', claim.insurancePhoneNumber);
-        addField('Insurance Fax Number', claim.insuranceFaxNumber);
-        addField('Insurance Address', claim.insuranceAddress);
-        addField('Insurance Claim Number', claim.insuranceClaimNumber);
-        addField('Renters Liability Insurance', claim.rentersLiabilityInsurance);
-        addField('Loss Damage Waiver', claim.lossDamageWaiver);
-        addField('LDW Accepted', claim.ldwAccepted);
-
-        // Third Party Information
-        doc.addPage();
-        addSectionHeader('6. Third Party Information');
-        addField('Third Party Name', claim.thirdPartyName);
-        addField('Third Party Phone Number', claim.thirdPartyPhoneNumber);
-        addField('Third Party Insurance Name', claim.thirdPartyInsuranceName);
-        addField('Third Party Policy Number', claim.thirdPartyPolicyNumber);
-
-        // Financial Information
-        doc.addPage();
-        addSectionHeader('7. Financial Information');
-        addField('Billable', claim.billable);
-        addField('Damages Total', claim.damagesTotal ? `$${claim.damagesTotal}` : 'Not Specified');
-        if (claim.invoiceTotals && claim.invoiceTotals.length > 0) {
-            doc.moveDown();
-            doc.text('Invoice Totals:', { underline: true });
-            claim.invoiceTotals.forEach(invoice => {
-                doc.text(`- ${invoice.fileName}: $${invoice.total}`);
-            });
-        }
-
-        // Notes and Comments
-        doc.addPage();
-        addSectionHeader('8. Notes and Comments');
-        if (claim.notes && claim.notes.length > 0) {
-            claim.notes.forEach((note, index) => {
-                doc.text(`Note ${index + 1}:`);
-                doc.text(`Date: ${new Date(note.createdAt).toLocaleString()}`);
-                doc.text(`Type: ${note.type}`);
-                doc.text(`Content: ${note.content}`);
-                doc.moveDown();
-            });
-        } else {
-            doc.text('No notes available');
-        }
-
-        // Attached Documents
-        doc.addPage();
-        addSectionHeader('9. Attached Documents');
-        const files = claim.files || {};
-        const fileCategories = [
-            { title: 'Photos', files: files.photos || [] },
-            { title: 'Documents', files: files.documents || [] },
-            { title: 'Invoices', files: files.invoices || [] },
-            { title: 'Police Reports', files: files.policeReports || [] },
-            { title: 'Rental Agreements', files: files.rentalAgreements || [] }
-        ];
-
-        fileCategories.forEach(category => {
-            if (category.files.length > 0) {
-                doc.moveDown();
-                doc.fontSize(16).text(category.title, { underline: true });
-                doc.fontSize(12);
-                
-                category.files.forEach((file, index) => {
-                    const filePath = path.join(__dirname, '../public/uploads', file);
-                    try {
-                        if (file.match(/\.(png|jpg|jpeg)$/i)) {
-                            // Start a new page for each image
-                            if (index > 0) {
-                                doc.addPage();
-                            }
-                            
-                            // Add image title
-                            doc.fontSize(14).text(file, { align: 'center' });
-                            doc.moveDown();
-                            
-                            // Add image with consistent sizing
-                            doc.image(filePath, {
-                                fit: [500, 600],
-                                align: 'center'
-                            });
-                            
-                            // Add page number for photos
-                            doc.fontSize(10)
-                                .text(
-                                    `Photo ${index + 1} of ${category.files.length}`,
-                                    { align: 'center' }
-                                );
-
-                            // Add a new page after the last photo in the category
-                            if (index === category.files.length - 1) {
-                                doc.addPage();
-                            }
-                        } else {
-                            // For non-image files
-                            doc.fontSize(12).text(`- ${file}`);
-                            doc.moveDown(0.5);
-                        }
-                    } catch (error) {
-                        doc.fontSize(12).text(`Error processing file: ${file}`);
-                        logRequest(req, 'Error processing file:', { error, file });
-                        doc.moveDown();
-                    }
-                });
-            } else {
-                doc.moveDown();
-                doc.fontSize(14).text(`${category.title}: No files attached`);
-                doc.fontSize(12);
-            }
-            doc.moveDown(2);
-        });
-
-        doc.end();
-
+        res.render('claims/view', { claim });
     } catch (err) {
-        logRequest(req, 'Error exporting claim to PDF:', { error: err });
-        res.status(500).render('500', { message: 'Internal Server Error' });
+        logger.error('Error fetching claim:', err);
+        res.status(500).render('error', { error: err });
     }
 });
 
-// Route to display the add claim form
-router.get('/add', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+// GET /claims/:id/edit - Display edit form
+router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('view_claim_edit'), async (req, res) => {
+    try {
+        const [claim, statuses, locations, damageTypes] = await Promise.all([
+            Claim.findById(req.params.id)
+                .populate('status')
+                .populate('rentingLocation')
+                .populate('damageType')
+                .exec(),
+            Status.find().sort({ name: 1 }),
+            Location.find().sort({ name: 1 }),
+            DamageType.find().sort({ name: 1 })
+        ]);
+
+        if (!claim) {
+            return res.status(404).render('404', { message: 'Claim not found' });
+        }
+
+        res.render('claims/edit', {
+            claim,
+            statuses,
+            locations,
+            damageTypes,
+            rentingLocations: locations,
+            errors: {}
+        });
+    } catch (err) {
+        logger.error('Error loading edit form:', err);
+        res.status(500).render('error', { error: err });
+    }
+});
+
+// PUT /claims/:id - Update claim
+router.put('/:id', ensureAuthenticated, logActivity('update_claim'), async (req, res) => {
+    try {
+        const claim = await Claim.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true, runValidators: true }
+        );
+
+        if (!claim) {
+            return res.status(404).render('404', { message: 'Claim not found' });
+        }
+
+        await notifyClaimUpdated(claim);
+        req.flash('success', 'Claim updated successfully');
+        res.redirect('/claims');
+    } catch (err) {
+        logger.error('Error updating claim:', err);
+        req.flash('error', 'Error updating claim');
+        res.status(500).render('error', { error: err });
+    }
+});
+
+// DELETE /claims/:id - Delete claim
+router.delete('/:id', ensureAuthenticated, ensureRole('admin'), logActivity('delete_claim'), async (req, res) => {
     try {
         const statuses = await Status.find().sort({ name: 1 });
         const locations = await Location.find().sort({ name: 1 });
@@ -448,8 +272,8 @@ router.get('/express', ensureAuthenticated, ensureRoles(['admin', 'manager', 'em
     }
 });
 
-// Route to search for claims, accessible by admin, manager, and employee
-router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+// POST /claims/:id/assign - Assign claim to user
+router.post('/:id/assign', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('assign_claim'), async (req, res) => {
     try {
         // Fetch necessary data for the search form
         const damageTypes = await DamageType.find().sort({ name: 1 });
@@ -557,97 +381,23 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
 // Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
 router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res) => {
     try {
-        let query = {};
-        if (req.query.status) {
-            query.status = req.query.status;
-        }
-        const claims = await Claim.find(query).sort({ createdAt: -1 });
-        res.json(claims);
-    } catch (error) {
-        logger.error('Error fetching claims:', error);
-        res.render('500', { message: 'Error fetching claims' });
-    }
-});
+        const claim = await Claim.findByIdAndUpdate(
+            req.params.id,
+            { $set: { status: req.body.statusId } },
+            { new: true }
+        );
 
-// POST /claims - Add a new claim
-router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, res) => {
-    try {
-        // Log the incoming request data (excluding sensitive info)
-        logger.info('Creating new claim with data:', {
-            ...req.body,
-            // Exclude any sensitive fields if present
-            customerDriversLicense: req.body.customerDriversLicense ? '[REDACTED]' : undefined,
-            // Add other sensitive fields to redact as needed
-        });
-
-        // Create new claim without specifying claim number
-        const newClaim = new Claim({
-            ...req.body,
-            createdBy: req.user._id
-        });
-        
-        // Save the claim (claim number will be generated automatically)
-        try {
-            await newClaim.save();
-            logger.info('New claim created successfully:', { 
-                claimId: newClaim._id,
-                claimNumber: newClaim.claimNumber
-            });
-        } catch (saveError) {
-            logger.error('Error saving new claim:', {
-                error: saveError.message,
-                stack: saveError.stack,
-                validationErrors: saveError.errors
-            });
-            throw saveError; // Re-throw to be caught by outer try-catch
-        }
-        
-        // Send notification
-        try {
-            await notifyNewClaim(req.user.email, newClaim);
-        } catch (notifyError) {
-            // Log notification error but don't fail the request
-            logger.error('Error sending claim notification:', {
-                error: notifyError.message,
-                claimId: newClaim._id
-            });
+        if (!claim) {
+            return res.status(404).render('404', { message: 'Claim not found' });
         }
 
-        // If this is an API request, send JSON response
-        if (req.xhr || req.headers.accept.includes('application/json')) {
-            res.status(201).json({
-                success: true,
-                claim: {
-                    id: newClaim._id,
-                    claimNumber: newClaim.claimNumber
-                }
-            });
-        } else {
-            // Otherwise redirect to the claim view page
-            res.redirect(`/claims/${newClaim._id}`);
-        }
-    } catch (error) {
-        logger.error('Error in claim creation:', {
-            error: error.message,
-            stack: error.stack,
-            body: req.body
-        });
-
-        // If this is an API request, send JSON error response
-        if (req.xhr || req.headers.accept.includes('application/json')) {
-            res.status(500).json({
-                success: false,
-                error: process.env.NODE_ENV === 'development' ? error.message : 'Error creating claim',
-                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-            });
-        } else {
-            // For regular form submissions, render error page
-            res.status(500).render('500', {
-                message: 'Error creating claim',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-            });
-        }
+        await notifyClaimStatusUpdate(claim);
+        req.flash('success', 'Claim status updated successfully');
+        res.redirect('/claims');
+    } catch (err) {
+        logger.error('Error updating claim status:', err);
+        req.flash('error', 'Error updating claim status');
+        res.status(500).render('error', { error: err });
     }
 });
 

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <!-- Budget logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <nav>
+            <ul>
+                <li><a href="/customer/dashboard" class="active">Dashboard</a></li>
+                <li><a href="/customer/claims">My Claims</a></li>
+                <li><a href="/customer/claims/new">Submit Claim</a></li>
+                <li><a href="/customer/settings">Settings</a></li>
+                <li><a href="/customer/help">Help</a></li>
+                <li><a href="/customer/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="dashboard-container">
+            <!-- Welcome Section -->
+            <section class="welcome-section">
+                <h1>Welcome, <%= user.firstName %>!</h1>
+                <p class="last-login">Last login: <%= new Date(user.lastLogin).toLocaleString() %></p>
+            </section>
+
+            <!-- Quick Stats -->
+            <section class="stats-section">
+                <h2>Claims Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Active Claims</h3>
+                        <p class="stat-number"><%= activeClaims %></p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pending Review</h3>
+                        <p class="stat-number"><%= pendingClaims %></p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Completed Claims</h3>
+                        <p class="stat-number"><%= completedClaims %></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Claims -->
+            <section class="recent-claims">
+                <h2>Recent Claims</h2>
+                <% if (recentClaims && recentClaims.length > 0) { %>
+                    <div class="claims-list">
+                        <% recentClaims.forEach(claim => { %>
+                            <div class="claim-card">
+                                <div class="claim-header">
+                                    <h3>Claim #<%= claim.claimNumber %></h3>
+                                    <span class="claim-status <%= claim.status.toLowerCase() %>">
+                                        <%= claim.status %>
+                                    </span>
+                                </div>
+                                <div class="claim-details">
+                                    <p>Submitted: <%= new Date(claim.createdAt).toLocaleDateString() %></p>
+                                    <p>Type: <%= claim.type %></p>
+                                    <% if (claim.lastUpdate) { %>
+                                        <p>Last Update: <%= new Date(claim.lastUpdate).toLocaleDateString() %></p>
+                                    <% } %>
+                                </div>
+                                <a href="/customer/claims/<%= claim._id %>" class="btn view-claim">View Details</a>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <p class="no-claims">No recent claims found.</p>
+                    <a href="/customer/claims/new" class="btn submit-claim">Submit Your First Claim</a>
+                <% } %>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="quick-actions">
+                <h2>Quick Actions</h2>
+                <div class="actions-grid">
+                    <a href="/customer/claims/new" class="action-card">
+                        <h3>Submit New Claim</h3>
+                        <p>Start a new claim process</p>
+                    </a>
+                    <a href="/customer/claims" class="action-card">
+                        <h3>View All Claims</h3>
+                        <p>See all your claims history</p>
+                    </a>
+                    <a href="/customer/help" class="action-card">
+                        <h3>Get Help</h3>
+                        <p>Access support resources</p>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <% if (messages && messages.length > 0) { %>
+        <div class="toast-container">
+            <% messages.forEach(message => { %>
+                <div class="toast <%= message.type %>">
+                    <%= message.text %>
+                </div>
+            <% }); %>
+        </div>
+    <% } %>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html> 

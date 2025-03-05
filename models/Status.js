@@ -32,5 +32,4 @@ statusSchema.statics.findByName = async function(name) {
 };
 
 const Status = mongoose.model('Status', statusSchema);
-
-module.exports = Status;
+module.exports = { Status };

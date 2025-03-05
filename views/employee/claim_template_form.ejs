@@ -1,0 +1,232 @@
+<%- include('../partials/header') %>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0"><%= action === 'create' ? 'Create New Claim Template' : 'Edit Claim Template' %></h2>
+        </div>
+        <div class="card-body">
+            <form action="<%= action === 'create' ? '/claim-templates' : `/claim-templates/${template._id}?_method=PUT` %>" method="POST" id="templateForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="name">Template Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required
+                                value="<%= template ? template.name : '' %>">
+                            <small class="form-text text-muted">Give your template a descriptive name</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <input type="text" class="form-control" id="category" name="category"
+                                value="<%= template ? template.category : '' %>">
+                            <small class="form-text text-muted">Categorize your template for easier organization</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"><%= template ? template.description : '' %></textarea>
+                    <small class="form-text text-muted">Describe the purpose and use case for this template</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="isShared" name="isShared"
+                                <%= template && template.isShared ? 'checked' : '' %>>
+                            <label class="form-check-label" for="isShared">
+                                Share with other employees
+                            </label>
+                            <small class="form-text text-muted">Allow other employees to use this template</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="requiresApproval" name="requiresApproval"
+                                <%= template && template.requiresApproval ? 'checked' : '' %>>
+                            <label class="form-check-label" for="requiresApproval">
+                                Requires approval before use
+                            </label>
+                            <small class="form-text text-muted">Template must be approved by a manager or admin before use</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+                <h4>Default Values</h4>
+                <p class="text-muted">Set default values for claim fields. These will be pre-filled when using this template.</p>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="customerName">Customer Name</label>
+                            <input type="text" class="form-control" id="customerName" name="defaultValues[customerName]"
+                                value="<%= template && template.defaultValues.customerName ? template.defaultValues.customerName : '' %>">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="customerEmail">Customer Email</label>
+                            <input type="email" class="form-control" id="customerEmail" name="defaultValues[customerEmail]"
+                                value="<%= template && template.defaultValues.customerEmail ? template.defaultValues.customerEmail : '' %>">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="customerAddress">Customer Address</label>
+                            <input type="text" class="form-control" id="customerAddress" name="defaultValues[customerAddress]"
+                                value="<%= template && template.defaultValues.customerAddress ? template.defaultValues.customerAddress : '' %>">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="customerPhone">Customer Phone</label>
+                            <input type="text" class="form-control" id="customerPhone" name="defaultValues[customerPhone]"
+                                value="<%= template && template.defaultValues.customerPhone ? template.defaultValues.customerPhone : '' %>">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="carMake">Car Make</label>
+                            <input type="text" class="form-control" id="carMake" name="defaultValues[carMake]"
+                                value="<%= template && template.defaultValues.carMake ? template.defaultValues.carMake : '' %>">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="carModel">Car Model</label>
+                            <input type="text" class="form-control" id="carModel" name="defaultValues[carModel]"
+                                value="<%= template && template.defaultValues.carModel ? template.defaultValues.carModel : '' %>">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="carYear">Car Year</label>
+                            <input type="number" class="form-control" id="carYear" name="defaultValues[carYear]"
+                                value="<%= template && template.defaultValues.carYear ? template.defaultValues.carYear : '' %>">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="damageDescription">Damage Description</label>
+                            <textarea class="form-control" id="damageDescription" name="defaultValues[damageDescription]" rows="3"><%= template && template.defaultValues.damageDescription ? template.defaultValues.damageDescription : '' %></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="notes">Notes</label>
+                            <textarea class="form-control" id="notes" name="defaultValues[notes]" rows="3"><%= template && template.defaultValues.notes ? template.defaultValues.notes : '' %></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+                <h4>Required Fields</h4>
+                <p class="text-muted">Select fields that should be required when using this template.</p>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="reqCustomerName" name="requiredFields" value="customerName"
+                                <%= template && template.requiredFields && template.requiredFields.includes('customerName') ? 'checked' : '' %>>
+                            <label class="form-check-label" for="reqCustomerName">Customer Name</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="reqCustomerEmail" name="requiredFields" value="customerEmail"
+                                <%= template && template.requiredFields && template.requiredFields.includes('customerEmail') ? 'checked' : '' %>>
+                            <label class="form-check-label" for="reqCustomerEmail">Customer Email</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="reqCustomerAddress" name="requiredFields" value="customerAddress"
+                                <%= template && template.requiredFields && template.requiredFields.includes('customerAddress') ? 'checked' : '' %>>
+                            <label class="form-check-label" for="reqCustomerAddress">Customer Address</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="reqCarMake" name="requiredFields" value="carMake"
+                                <%= template && template.requiredFields && template.requiredFields.includes('carMake') ? 'checked' : '' %>>
+                            <label class="form-check-label" for="reqCarMake">Car Make</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="reqCarModel" name="requiredFields" value="carModel"
+                                <%= template && template.requiredFields && template.requiredFields.includes('carModel') ? 'checked' : '' %>>
+                            <label class="form-check-label" for="reqCarModel">Car Model</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="reqCarYear" name="requiredFields" value="carYear"
+                                <%= template && template.requiredFields && template.requiredFields.includes('carYear') ? 'checked' : '' %>>
+                            <label class="form-check-label" for="reqCarYear">Car Year</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="reqDamageDescription" name="requiredFields" value="damageDescription"
+                                <%= template && template.requiredFields && template.requiredFields.includes('damageDescription') ? 'checked' : '' %>>
+                            <label class="form-check-label" for="reqDamageDescription">Damage Description</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="reqNotes" name="requiredFields" value="notes"
+                                <%= template && template.requiredFields && template.requiredFields.includes('notes') ? 'checked' : '' %>>
+                            <label class="form-check-label" for="reqNotes">Notes</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <%= action === 'create' ? 'Create Template' : 'Update Template' %>
+                    </button>
+                    <a href="/claim-templates" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Serialize form data to JSON for defaultValues
+        const form = document.getElementById('templateForm');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Collect default values
+            const defaultValues = {};
+            const defaultValueInputs = document.querySelectorAll('[name^="defaultValues["]');
+            defaultValueInputs.forEach(input => {
+                const fieldName = input.name.match(/defaultValues\[(.*?)\]/)[1];
+                defaultValues[fieldName] = input.value;
+            });
+            
+            // Create hidden input for defaultValues
+            const defaultValuesInput = document.createElement('input');
+            defaultValuesInput.type = 'hidden';
+            defaultValuesInput.name = 'defaultValues';
+            defaultValuesInput.value = JSON.stringify(defaultValues);
+            form.appendChild(defaultValuesInput);
+            
+            // Remove individual defaultValues inputs
+            defaultValueInputs.forEach(input => {
+                input.removeAttribute('name');
+            });
+            
+            // Submit the form
+            form.submit();
+        });
+    });
+</script>
+
+<%- include('../partials/footer') %> 

@@ -15,4 +15,5 @@ const locationSchema = new mongoose.Schema({
 // Remove the pre-save hook that converts name to uppercase
 // This allows preserving the original case of location names
 
-module.exports = mongoose.model('Location', locationSchema);
+const Location = mongoose.model('Location', locationSchema);
+module.exports = { Location };

@@ -44,130 +44,204 @@
  * @param {Object} res - The Express response object.
  * @returns {Promise<void>}
  */
-const express = require('express'); // Import Express to create a router
-const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
-const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
-const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
-const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
-const pdfkit = require('pdfkit'); // Import PDFKit for PDF export
-const csv = require('csv-express'); // Import csv-express for CSV export
-const pinoLogger = require('../logger'); // Import Pino logger
+const express = require('express');
+const router = express.Router();
+const Claim = require('../models/Claim');
+const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
+const multer = require('multer');
+const upload = multer();
+const csv = require('csv-express');
+const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
 
-const router = express.Router(); // Create a new router
-
-// Define sensitive fields that should not be logged
-const sensitiveFields = ['password', 'token', 'ssn'];
-
-// Function to filter out sensitive fields from the request body
-const filterSensitiveData = (data) => {
-    if (!data || typeof data !== 'object') {
-        return data;
-    }
-    
-    return Object.keys(data).reduce((filteredData, key) => {
-        if (sensitiveFields.includes(key)) {
-            filteredData[key] = '***REDACTED***'; // Mask the sensitive field
-        } else if (typeof data[key] === 'object') {
-            filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
-        } else {
-            filteredData[key] = data[key];
-        }
-        return filteredData;
-    }, {});
-};
-
-// Helper function to log requests with user and session info
-const logRequest = (req, message, extra = {}) => {
-    const { method, originalUrl, headers, body } = req;
-    const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
-
-    pinoLogger.info({
-        message, // Log message
-        user: req.user ? req.user.email : 'Unauthenticated', // Log user
-        ip: req.ip, // Log IP address
-        sessionId: req.sessionID, // Log session ID
-        timestamp: new Date().toISOString(), // Add a timestamp
-        method, // Log HTTP method
-        url: originalUrl, // Log originating URL
-        requestBody: filteredBody, // Log the filtered request body
-        headers // Log request headers
-    });
-};
-
-// Route to render the reports page
-// Only accessible to authenticated users with 'admin' or 'manager' roles
+// GET /reports - Render reports dashboard page
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
-    logRequest(req, 'Reports route accessed');
-    res.render('reports', { title: 'Reports - Budget Claims System' }); // Render the reports page
+    res.render('reports/index', { 
+        title: 'Reports Dashboard',
+        user: req.user
+    });
 });
 
-// Route to generate and download reports in various formats (CSV, Excel, PDF)
-// Only accessible to authenticated users with 'admin' or 'manager' roles
-router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    const { format, startDate, endDate } = req.body; // Extract report parameters from the request body
-    logRequest(req, 'Generating report with parameters:', { format, startDate, endDate });
-
-    // Build a filter object based on the provided date range
-    let filter = {};
-    if (startDate || endDate) {
-        filter.date = {};
-        if (startDate) filter.date.$gte = new Date(startDate); // Set the start date filter
-        if (endDate) filter.date.$lte = new Date(endDate); // Set the end date filter
-    }
-
+// GET /reports/status - Render status report page
+router.get('/status', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     try {
-        // Fetch claims from the database based on the filter
-        const claims = await Claim.find(filter).exec();
-        logRequest(req, 'Claims fetched for report:', { claims });
-
-        if (format === 'csv') {
-            // Export claims to CSV
-            logRequest(req, 'Exporting claims to CSV');
-            res.csv(claims, true); // Send CSV response
-        } else if (format === 'excel') {
-            // Export claims to Excel
-            logRequest(req, 'Exporting claims to Excel');
-            const workbook = new ExcelJS.Workbook(); // Create a new workbook
-            const worksheet = workbook.addWorksheet('Claims'); // Add a worksheet to the workbook
-            worksheet.columns = [
-                { header: 'MVA', key: 'mva', width: 10 },
-                { header: 'Customer Name', key: 'customerName', width: 30 },
-                { header: 'Description', key: 'description', width: 50 },
-                { header: 'Status', key: 'status', width: 10 },
-                { header: 'Date', key: 'date', width: 15 }
-            ]; // Define worksheet columns
-            claims.forEach(claim => {
-                worksheet.addRow(claim); // Add each claim as a row in the worksheet
-            });
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            res.setHeader('Content-Disposition', 'attachment; filename=claims.xlsx');
-            await workbook.xlsx.write(res); // Write the workbook to the response
-            res.end(); // End the response
-        } else if (format === 'pdf') {
-            // Export claims to PDF
-            logRequest(req, 'Exporting claims to PDF');
-            const doc = new pdfkit(); // Create a new PDF document
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', 'attachment; filename=claims.pdf');
-            doc.pipe(res); // Pipe the PDF document to the response
-            doc.text('Claims Report', { align: 'center' }); // Add a title to the PDF
-            claims.forEach(claim => {
-                doc.text(`MVA: ${claim.mva}`);
-                doc.text(`Customer Name: ${claim.customerName}`);
-                doc.text(`Description: ${claim.description}`);
-                doc.text(`Status: ${claim.status}`);
-                doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
-                doc.moveDown(); // Add space between claims
-            });
-            doc.end(); // Finalize the PDF document
-        } else {
-            logRequest(req, 'Invalid report format:', { format });
-            res.status(400).json({ msg: 'Invalid format' }); // Respond with an error for invalid formats
-        }
-    } catch (err) {
-        logRequest(req, 'Error generating report:', { error: err });
-        res.status(500).json({ error: err.message }); // Respond with an error for any exceptions
+        const claims = await Claim.find()
+            .populate('status')
+            .sort({ createdAt: -1 });
+            
+        res.render('reports/status', { 
+            title: 'Status Reports',
+            claims,
+            user: req.user
+        });
+    } catch (error) {
+        res.status(500).render('error', {
+            message: 'Error generating status report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
     }
 });
 
-module.exports = router; // Export the router
+// GET /reports/financial - Render financial report page
+router.get('/financial', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const claims = await Claim.find()
+            .populate('status')
+            .sort({ damagesTotal: -1 });
+            
+        res.render('reports/financial', { 
+            title: 'Financial Reports',
+            claims,
+            user: req.user
+        });
+    } catch (error) {
+        res.status(500).render('error', {
+            message: 'Error generating financial report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
+});
+
+// GET /reports/monthly - Render monthly report page
+router.get('/monthly', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const currentYear = new Date().getFullYear();
+        const claims = await Claim.find({
+            createdAt: {
+                $gte: new Date(`${currentYear}-01-01`),
+                $lte: new Date(`${currentYear}-12-31`)
+            }
+        }).populate('status');
+            
+        res.render('reports/monthly', { 
+            title: 'Monthly Reports',
+            claims,
+            user: req.user
+        });
+    } catch (error) {
+        res.status(500).render('error', {
+            message: 'Error generating monthly report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
+});
+
+// POST /reports/generate - Generate custom report
+router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        console.log('\n=== Report Generation Started ===');
+        console.log('Request body:', req.body);
+        
+        const { reportType, dateRange, startDate, endDate, type, format } = req.body;
+        console.log('Parameters:', { reportType, dateRange, startDate, endDate, type, format });
+        
+        // Build query based on date range
+        let query = {};
+        if (dateRange === 'custom') {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+        console.log('MongoDB query:', query);
+
+        // Fetch claims based on query
+        console.log('\n=== Fetching Claims ===');
+        const claims = await Claim.find(query)
+            .populate({
+                path: 'status',
+                select: 'name color'
+            })
+            .sort({ createdAt: -1 });
+        
+        console.log('\n=== Claims Data ===');
+        console.log('Total claims found:', claims.length);
+        
+        if (claims.length > 0) {
+            const firstClaim = claims[0];
+            console.log('\nFirst Claim Details:');
+            console.log('- Full claim:', JSON.stringify(firstClaim, null, 2));
+            console.log('- Status field:', firstClaim.status);
+            console.log('- Status type:', typeof firstClaim.status);
+            console.log('- Status name:', firstClaim.status?.name);
+            console.log('- Status ID:', firstClaim.status?._id);
+            
+            // Test if status is populated
+            console.log('\nStatus Population Check:');
+            console.log('- Is status defined?:', !!firstClaim.status);
+            console.log('- Is status an object?:', typeof firstClaim.status === 'object');
+            console.log('- Is status null?:', firstClaim.status === null);
+            console.log('- Status constructor:', firstClaim.status?.constructor?.name);
+        }
+
+        // Helper function to format currency
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(amount || 0);
+        };
+
+        // Helper function to format notes more concisely
+        const formatNotes = (notes) => {
+            if (!notes || !Array.isArray(notes)) return '';
+            // Get the most recent note only
+            const latestNote = notes.sort((a, b) => b.createdAt - a.createdAt)[0];
+            return latestNote ? latestNote.content : '';
+        };
+
+        // Render the reports/result view with the generated report data
+        return res.render('reports/result', {
+            title: 'Report Results',
+            claims,
+            type: type || reportType,
+            format: format || 'table',
+            user: req.user
+        });
+
+    } catch (error) {
+        console.error('Error generating report:', error);
+        return res.status(500).render('error', { 
+            message: 'Error generating report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
+});
+
+// Export formats logic
+router.post('/export', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
+    try {
+        const { format, dataType } = req.body;
+        
+        // Get claims data for export
+        const claims = await Claim.find()
+            .populate('status')
+            .sort({ createdAt: -1 });
+
+        // Rest of export implementation...
+        
+        // For CSV
+        if (format === 'csv') {
+            const csvData = claims.map(claim => ({
+                'MVA #': claim.mva || '',
+                'Customer Name': claim.customerName || '',
+                'Status': claim.status?.name || 'Unknown',
+                'Date': claim.date ? new Date(claim.date).toLocaleDateString() : '',
+                'Amount': claim.damagesTotal ? `$${claim.damagesTotal.toFixed(2)}` : '$0.00'
+            }));
+            
+            return res.csv(csvData, true);
+        }
+        
+        // Fallback if format not handled
+        res.redirect('/reports');
+        
+    } catch (error) {
+        res.status(500).render('error', {
+            message: 'Error exporting report',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
+});
+
+module.exports = router;
