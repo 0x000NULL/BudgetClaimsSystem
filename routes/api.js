@@ -134,6 +134,7 @@ const Location = require('../models/Location');
 const Status = require('../models/Status');
 const DamageType = require('../models/DamageType');
 const bcrypt = require('bcryptjs'); // Import bcryptjs for password hashing
+const mongoose = require('mongoose'); // Import mongoose for MongoDB operations
 
 // Initialize global constants if they don't exist yet
 if (!global.ALLOWED_FILE_TYPES) {
@@ -436,11 +437,11 @@ router.get('/customers/:id', ensureAuthenticated, async (req, res) => {
 // API route to add a new customer
 router.post('/customers', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
     logRequest(req, 'Adding a new customer');
-    const { name, email, password } = req.body;
+    const { firstName, lastName, email, password } = req.body;
 
     // Validate required fields
-    if (!name || !email || !password) {
-        return sendErrorResponse(res, 400, 'Missing required fields: name, email, and password are required');
+    if (!firstName || !lastName || !email || !password) {
+        return sendErrorResponse(res, 400, 'Missing required fields: firstName, lastName, email, and password are required');
     }
 
     try {
@@ -456,7 +457,8 @@ router.post('/customers', ensureAuthenticated, ensureRole('admin'), async (req, 
 
         // Create a new customer object with hashed password
         const newCustomer = new Customer({
-            name,
+            firstName,
+            lastName,
             email,
             password: hashedPassword
         });
@@ -466,7 +468,8 @@ router.post('/customers', ensureAuthenticated, ensureRole('admin'), async (req, 
         // Don't return the password in the response
         const customerResponse = {
             _id: customer._id,
-            name: customer.name,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
             email: customer.email
         };
         
@@ -481,11 +484,12 @@ router.post('/customers', ensureAuthenticated, ensureRole('admin'), async (req, 
 // API route to update a customer by ID
 router.put('/customers/:id', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
     logRequest(req, 'Updating customer by ID', { customerId: req.params.id });
-    const { name, email, password } = req.body;
+    const { firstName, lastName, email, password } = req.body;
     
     // Create update object with validated fields
     const updateData = {};
-    if (name) updateData.name = name;
+    if (firstName) updateData.firstName = firstName;
+    if (lastName) updateData.lastName = lastName;
     if (email) updateData.email = email;
     
     try {
@@ -533,6 +537,11 @@ router.put('/customers/:id', ensureAuthenticated, ensureRole('admin'), async (re
 router.delete('/customers/:id', ensureAuthenticated, ensureRole('admin'), async (req, res) => {
     logRequest(req, 'Deleting customer by ID', { customerId: req.params.id });
     try {
+        // Validate MongoDB ID format
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return sendErrorResponse(res, 404, 'Customer not found');
+        }
+
         // Check if customer has associated claims
         const customerHasClaims = await Claim.exists({ customerName: req.params.id });
         if (customerHasClaims) {
@@ -550,7 +559,25 @@ router.delete('/customers/:id', ensureAuthenticated, ensureRole('admin'), async 
         sendSuccessResponse(res, null, 'Customer deleted successfully');
     } catch (err) {
         logRequest(req, 'Error deleting customer by ID', { error: err });
+        // If it's an invalid ObjectId, return 404
+        if (err.name === 'CastError' && err.kind === 'ObjectId') {
+            return sendErrorResponse(res, 404, 'Customer not found');
+        }
         sendErrorResponse(res, 500, 'Error deleting customer', err);
+    }
+});
+
+// API route to get all customers
+router.get('/customers', ensureAuthenticated, async (req, res) => {
+    logRequest(req, 'Fetching all customers');
+    try {
+        // Select all fields except password for security
+        const customers = await Customer.find().select('-password');
+        logRequest(req, 'Customers fetched successfully', { count: customers.length });
+        sendSuccessResponse(res, customers, 'Customers fetched successfully');
+    } catch (err) {
+        logRequest(req, 'Error fetching customers', { error: err });
+        sendErrorResponse(res, 500, 'Error fetching customers', err);
     }
 });
 
@@ -645,6 +672,13 @@ router.post('/settings/file-count', ensureAuthenticated, ensureRole('admin'), as
     try {
         // Validate input
         const { photos, documents, invoices } = req.body;
+        
+        // Check if all required fields are present
+        if (!photos || !documents || !invoices) {
+            return sendErrorResponse(res, 400, 'Missing required fields');
+        }
+
+        // Validate values are positive integers
         if (
             !Number.isInteger(Number(photos)) || 
             !Number.isInteger(Number(documents)) || 
@@ -684,6 +718,14 @@ router.post('/settings/file-sizes', ensureAuthenticated, ensureRole('admin'), as
     try {
         // Validate input
         const { photos, documents, invoices } = req.body;
+        
+        // Check if all required fields are present and are valid numbers
+        if (!photos || !documents || !invoices || 
+            isNaN(Number(photos)) || isNaN(Number(documents)) || isNaN(Number(invoices))) {
+            return sendErrorResponse(res, 400, 'Invalid values. All values must be valid numbers.');
+        }
+
+        // Validate values are positive integers
         if (
             !Number.isInteger(Number(photos)) || 
             !Number.isInteger(Number(documents)) || 
@@ -731,9 +773,14 @@ router.post('/settings/file-types', ensureAuthenticated, ensureRole('admin'), as
         // Validate input - ensure each category has at least one file type
         const { photos, documents, invoices } = req.body;
         
-        if (!photos || !Array.isArray(photos) || photos.length === 0 ||
-            !documents || !Array.isArray(documents) || documents.length === 0 ||
-            !invoices || !Array.isArray(invoices) || invoices.length === 0) {
+        // Check if all required fields are present
+        if (!photos || !documents || !invoices) {
+            return sendErrorResponse(res, 400, 'Missing required fields');
+        }
+        
+        if (!Array.isArray(photos) || photos.length === 0 ||
+            !Array.isArray(documents) || documents.length === 0 ||
+            !Array.isArray(invoices) || invoices.length === 0) {
             return sendErrorResponse(res, 400, 'Each file category must have at least one allowed file type');
         }
 

@@ -6,19 +6,33 @@ const mongoose = require('mongoose');
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
-const MockAuditLog = require('../../models/AuditLog');
-const auditLogRoutes = require('../../routes/auditLogs');
 
-// Mock dependencies
-jest.mock('../../models/AuditLog');
+// Create a mock AuditLog model
+const MockAuditLog = {
+    find: jest.fn(),
+    countDocuments: jest.fn(),
+    distinct: jest.fn(),
+    populate: jest.fn(),
+    sort: jest.fn(),
+    skip: jest.fn(),
+    limit: jest.fn(),
+    lean: jest.fn()
+};
+
+// Mock the model module
+jest.mock('../../models/AuditLog', () => MockAuditLog);
+
+// Mock other dependencies
 jest.mock('../../middleware/auth', () => ({
     ensureAuthenticated: (req, res, next) => next(),
     ensureRoles: () => (req, res, next) => next()
 }));
+
 jest.mock('../../logger', () => ({
     info: jest.fn(),
     error: jest.fn()
 }));
+
 // Mock csv-express middleware
 jest.mock('csv-express', () => {
     return function mockCsv(req, res, next) {
@@ -110,6 +124,9 @@ app.use((req, res, next) => {
     req.isAuthenticated = () => true;
     next();
 });
+
+// Import routes after setting up mocks
+const auditLogRoutes = require('../../routes/auditLogs');
 app.use('/audit-logs', auditLogRoutes);
 
 // Mock render to avoid template issues in tests
@@ -132,6 +149,24 @@ app.use((err, req, res, next) => {
 describe('Audit Logs Routes', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // Set up default mock implementations
+        MockAuditLog.find.mockReturnValue({
+            populate: jest.fn().mockReturnThis(),
+            sort: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue([
+                {
+                    _id: 'log1',
+                    user: { _id: 'user1', username: 'testuser' },
+                    action: 'login',
+                    details: 'User logged in',
+                    timestamp: new Date()
+                }
+            ])
+        });
+        MockAuditLog.countDocuments.mockResolvedValue(25);
+        MockAuditLog.distinct.mockResolvedValue(['login', 'logout', 'create', 'update', 'delete']);
     });
 
     afterAll(async () => {
@@ -142,26 +177,6 @@ describe('Audit Logs Routes', () => {
 
     describe('GET /audit-logs', () => {
         it('should render audit logs page with pagination and filters', async () => {
-            // Mock the database responses
-            MockAuditLog.find.mockImplementation(() => ({
-                populate: jest.fn().mockReturnThis(),
-                sort: jest.fn().mockReturnThis(),
-                skip: jest.fn().mockReturnThis(),
-                limit: jest.fn().mockReturnThis(),
-                lean: jest.fn().mockResolvedValue([
-                    {
-                        _id: 'log1',
-                        user: { _id: 'user1', username: 'testuser' },
-                        action: 'login',
-                        details: 'User logged in',
-                        timestamp: new Date()
-                    }
-                ])
-            }));
-            
-            MockAuditLog.countDocuments.mockResolvedValue(25);
-            MockAuditLog.distinct.mockResolvedValue(['login', 'logout', 'create', 'update', 'delete']);
-
             const response = await request(app).get('/audit-logs');
             
             expect(response.status).toBe(200);
@@ -171,18 +186,6 @@ describe('Audit Logs Routes', () => {
         });
 
         it('should handle filters correctly', async () => {
-            // Mock the database responses
-            MockAuditLog.find.mockImplementation(() => ({
-                populate: jest.fn().mockReturnThis(),
-                sort: jest.fn().mockReturnThis(),
-                skip: jest.fn().mockReturnThis(),
-                limit: jest.fn().mockReturnThis(),
-                lean: jest.fn().mockResolvedValue([])
-            }));
-            
-            MockAuditLog.countDocuments.mockResolvedValue(5);
-            MockAuditLog.distinct.mockResolvedValue(['login', 'logout']);
-
             const response = await request(app)
                 .get('/audit-logs')
                 .query({
@@ -220,21 +223,6 @@ describe('Audit Logs Routes', () => {
 
     describe('GET /audit-logs/export/csv', () => {
         it('should export audit logs as CSV', async () => {
-            // Mock the database responses
-            MockAuditLog.find.mockImplementation(() => ({
-                populate: jest.fn().mockReturnThis(),
-                sort: jest.fn().mockReturnThis(),
-                lean: jest.fn().mockResolvedValue([
-                    {
-                        _id: 'log1',
-                        user: { _id: 'user1', username: 'testuser', email: 'user@example.com' },
-                        action: 'login',
-                        details: 'User logged in',
-                        timestamp: new Date()
-                    }
-                ])
-            }));
-
             const response = await request(app).get('/audit-logs/export/csv');
             
             expect(response.status).toBe(200);
@@ -248,21 +236,6 @@ describe('Audit Logs Routes', () => {
             // Skip this test if it continues to be problematic
             // This is a complex test that may require more setup in a real project
             
-            // Mock the database responses
-            MockAuditLog.find.mockImplementation(() => ({
-                populate: jest.fn().mockReturnThis(),
-                sort: jest.fn().mockReturnThis(),
-                lean: jest.fn().mockResolvedValue([
-                    {
-                        _id: 'log1',
-                        user: { _id: 'user1', username: 'testuser', email: 'user@example.com' },
-                        action: 'login',
-                        details: 'User logged in',
-                        timestamp: new Date()
-                    }
-                ])
-            }));
-
             // For this test, we'll just verify the route doesn't crash
             const response = await request(app).get('/audit-logs/export/excel');
             
@@ -278,22 +251,6 @@ describe('Audit Logs Routes', () => {
             // Skip this test if it continues to be problematic
             // This is a complex test that may require more setup in a real project
             
-            // Mock the database responses
-            MockAuditLog.find.mockImplementation(() => ({
-                populate: jest.fn().mockReturnThis(),
-                sort: jest.fn().mockReturnThis(),
-                limit: jest.fn().mockReturnThis(),
-                lean: jest.fn().mockResolvedValue([
-                    {
-                        _id: 'log1',
-                        user: { _id: 'user1', username: 'testuser', email: 'user@example.com' },
-                        action: 'login',
-                        details: 'User logged in',
-                        timestamp: new Date()
-                    }
-                ])
-            }));
-
             // For this test, we'll just verify the route doesn't crash
             const response = await request(app).get('/audit-logs/export/pdf');
             

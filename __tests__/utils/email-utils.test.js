@@ -129,13 +129,16 @@ const createMockRequest = (overrides = {}) => {
 
 // Create a mock claim object for testing
 const createMockClaim = (overrides = {}) => {
-    // Create a valid MongoDB ObjectId for testing
+    // Create valid MongoDB ObjectIds for testing
     const mongoose = require('mongoose');
     const objectId = new mongoose.Types.ObjectId();
     const statusId = new mongoose.Types.ObjectId();
+    const damageTypeId = new mongoose.Types.ObjectId();
+    const rentingLocationId = new mongoose.Types.ObjectId();
+    const createdById = new mongoose.Types.ObjectId();
     
     return {
-        _id: objectId, // Use a valid MongoDB ObjectId
+        _id: objectId,
         mva: 'MVA123',
         customerName: 'John Doe',
         customerEmail: 'john@example.com',
@@ -163,7 +166,12 @@ const createMockClaim = (overrides = {}) => {
         thirdPartyPhoneNumber: '888-555-1234',
         thirdPartyInsuranceName: 'Other Insurance',
         thirdPartyPolicyNumber: 'TP123456',
-        status: statusId, // Add the required status field with a valid ObjectId
+        status: statusId,
+        // Add required fields
+        damageType: damageTypeId,
+        rentingLocation: rentingLocationId,
+        description: 'Test claim description',
+        createdBy: createdById,
         ...overrides
     };
 };

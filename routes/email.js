@@ -78,7 +78,7 @@ const express = require('express'); // Import Express to create a router
 const router = express.Router(); // Create a new router
 const nodemailer = require('nodemailer'); // Import Nodemailer for sending emails
 const EmailTemplate = require('../models/EmailTemplate'); // Import the EmailTemplate model
-const Claim = require('../models/Claim'); // Import the Claim model
+const { Claim } = require('../models/Claim'); // Import the Claim model
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const pinoLogger = require('../logger'); // Import Pino logger
 const emailConfig = require('../config/nodemailer'); // Import nodemailer configuration
@@ -214,6 +214,7 @@ router.get('/form/:id', ensureAuthenticated, async (req, res) => {
     logRequest(req, 'Displaying email form');
     try {
         const claim = await Claim.findById(req.params.id);
+            
         if (!claim) {
             return res.status(404).send('Claim not found');
         }
@@ -222,7 +223,7 @@ router.get('/form/:id', ensureAuthenticated, async (req, res) => {
         
         // For testing: if Accept header is 'application/json', return JSON
         if (req.headers.accept === 'application/json' || process.env.NODE_ENV === 'test') {
-            return res.json({
+            return res.status(200).json({
                 view: 'email_form',
                 options: {
                     claim,
@@ -251,45 +252,30 @@ router.get('/form/:id', ensureAuthenticated, async (req, res) => {
  * @param {Object} res - The Express response object.
  */
 router.get('/templates/:templateId', ensureAuthenticated, async (req, res) => {
-    console.log('GET /templates/:templateId route handler called');
-    console.log('Route params:', req.params);
-    console.log('Query params:', req.query);
-    
     logRequest(req, `Fetching email template with ID: ${req.params.templateId}`);
     try {
-        console.log('Looking for template with ID:', req.params.templateId);
         const template = await EmailTemplate.findById(req.params.templateId);
-        console.log('Template found:', template ? 'Yes' : 'No');
         
         if (!template) {
-            console.log('Template not found, returning 404');
             return res.status(404).json({ error: 'Template not found' });
         }
         
         // Check if claimId was provided in the query parameter
         if (!req.query.claimId) {
-            console.log('No claimId provided, returning template without variables');
-            // If no claimId, just return the template without variable replacement
             return res.json(template);
         }
         
-        console.log('Looking for claim with ID:', req.query.claimId);
         const claim = await Claim.findById(req.query.claimId);
-        console.log('Claim found:', claim ? 'Yes' : 'No');
         
         if (!claim) {
-            console.log('Claim not found, returning 404');
             return res.status(404).json({ error: 'Claim not found' });
         }
         
-        console.log('Populating template with claim data');
         const populatedTemplate = replaceVariables(template, claim);
         logRequest(req, 'Email template fetched and variables replaced');
-        console.log('Sending populated template');
         return res.status(200).json(populatedTemplate);
     } catch (err) {
-        console.log('Error in template endpoint:', err.message, err.stack);
-        logRequest(req, 'Error fetching email template', { error: err.message, stack: err.stack });
+        logRequest(req, 'Error fetching email template', { error: err.message });
         return res.status(500).json({ error: 'Server Error: ' + err.message });
     }
 });
@@ -314,7 +300,7 @@ router.get('/send/:claimId', ensureAuthenticated, ensureRoles(['admin', 'manager
         
         // For testing: if Accept header is 'application/json', return JSON
         if (req.headers.accept === 'application/json' || process.env.NODE_ENV === 'test') {
-            return res.json({
+            return res.status(200).json({
                 view: 'email_form',
                 options: {
                     claim,

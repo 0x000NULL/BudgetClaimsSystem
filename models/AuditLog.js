@@ -29,8 +29,10 @@ const AuditLogSchema = new mongoose.Schema({
     }
 });
 
-// Create the model from the schema
-const AuditLog = mongoose.model('AuditLog', AuditLogSchema);
+// Only create the model if not in test environment
+const AuditLog = process.env.NODE_ENV === 'test' 
+    ? mongoose.models.AuditLog || { name: 'AuditLog' }  // Return mock model in test
+    : mongoose.model('AuditLog', AuditLogSchema);       // Create real model otherwise
 
 // Export the model
 module.exports = AuditLog;

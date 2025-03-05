@@ -1,10 +1,11 @@
 // Mock mongoose
 jest.mock('mongoose', () => ({
-    Schema: {
+    Schema: jest.fn().mockImplementation(() => ({
         Types: {
             ObjectId: String
         }
-    }
+    })),
+    model: jest.fn().mockReturnValue(jest.fn())
 }));
 
 const { logActivity } = require('../../middleware/activityLogger');

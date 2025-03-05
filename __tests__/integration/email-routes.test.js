@@ -57,8 +57,11 @@ jest.mock('../../middleware/auth', () => ({
 
 // Import models after mocking
 const EmailTemplate = require('../../models/EmailTemplate');
-const Claim = require('../../models/Claim');
-const Status = require('../../models/Status');
+const { Claim } = require('../../models/Claim');
+const { Status } = require('../../models/Status');
+const { DamageType } = require('../../models/DamageType');
+const { Location } = require('../../models/Location');
+const { User } = require('../../models/User');
 
 // We'll create a simplified express app for testing
 const app = express();
@@ -88,6 +91,10 @@ describe('Email Routes Integration Tests', () => {
     let mongoServer;
     let mockClaimId;
     let mockTemplateId;
+    let mockStatusId;
+    let mockDamageTypeId;
+    let mockLocationId;
+    let mockUserId;
 
     beforeAll(async () => {
         // Check if already connected and disconnect if needed
@@ -99,12 +106,9 @@ describe('Email Routes Integration Tests', () => {
         mongoServer = await MongoMemoryServer.create();
         const uri = mongoServer.getUri();
         
-        await mongoose.connect(uri, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        });
+        await mongoose.connect(uri);
         
-        // First create a status record since it's referenced by claims
+        // Create a status record
         const statusData = {
             name: 'Open',
             color: '#28a745',
@@ -112,10 +116,47 @@ describe('Email Routes Integration Tests', () => {
         };
         const statusRecord = new Status(statusData);
         await statusRecord.save();
+        mockStatusId = statusRecord._id;
         
-        // Create mock claim with the valid status ID
+        // Create a damage type record
+        const damageTypeData = {
+            name: 'Collision',
+            description: 'Vehicle collision damage'
+        };
+        const damageTypeRecord = new DamageType(damageTypeData);
+        await damageTypeRecord.save();
+        mockDamageTypeId = damageTypeRecord._id;
+        
+        // Create a location record
+        const locationData = {
+            name: 'Test Location',
+            address: '123 Test St',
+            city: 'Test City',
+            state: 'TS',
+            zipCode: '12345',
+            phoneNumber: '123-456-7890'
+        };
+        const locationRecord = new Location(locationData);
+        await locationRecord.save();
+        mockLocationId = locationRecord._id;
+        
+        // Create a user record
+        const userData = {
+            email: 'test@example.com',
+            name: 'Test User',
+            role: 'admin',
+            password: 'testpassword123'
+        };
+        const userRecord = new User(userData);
+        await userRecord.save();
+        mockUserId = userRecord._id;
+        
+        // Create mock claim with all required references
         const mockClaimData = createMockClaim({
-            status: statusRecord._id // Use the real status ObjectId
+            status: mockStatusId,
+            damageType: mockDamageTypeId,
+            rentingLocation: mockLocationId,
+            createdBy: mockUserId
         });
         
         const mockClaim = new Claim(mockClaimData);
@@ -124,22 +165,9 @@ describe('Email Routes Integration Tests', () => {
         
         // Create and save the template
         const mockTemplateData = createMockTemplate();
-        console.log('Creating template with data:', JSON.stringify(mockTemplateData));
-        
         const mockTemplate = new EmailTemplate(mockTemplateData);
         await mockTemplate.save();
         mockTemplateId = mockTemplate._id.toString();
-        
-        // Log the IDs for debugging
-        console.log('Mock Claim ID:', mockClaimId);
-        console.log('Mock Template ID:', mockTemplateId);
-        
-        // Verify the template was saved correctly
-        const savedTemplate = await EmailTemplate.findById(mockTemplateId);
-        console.log('Saved template:', savedTemplate ? 'Found' : 'Not found');
-        if (savedTemplate) {
-            console.log('Saved template ID:', savedTemplate._id.toString());
-        }
     });
 
     afterAll(async () => {

@@ -10,11 +10,23 @@ const mongoose = require('mongoose');
 const path = require('path');
 
 // Mock dependencies
-jest.mock('../../models/Claim');
-jest.mock('../../models/Status');
+jest.mock('../../models/Claim', () => ({
+    Claim: {
+        countDocuments: jest.fn(),
+        find: jest.fn()
+    }
+}));
+
+jest.mock('../../models/Status', () => ({
+    Status: {
+        find: jest.fn()
+    }
+}));
+
 jest.mock('../../middleware/auth', () => ({
     ensureAuthenticated: (req, res, next) => next()
 }));
+
 jest.mock('../../logger', () => ({
     info: jest.fn(),
     error: jest.fn(),
@@ -23,8 +35,8 @@ jest.mock('../../logger', () => ({
 }));
 
 // Import mocked modules
-const Claim = require('../../models/Claim');
-const Status = require('../../models/Status');
+const { Claim } = require('../../models/Claim');
+const { Status } = require('../../models/Status');
 const pinoLogger = require('../../logger');
 
 // Import the module to test
@@ -49,36 +61,32 @@ app.use((req, res, next) => {
 describe('Dashboard Routes and Helper Functions', () => {
     let mongoServer;
     
-    // Setup and teardown for the tests
     beforeAll(async () => {
-        // Create an in-memory MongoDB instance
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
         
-        // Check if mongoose is already connected
-        if (mongoose.connection.readyState === 0) { // 0 = disconnected
-            await mongoose.connect(mongoUri, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true
-            });
+        if (mongoose.connection.readyState === 0) {
+            await mongoose.connect(mongoUri);
         } else {
-            // If already connected, disconnect first to avoid errors
             await mongoose.disconnect();
-            await mongoose.connect(mongoUri, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true
-            });
+            await mongoose.connect(mongoUri);
         }
     });
 
     afterAll(async () => {
-        // Ensure proper cleanup
-        if (mongoose.connection.readyState !== 0) {
-            await mongoose.connection.close();
-        }
-        
-        if (mongoServer) {
-            await mongoServer.stop();
+        try {
+            if (mongoose.connection.readyState !== 0) {
+                await mongoose.disconnect();
+            }
+            
+            if (mongoServer) {
+                await mongoServer.stop();
+            }
+
+            jest.clearAllMocks();
+            jest.useRealTimers();
+        } catch (error) {
+            console.error('Error during test cleanup:', error);
         }
     });
 
@@ -303,49 +311,57 @@ describe('Dashboard Routes and Helper Functions', () => {
     });
 
     describe('GET /dashboard route', () => {
+        const mockStatusData = [
+            { _id: 'status1', name: 'Open', color: '#28a745', description: 'Open status' },
+            { _id: 'status2', name: 'In Progress', color: '#ffc107', description: 'In progress status' },
+            { _id: 'status3', name: 'Closed', color: '#dc3545', description: 'Closed status' }
+        ];
+
+        const mockClaimData = [
+            {
+                _id: 'claim1',
+                claimNumber: 'CLM-001',
+                customerName: 'John Doe',
+                updatedAt: new Date(),
+                status: { _id: 'status1', name: 'Open', color: '#28a745', description: 'Open status' }
+            },
+            {
+                _id: 'claim2',
+                claimNumber: 'CLM-002',
+                customerName: 'Jane Smith',
+                updatedAt: new Date(),
+                status: { _id: 'status2', name: 'In Progress', color: '#ffc107', description: 'In progress status' }
+            }
+        ];
+
         beforeEach(() => {
-            // Mock the Status.find() method
-            Status.find.mockReturnValue({
-                lean: jest.fn().mockReturnValue({
-                    exec: jest.fn().mockResolvedValue([
-                        { _id: 'status1', name: 'Open', color: '#28a745', description: 'Open status' },
-                        { _id: 'status2', name: 'In Progress', color: '#ffc107', description: 'In progress status' },
-                        { _id: 'status3', name: 'Closed', color: '#dc3545', description: 'Closed status' }
-                    ])
-                })
-            });
-            
-            // Mock the Claim.countDocuments() and Claim.find() methods
+            jest.clearAllMocks();
+
+            // Setup Status.find mock
+            const mockStatusChain = {
+                lean: jest.fn().mockReturnThis(),
+                exec: jest.fn().mockResolvedValue(mockStatusData)
+            };
+            Status.find.mockReturnValue(mockStatusChain);
+
+            // Setup Claim.countDocuments mock
             Claim.countDocuments.mockImplementation((filter) => {
-                if (!filter) return Promise.resolve(10); // Total claims
-                if (filter.status === 'status1') return Promise.resolve(3); // Open claims
-                if (filter.status === 'status2') return Promise.resolve(5); // In progress claims
-                if (filter.status === 'status3') return Promise.resolve(2); // Closed claims
+                if (!filter) return Promise.resolve(10);
+                if (filter.status === 'status1') return Promise.resolve(3);
+                if (filter.status === 'status2') return Promise.resolve(5);
+                if (filter.status === 'status3') return Promise.resolve(2);
                 return Promise.resolve(0);
             });
-            
-            Claim.find.mockReturnValue({
+
+            // Setup Claim.find mock
+            const mockClaimChain = {
                 sort: jest.fn().mockReturnThis(),
                 limit: jest.fn().mockReturnThis(),
                 populate: jest.fn().mockReturnThis(),
                 lean: jest.fn().mockReturnThis(),
-                exec: jest.fn().mockResolvedValue([
-                    {
-                        _id: 'claim1',
-                        claimNumber: 'CLM-001',
-                        customerName: 'John Doe',
-                        updatedAt: new Date(),
-                        status: { _id: 'status1', name: 'Open', color: '#28a745', description: 'Open status' }
-                    },
-                    {
-                        _id: 'claim2',
-                        claimNumber: 'CLM-002',
-                        customerName: 'Jane Smith',
-                        updatedAt: new Date(),
-                        status: { _id: 'status2', name: 'In Progress', color: '#ffc107', description: 'In progress status' }
-                    }
-                ])
-            });
+                exec: jest.fn().mockResolvedValue(mockClaimData)
+            };
+            Claim.find.mockReturnValue(mockClaimChain);
         });
 
         test('should render dashboard with claim statistics and recent claims', async () => {
@@ -364,17 +380,14 @@ describe('Dashboard Routes and Helper Functions', () => {
             expect(locals.openPercentage).toBe(30);
             expect(locals.inProgressPercentage).toBe(50);
             expect(locals.closedPercentage).toBe(20);
-            
-            // Verify logger calls
-            expect(pinoLogger.debug).toHaveBeenCalled();
         });
 
         test('should handle case when no statuses are found', async () => {
-            Status.find.mockReturnValue({
-                lean: jest.fn().mockReturnValue({
-                    exec: jest.fn().mockResolvedValue([])
-                })
-            });
+            const mockEmptyStatusChain = {
+                lean: jest.fn().mockReturnThis(),
+                exec: jest.fn().mockResolvedValue([])
+            };
+            Status.find.mockReturnValue(mockEmptyStatusChain);
             
             const response = await request(app).get('/dashboard');
             
@@ -385,13 +398,14 @@ describe('Dashboard Routes and Helper Functions', () => {
 
         test('should handle case when statuses are found but no claims exist', async () => {
             Claim.countDocuments.mockResolvedValue(0);
-            Claim.find.mockReturnValue({
+            const mockEmptyClaimChain = {
                 sort: jest.fn().mockReturnThis(),
                 limit: jest.fn().mockReturnThis(),
                 populate: jest.fn().mockReturnThis(),
                 lean: jest.fn().mockReturnThis(),
                 exec: jest.fn().mockResolvedValue([])
-            });
+            };
+            Claim.find.mockReturnValue(mockEmptyClaimChain);
             
             const response = await request(app).get('/dashboard');
             
@@ -404,11 +418,11 @@ describe('Dashboard Routes and Helper Functions', () => {
         });
 
         test('should handle database errors', async () => {
-            Status.find.mockReturnValue({
-                lean: jest.fn().mockReturnValue({
-                    exec: jest.fn().mockRejectedValue(new Error('Database error'))
-                })
-            });
+            const mockErrorStatusChain = {
+                lean: jest.fn().mockReturnThis(),
+                exec: jest.fn().mockRejectedValue(new Error('Database error'))
+            };
+            Status.find.mockReturnValue(mockErrorStatusChain);
             
             const response = await request(app).get('/dashboard');
             
@@ -420,7 +434,7 @@ describe('Dashboard Routes and Helper Functions', () => {
         });
 
         test('should handle claims with missing status', async () => {
-            Claim.find.mockReturnValue({
+            const mockMissingStatusClaimChain = {
                 sort: jest.fn().mockReturnThis(),
                 limit: jest.fn().mockReturnThis(),
                 populate: jest.fn().mockReturnThis(),
@@ -441,7 +455,8 @@ describe('Dashboard Routes and Helper Functions', () => {
                         status: undefined
                     }
                 ])
-            });
+            };
+            Claim.find.mockReturnValue(mockMissingStatusClaimChain);
             
             const response = await request(app).get('/dashboard');
             

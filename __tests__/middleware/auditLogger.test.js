@@ -1,10 +1,17 @@
+// Set test environment
+process.env.NODE_ENV = 'test';
+
+// Mock dependencies
+jest.mock('../../models/AuditLog', () => {
+    return jest.fn().mockImplementation(() => ({
+        save: jest.fn().mockResolvedValue(true)
+    }));
+});
+jest.mock('../../logger');
+
 const logActivity = require('../../middleware/auditLogger');
 const AuditLog = require('../../models/AuditLog');
 const pinoLogger = require('../../logger');
-
-// Mock dependencies
-jest.mock('../../models/AuditLog');
-jest.mock('../../logger');
 
 describe('auditLogger Middleware', () => {
     let mockReq;

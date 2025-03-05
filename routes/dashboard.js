@@ -7,8 +7,8 @@
 
 const express = require('express');
 const router = express.Router();
-const Claim = require('../models/Claim');
-const Status = require('../models/Status');
+const { Claim } = require('../models/Claim');
+const { Status } = require('../models/Status');
 const { ensureAuthenticated } = require('../middleware/auth');
 const pinoLogger = require('../logger');
 

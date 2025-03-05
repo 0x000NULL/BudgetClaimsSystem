@@ -6,10 +6,12 @@
  */
 
 const express = require('express');
+const router = express.Router();
 const Claim = require('../models/Claim');
 const path = require('path');
 const { ensureAuthenticated, ensureRoles, ensureRole } = require('../middleware/auth');
 const { logActivity } = require('../middleware/activityLogger');
+const { logRequest } = require('../middleware/requestLogger');
 const { notifyNewClaim, notifyClaimStatusUpdate, notifyClaimAssigned, notifyClaimUpdated } = require('../notifications/notify');
 const csv = require('csv-express');
 const ExcelJS = require('exceljs');
@@ -25,8 +27,6 @@ const fileUpload = require('express-fileupload');
 const Settings = require('../models/Settings');
 const uploadsPath = require('../config/settings');
 const logger = require('../logger');
-
-const router = express.Router();
 
 // Middleware for file uploads
 router.use(fileUpload({
@@ -104,8 +104,6 @@ const sanitizeFilename = (filename) => {
     // Add timestamp for uniqueness and keep original extension
     return `${sanitized}_${Date.now()}${extension.toLowerCase()}`;
 };
-
-const router = express.Router(); // Create a new router
 
 // Function to filter out sensitive fields from the request body
 const filterSensitiveData = (data) => {
@@ -377,26 +375,56 @@ router.post('/:id/assign', ensureAuthenticated, ensureRoles(['admin', 'manager']
     }
 });
 
-
 // Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
-router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res) => {
+router.get('/', ensureAuthenticated, logActivity('view_claims'), async (req, res) => {
     try {
-        const claim = await Claim.findByIdAndUpdate(
-            req.params.id,
-            { $set: { status: req.body.statusId } },
-            { new: true }
-        );
+        // Get pagination parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
 
-        if (!claim) {
-            return res.status(404).render('404', { message: 'Claim not found' });
+        // Get filter parameters
+        const filter = {};
+        if (req.query.status) filter.status = req.query.status;
+        if (req.query.location) filter.rentingLocation = req.query.location;
+        if (req.query.damageType) filter.damageType = req.query.damageType;
+
+        // Get claims with pagination and filters
+        const [claims, total] = await Promise.all([
+            Claim.find(filter)
+                .populate('status')
+                .populate('rentingLocation')
+                .populate('damageType')
+                .skip(skip)
+                .limit(limit)
+                .sort({ createdAt: -1 })
+                .exec(),
+            Claim.countDocuments(filter)
+        ]);
+
+        // If JSON is requested, return JSON response
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.json({
+                claims,
+                page,
+                totalPages: Math.ceil(total / limit),
+                total
+            });
         }
 
-        await notifyClaimStatusUpdate(claim);
-        req.flash('success', 'Claim status updated successfully');
-        res.redirect('/claims');
+        // Otherwise render the view
+        res.render('claims/index', {
+            claims,
+            page,
+            totalPages: Math.ceil(total / limit),
+            total,
+            query: req.query
+        });
     } catch (err) {
-        logger.error('Error updating claim status:', err);
-        req.flash('error', 'Error updating claim status');
+        logger.error('Error fetching claims:', err);
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            return res.status(500).json({ error: err.message });
+        }
         res.status(500).render('error', { error: err });
     }
 });
@@ -404,8 +432,8 @@ router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res
 // Route to add a new location
 router.post('/locations', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     try {
-        const { location } = req.body;
-        const newLocation = new Location({ name: location });
+        const { name } = req.body;
+        const newLocation = new Location({ name });
         await newLocation.save();
         res.status(201).json({ message: 'Location added successfully' });
     } catch (error) {
@@ -415,7 +443,7 @@ router.post('/locations', ensureAuthenticated, ensureRoles(['admin', 'manager'])
 });
 
 // Route to get a specific claim by ID for editing, accessible by admin and manager
-router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Viewed claim edit form'), async (req, res) => {
+router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('view_claim_edit'), async (req, res) => {
     const claimId = req.params.id;
     logRequest(req, `Fetching claim for editing with ID: ${claimId}`);
 
@@ -445,7 +473,7 @@ router.get('/:id/edit', ensureAuthenticated, ensureRoles(['admin', 'manager']), 
 
         
 // PUT /claims/:id - Update a claim
-router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req, res) => {
+router.put('/:id', ensureAuthenticated, logActivity('update_claim'), async (req, res) => {
     try {
         const claimId = req.params.id;
         logger.info('Incoming request body:', req.body);
@@ -534,7 +562,7 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
 
 
 // DELETE /claims/:id - Delete a claim
-router.delete('/:id', ensureAuthenticated, logActivity('delete claim'), async (req, res) => {
+router.delete('/:id', ensureAuthenticated, logActivity('delete_claim'), async (req, res) => {
     try {
         const claim = await Claim.findById(req.params.id);
         if (!claim) {
@@ -549,7 +577,7 @@ router.delete('/:id', ensureAuthenticated, logActivity('delete claim'), async (r
 });
 
 // Route for bulk updating claims, accessible by admin and manager
-router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk updated claims'), async (req, res) => {
+router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('bulk_update_claims'), async (req, res) => {
     const { claimIds, updateData } = req.body; // Extract claim IDs and update data from the request body
 
     logRequest(req, 'Bulk updating claims with IDs:', { claimIds, updateData });
@@ -568,7 +596,7 @@ router.put('/bulk/update', ensureAuthenticated, ensureRoles(['admin', 'manager']
 });
 
 // Route for bulk exporting claims, accessible by admin and manager
-router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('Bulk exported claims'), async (req, res) => {
+router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager']), logActivity('bulk_export_claims'), async (req, res) => {
     const { claimIds, format } = req.body; // Extract claim IDs and export format from the request body
 
     logRequest(req, 'Bulk exporting claims with IDs:', { claimIds, format });
@@ -622,7 +650,7 @@ router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager'
 });
 
 // Route to view a specific claim by ID, with options to edit or delete, accessible by admin, manager, and employee
-router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claim details'), async (req, res) => {
+router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('view_claim_details'), async (req, res) => {
     const claimId = req.params.id;
     logRequest(req, 'Fetching claim details with ID:', { claimId });
 
