@@ -1243,4 +1243,75 @@ function calculateAdminFee(invoiceTotals) {
     return adminFee;
 }
 
+// Route to rename a file in a claim
+router.put('/:id/rename-file', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+    const claimId = req.params.id;
+    const { category, oldName, newName } = req.body;
+
+    try {
+        // Find the claim
+        const claim = await Claim.findById(claimId);
+        if (!claim) {
+            logger.error(`Claim not found with ID: ${claimId}`);
+            return res.status(404).json({ success: false, message: 'Claim not found' });
+        }
+
+        // Validate that the file exists in the specified category
+        if (!claim.files || !claim.files[category] || !claim.files[category].includes(oldName)) {
+            logger.error(`File ${oldName} not found in category ${category}`);
+            return res.status(404).json({ success: false, message: 'File not found in claim' });
+        }
+
+        // Validate new filename
+        const ext = path.extname(oldName);
+        const newNameWithExt = newName.endsWith(ext) ? newName : newName + ext;
+        const sanitizedNewName = sanitizeFilename(newNameWithExt);
+
+        // Validate file with new name
+        const dummyFile = { name: sanitizedNewName };
+        const validationErrors = validateFile(dummyFile, category);
+        if (validationErrors.length > 0) {
+            return res.status(400).json({ success: false, errors: validationErrors });
+        }
+
+        // Rename file on disk
+        const oldPath = path.join(uploadsPath, oldName);
+        const newPath = path.join(uploadsPath, sanitizedNewName);
+
+        if (!fs.existsSync(oldPath)) {
+            logger.error(`File ${oldPath} not found on disk`);
+            return res.status(404).json({ success: false, message: 'File not found on disk' });
+        }
+
+        if (fs.existsSync(newPath)) {
+            logger.error(`File ${newPath} already exists`);
+            return res.status(400).json({ success: false, message: 'A file with this name already exists' });
+        }
+
+        // Perform the rename operation
+        fs.renameSync(oldPath, newPath);
+
+        // Update the filename in the claim document
+        const fileIndex = claim.files[category].indexOf(oldName);
+        claim.files[category][fileIndex] = sanitizedNewName;
+        await claim.save();
+
+        logger.info(`File renamed successfully from ${oldName} to ${sanitizedNewName}`);
+        res.json({ 
+            success: true, 
+            message: 'File renamed successfully',
+            oldName: oldName,
+            newName: sanitizedNewName
+        });
+
+    } catch (error) {
+        logger.error('Error renaming file:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error renaming file',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
 module.exports = router; // Export the router

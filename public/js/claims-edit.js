@@ -145,36 +145,59 @@ document.addEventListener('DOMContentLoaded', function () {
                 const oldName = fileNameSpan.textContent;
                 
                 if (newName && newName !== oldName) {
-                    // Add hidden input to track renamed files
-                    let renamedFiles = document.querySelector('input[name="renamedFiles"]');
-                    if (!renamedFiles) {
-                        renamedFiles = document.createElement('input');
-                        renamedFiles.type = 'hidden';
-                        renamedFiles.name = 'renamedFiles';
-                        renamedFiles.value = '[]';
-                        document.querySelector('form').appendChild(renamedFiles);
-                    }
-
-                    // Update renamed files array
-                    const renamedFilesArray = JSON.parse(renamedFiles.value);
-                    renamedFilesArray.push({
-                        type: fileType,
-                        oldName: oldName,
-                        newName: newName
+                    // Get the claim ID from the URL
+                    const claimId = window.location.pathname.split('/').filter(Boolean)[1];
+                    
+                    // Call the rename API
+                    fetch(`/claims/${claimId}/rename-file`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            category: fileType,
+                            oldName: oldName,
+                            newName: newName
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update UI with sanitized name from server
+                            const sanitizedNewName = data.newName;
+                            fileNameSpan.textContent = sanitizedNewName;
+                            fileItem.dataset.filename = sanitizedNewName;
+                            fileItem.querySelector('.view-file').dataset.file = sanitizedNewName;
+                            fileItem.querySelector('.remove-file').dataset.file = sanitizedNewName;
+                            fileItem.querySelector('.rename-file').dataset.file = sanitizedNewName;
+                            
+                            // Hide input and show span
+                            fileNameSpan.style.display = 'block';
+                            renameInput.style.display = 'none';
+                            renameBtn.textContent = 'Rename';
+                        } else {
+                            // Show error message
+                            if (data.errors) {
+                                alert(data.errors.join('\n'));
+                            } else {
+                                alert(data.message || 'Failed to rename file');
+                            }
+                            // Reset input to old name
+                            renameInput.value = oldName;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error renaming file');
+                        // Reset input to old name
+                        renameInput.value = oldName;
                     });
-                    renamedFiles.value = JSON.stringify(renamedFilesArray);
-
-                    // Update UI
-                    fileNameSpan.textContent = newName;
-                    fileItem.dataset.filename = newName;
-                    fileItem.querySelector('.view-file').dataset.file = newName;
-                    fileItem.querySelector('.remove-file').dataset.file = newName;
-                    fileItem.querySelector('.rename-file').dataset.file = newName;
+                } else {
+                    // If no change or empty name, just hide input
+                    fileNameSpan.style.display = 'block';
+                    renameInput.style.display = 'none';
+                    renameBtn.textContent = 'Rename';
                 }
-                
-                fileNameSpan.style.display = 'block';
-                renameInput.style.display = 'none';
-                renameBtn.textContent = 'Rename';
             }
         });
 
