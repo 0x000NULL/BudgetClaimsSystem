@@ -60,4 +60,4 @@ userSchema.methods.comparePassword = function (candidatePassword) {
 
 // Create and export the User model based on the user schema
 const User = mongoose.model('User', userSchema); // Create the User model
-module.exports = { User }; // Export the User model as an object
+module.exports = User; // Export the User model

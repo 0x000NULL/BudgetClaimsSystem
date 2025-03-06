@@ -51,7 +51,7 @@ const Status = require('../models/Status'); // Import the Status model to intera
 const Location = require('../models/Location'); // Import the Location model to interact with the locations collection in MongoDB
 const crypto = require('crypto');
 const { parse } = require('csv-parse');
-const ExcelJS = require('exceljs');
+const xlsx = require('xlsx');
 const os = require('os');
 const debug = require('debug')('app:import');
 const mongoose = require('mongoose');
@@ -136,71 +136,54 @@ const handleFileUpload = async (file, allowedExtensions) => {
  */
 const convertExcelToCsv = async (filePath) => {
     try {
-        // Create a new workbook
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile(filePath);
-
-        // Get the first worksheet
-        const worksheet = workbook.worksheets[0];
+        // Read the Excel file
+        const workbook = xlsx.readFile(filePath);
         
-        // Find the header row
-        let headerRowIndex = 1;
-        let headers = [];
+        // Get the first sheet
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         
-        worksheet.eachRow((row, rowNumber) => {
-            const values = row.values.map(cell => 
-                cell ? cell.toString().trim() : ''
-            );
-            if (values.some(cell => cell === 'Claim #')) {
-                headerRowIndex = rowNumber;
-                headers = values.slice(1); // ExcelJS row.values is 1-based
-                return false; // Break the loop
-            }
+        // Convert to array of arrays first
+        const data = xlsx.utils.sheet_to_json(firstSheet, { 
+            header: 1,
+            raw: false,
+            dateNF: 'MM/DD/YY',
+            defval: '' // Default empty cells to empty string
         });
+
+        // Find and clean the header row
+        const headerRowIndex = data.findIndex(row => 
+            row.some(cell => cell && cell.toString().trim() === 'Claim #')
+        );
 
         if (headerRowIndex === -1) {
             throw new Error('Could not find header row in Excel file');
         }
 
-        // Clean headers
-        headers = headers.map(header => 
+        // Get headers and clean them
+        const headers = data[headerRowIndex].map(header => 
             header ? header.toString().trim().replace(/\s+/g, ' ') : ''
         );
 
-        // Convert rows to objects
-        const records = [];
-        worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber <= headerRowIndex) return; // Skip header and any rows before it
-            
-            const values = row.values.slice(1); // ExcelJS row.values is 1-based
-            if (!values.some(cell => cell)) return; // Skip empty rows
-            
-            const record = {};
-            headers.forEach((header, index) => {
-                if (header) {
-                    let value = values[index];
-                    // Handle different cell types
-                    if (value) {
-                        if (value.text) {
-                            value = value.text.trim();
-                        } else if (value.result) {
-                            value = value.result.toString().trim();
-                        } else {
-                            value = value.toString().trim();
-                        }
-                        // Handle special case for numeric values
+        // Convert remaining rows to objects
+        const records = data.slice(headerRowIndex + 1)
+            .filter(row => row.some(cell => cell)) // Remove empty rows
+            .map(row => {
+                const record = {};
+                headers.forEach((header, index) => {
+                    if (header && row[index]) {
+                        let value = row[index].toString().trim();
+                        // Handle special case for numeric values that might be "0.00"
                         if (value === '0.00') value = '0';
                         record[header] = value;
                     }
-                }
+                });
+                return record;
             });
-            records.push(record);
-        });
 
         debugData('Headers found:', headers);
         debugData('First record:', records[0]);
 
-        // Convert to CSV
+        // Convert back to CSV
         const csvRows = [
             headers.join(','),
             ...records.map(record => 

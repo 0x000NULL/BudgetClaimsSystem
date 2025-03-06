@@ -48,24 +48,6 @@
                         </ul>
                     </div>
                 <% } %>
-                
-                <% if (typeof template !== 'undefined' && template) { %>
-                    <div class="info-banner">
-                        <h3>Using Template: <%= template.name %></h3>
-                        <p><%= template.description %></p>
-                        <% if (template.requiredFields && template.requiredFields.length > 0) { %>
-                            <p><strong>Required Fields:</strong> 
-                                <%= template.requiredFields.map(field => field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())).join(', ') %>
-                            </p>
-                        <% } %>
-                        <a href="/claim-templates" class="btn btn-secondary btn-sm">View All Templates</a>
-                    </div>
-                <% } else { %>
-                    <div class="template-link">
-                        <a href="/claim-templates" class="btn btn-primary btn-sm">Use a Template</a>
-                        <small>Templates can help you quickly fill out common claim types</small>
-                    </div>
-                <% } %>
 
                 <div class="tab">
                     <div class="tab-row">

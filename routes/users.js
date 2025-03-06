@@ -12,7 +12,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const User = require('../models/User');
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth');
-const logger = require('../logger'); // Import Pino logger
+const pinoLogger = require('../logger'); // Import Pino logger
 const router = express.Router();
 
 // Define sensitive fields that should not be logged
@@ -39,7 +39,7 @@ const logRequest = (req, message, extra = {}) => {
     const { method, originalUrl, headers, body } = req;
     const filteredBody = filterSensitiveData(body);
 
-    logger.info({
+    pinoLogger.info({
         message,
         user: req.user ? req.user.email : 'Unauthenticated',
         ip: req.ip,
@@ -52,208 +52,105 @@ const logRequest = (req, message, extra = {}) => {
     });
 };
 
-// Configure Passport.js local strategy
-passport.use(new LocalStrategy(
-    { usernameField: 'email' },
-    async (email, password, done) => {
-        try {
-            // Find user by email
-            const user = await User.findOne({ email });
-            
-            // If user not found
-            if (!user) {
-                return done(null, false, { message: 'Invalid email or password' });
-            }
-            
-            // Check password
-            const isMatch = await bcrypt.compare(password, user.password);
-            
-            // If password doesn't match
-            if (!isMatch) {
-                return done(null, false, { message: 'Invalid email or password' });
-            }
-            
-            // Update last login time
-            user.lastLogin = Date.now();
-            await user.save();
-            
-            // Return user
-            return done(null, user);
-        } catch (error) {
-            logger.error({ error }, 'Error during authentication');
-            return done(error);
-        }
-    }
-));
+// Passport Local Strategy Configuration
+passport.use(new LocalStrategy({
+    usernameField: 'email',
+    passReqToCallback: true // This enables passing `req` to the callback
+}, async (req, email, password, done) => {
+    logRequest(req, 'Authenticating user:', { email });
 
-// Serialize user for session
+    try {
+        // Find the user by email using async/await syntax
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            logRequest(req, 'No user found with email:', { email });
+            return done(null, false, { message: 'That email is not registered' });
+        }
+
+        // Compare the provided password with the stored hashed password
+        const isMatch = await bcrypt.compare(password, user.password);
+        logRequest(req, 'Password match status:', { isMatch });
+
+        if (isMatch) {
+            return done(null, user);
+        } else {
+            return done(null, false, { message: 'Password incorrect' });
+        }
+    } catch (err) {
+        logRequest(req, 'Error fetching user or comparing passwords:', { error: err });
+        return done(err);
+    }
+}));
+
 passport.serializeUser((user, done) => {
     done(null, user.id);
 });
 
-// Deserialize user from session
 passport.deserializeUser(async (id, done) => {
     try {
         const user = await User.findById(id);
         done(null, user);
-    } catch (error) {
-        done(error);
+    } catch (err) {
+        done(err);
     }
 });
 
-/**
- * @route GET /register
- * @description Render registration form
- * @access Public
- */
 router.get('/register', (req, res) => {
-    res.render('register', {
-        title: 'Register',
-        user: req.user
-    });
+    logRequest(req, 'Register route accessed');
+    res.render('register', { title: 'Register' });
 });
 
-/**
- * @route POST /register
- * @description Register a new user
- * @access Public
- */
 router.post('/register', async (req, res) => {
-    try {
-        const { name, email, password, role } = req.body;
-        
-        if (process.env.NODE_ENV === 'test') {
-            if (email === 'test@example.com') {
-                return res.status(200).render('register', {
-                    title: 'Register',
-                    error: 'Email already in use',
-                    user: req.user
-                });
-            }
-            return res.status(200).redirect('/login');
-        }
+    const { name, email, password, role } = req.body;
+    logRequest(req, 'Register POST request received', { data: req.body });
 
-        // Check if email already exists
-        const existingUser = await User.findOne({ email });
-        
-        if (existingUser) {
-            return res.status(200).render('register', {
-                title: 'Register',
-                error: 'Email already in use',
-                user: req.user
-            });
+    let errors = [];
+
+    if (errors.length > 0) {
+        logRequest(req, 'Validation errors:', { errors });
+        res.render('register', { errors, name, email, password, role });
+    } else {
+        try {
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                errors.push({ msg: 'Email already exists' });
+                logRequest(req, 'Email already exists', { email });
+                return res.render('register', { errors, name, email, password, role });
+            }
+
+            const newUser = new User({ name, email, password, role });
+            await newUser.save();
+            logRequest(req, 'New user registered:', { newUser });
+            req.flash('success_msg', 'You are now registered and can log in');
+            res.redirect('/login');
+        } catch (err) {
+            logRequest(req, 'Error saving new user:', { error: err });
+            res.status(500).send('Server error');
         }
-        
-        // Create new user
-        const newUser = new User({
-            name,
-            email,
-            password,
-            role: role || 'employee'
-        });
-        
-        // Save user
-        await newUser.save();
-        
-        // Log registration
-        logger.info({
-            message: 'User registered',
-            email: newUser.email,
-            role: newUser.role
-        });
-        
-        // Redirect to login
-        return res.status(200).redirect('/login');
-    } catch (error) {
-        logger.error({ error }, 'Error registering user');
-        return res.status(500).render('error', {
-            error: 'Registration failed',
-            message: error.message
-        });
     }
 });
 
-/**
- * @route GET /login
- * @description Render login form
- * @access Public
- */
 router.get('/login', (req, res) => {
-    res.render('login', {
-        title: 'Login',
-        user: req.user
-    });
+    logRequest(req, 'Login route accessed');
+    res.render('login', { title: 'Login' });
 });
 
-/**
- * @route POST /login
- * @description Authenticate user
- * @access Public
- */
 router.post('/login', (req, res, next) => {
-    if (process.env.NODE_ENV === 'test') {
-        const { email, password } = req.body;
-        if (email === 'test@example.com' && password === 'password') {
-            return res.status(200).redirect('/dashboard');
-        }
-        return res.status(200).redirect('/login');
-    }
-
-    passport.authenticate('local', (err, user, info) => {
-        if (err) {
-            logger.error({ error: err }, 'Authentication error');
-            return res.status(500).render('error', {
-                error: 'Authentication error',
-                message: err.message
-            });
-        }
-        
-        if (!user) {
-            return res.status(200).render('login', {
-                title: 'Login',
-                error: info.message || 'Invalid credentials',
-                user: req.user
-            });
-        }
-        
-        req.logIn(user, (err) => {
-            if (err) {
-                logger.error({ error: err }, 'Login error');
-                return res.status(500).render('error', {
-                    error: 'Login error',
-                    message: err.message
-                });
-            }
-            
-            logger.info({
-                message: 'User logged in',
-                email: user.email,
-                role: user.role
-            });
-            
-            return res.status(200).redirect('/dashboard');
-        });
+    logRequest(req, 'Login POST request received');
+    passport.authenticate('local', {
+        successRedirect: '/dashboard',
+        failureRedirect: '/login',
+        failureFlash: true
     })(req, res, next);
 });
 
-router.get('/logout', (req, res, next) => {
+router.get('/logout', (req, res) => {
     logRequest(req, 'Logout route accessed');
-    
-    // Handle logout with callback for Passport v0.6+
-    if (req.logout) {
-        req.logout(function(err) {
-            if (err) {
-                logRequest(req, 'Error during logout:', { error: err });
-                return next(err);
-            }
-            req.flash('success_msg', 'You are logged out');
-            res.redirect('/login');
-        });
-    } else {
-        // Fallback for older Passport versions
-        req.session.destroy();
+    req.logout(err => {
+        if (err) return next(err);
+        req.flash('success_msg', 'You are logged out');
         res.redirect('/login');
-    }
+    });
 });
 
 router.get('/user-management', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {

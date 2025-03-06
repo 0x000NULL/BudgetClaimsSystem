@@ -5,4 +5,4 @@ const DamageTypeSchema = new mongoose.Schema({
 });
 
 const DamageType = mongoose.model('DamageType', DamageTypeSchema);
-module.exports = { DamageType };
+module.exports = DamageType;

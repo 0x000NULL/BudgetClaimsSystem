@@ -90,7 +90,7 @@ const crypto = require('crypto'); // Module for generating cryptographic hash va
 const Settings = require('./models/Settings');
 const https = require('https');
 const fs = require('fs');
-const customerRoutes = require('./routes/customers');
+const initializeDatabase = require('./config/dbInit');
 
 // Load environment variables from a .env file
 require('dotenv').config();
@@ -137,16 +137,22 @@ pinoLogger.info('MONGO_URI:', process.env.MONGO_URI);
 pinoLogger.info('SESSION_SECRET:', process.env.SESSION_SECRET);
 
 // Connect to MongoDB using Mongoose
-mongoose.connect(process.env.MONGO_URI, {})
-    .then(() => {
-        pinoLogger.info('MongoDB connected');
+mongoose.connect(process.env.MONGO_URI)
+    .then(async () => {
+        console.log('Connected to MongoDB');
+        // Initialize database with default values
+        await initializeDatabase();
+        console.log('Database initialized with default values');
         return loadSettings(); // Load settings after successful connection
     })
-    .catch(err => pinoLogger.error('MongoDB connection error:', err));
+    .catch(err => {
+        console.error('MongoDB connection error:', err);
+        process.exit(1);
+    });
 
 // Middleware setup
 app.use(express.json()); // Parse incoming JSON requests
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+app.use(express.urlencoded({ extended: false })); // Parse URL-encoded bodies
 app.use(cors()); // Enable CORS
 app.use(fileUpload({
     createParentPath: true,
@@ -296,7 +302,10 @@ app.use('/feedback', (req, res, next) => {
     pinoLogger.info('Accessing feedback route');
     next();
 }, require('./routes/feedback')); // Feedback routes
-app.use('/customer', customerRoutes);
+app.use('/customers', (req, res, next) => {
+    pinoLogger.info('Accessing customers route');
+    next();
+}, require('./routes/customers')); // Customer-related routes
 app.use('/employee', (req, res, next) => {
     pinoLogger.info('Accessing employee route');
     next();
@@ -322,21 +331,9 @@ app.use('/export', (req, res, next) => {
     next();
 }, exportRoutes); // Export functionality routes
 app.use('/import', (req, res, next) => {
-    res.locals.nonce = crypto.randomBytes(16).toString('hex');
+    pinoLogger.info('Accessing import route');
     next();
-}, require('./routes/import'));
-
-// Add claim templates routes
-app.use('/claim-templates', (req, res, next) => {
-    res.locals.nonce = crypto.randomBytes(16).toString('hex');
-    next();
-}, require('./routes/claimTemplates'));
-
-// Add this for debugging
-app.use((req, res, next) => {
-    console.log('Request received:', req.method, req.url);
-    next();
-});
+}, require('./routes/import')); // Import functionality routes
 
 // Start the server and listen on the specified port
 const PORT = process.env.PORT || 5000; // Use the port from environment variables or default to 5000

@@ -12,7 +12,7 @@ const locationSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Pre-save hook to convert name to uppercase
+// Add a pre-save hook to convert name to uppercase
 locationSchema.pre('save', function(next) {
     if (this.name) {
         this.name = this.name.toUpperCase();
@@ -20,5 +20,4 @@ locationSchema.pre('save', function(next) {
     next();
 });
 
-const Location = mongoose.model('Location', locationSchema);
-module.exports = { Location };
+module.exports = mongoose.model('Location', locationSchema);

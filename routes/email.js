@@ -1,5 +1,5 @@
 /**
- * @file routes/email.js
+ * @file /home/stripcheese/Desktop/BudgetClaimsSystem/routes/email.js
  * @description This file contains routes for handling email-related operations in the Budget Claims System.
  * It includes routes for displaying email forms, fetching email templates, and sending emails.
  * The routes use Express.js for routing, Nodemailer for sending emails, and Pino for logging.
@@ -12,7 +12,6 @@
  * @requires ../models/Claim
  * @requires ../middleware/auth
  * @requires ../logger
- * @requires ../config/nodemailer
  */
 
 /**
@@ -78,41 +77,23 @@ const express = require('express'); // Import Express to create a router
 const router = express.Router(); // Create a new router
 const nodemailer = require('nodemailer'); // Import Nodemailer for sending emails
 const EmailTemplate = require('../models/EmailTemplate'); // Import the EmailTemplate model
-const { Claim } = require('../models/Claim'); // Import the Claim model
+const Claim = require('../models/Claim'); // Import the Claim model
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const pinoLogger = require('../logger'); // Import Pino logger
-const emailConfig = require('../config/nodemailer'); // Import nodemailer configuration
 
 // Define sensitive fields that should not be logged
-const sensitiveFields = ['password', 'token', 'ssn', 'customerDriversLicense', 'carVIN'];
+const sensitiveFields = ['password', 'token', 'ssn'];
 
-// Add explicit logging for all incoming requests to this router
-router.use((req, res, next) => {
-    console.log(`Email Router - Received request: ${req.method} ${req.originalUrl}`);
-    next();
-});
-
-// Add a DEBUG route to test basic routing
-router.get('/debug', (req, res) => {
-    console.log('DEBUG route accessed');
-    res.status(200).json({ message: 'Email router is working' });
-});
-
-/**
- * @function filterSensitiveData
- * @description Filters out sensitive fields from the request body.
- * @param {Object} data - The data object to filter.
- * @returns {Object} The filtered data object with sensitive fields masked.
- */
+// Function to filter out sensitive fields from the request body
 const filterSensitiveData = (data) => {
     if (!data || typeof data !== 'object') {
         return data;
     }
 
     return Object.keys(data).reduce((filteredData, key) => {
-        if (sensitiveFields.some(field => field.toLowerCase() === key.toLowerCase())) {
+        if (sensitiveFields.includes(key)) {
             filteredData[key] = '***REDACTED***'; // Mask the sensitive field
-        } else if (typeof data[key] === 'object' && data[key] !== null) {
+        } else if (typeof data[key] === 'object') {
             filteredData[key] = filterSensitiveData(data[key]); // Recursively filter nested objects
         } else {
             filteredData[key] = data[key];
@@ -121,13 +102,7 @@ const filterSensitiveData = (data) => {
     }, {});
 };
 
-/**
- * @function logRequest
- * @description Logs requests with user and session information.
- * @param {Object} req - The Express request object.
- * @param {string} message - The log message.
- * @param {Object} [extra={}] - Additional information to log.
- */
+// Helper function to log requests with user and session info
 const logRequest = (req, message, extra = {}) => {
     const { method, originalUrl, headers, body } = req;
     const filteredBody = filterSensitiveData(body); // Filter sensitive data from the request body
@@ -141,254 +116,127 @@ const logRequest = (req, message, extra = {}) => {
         method, // Log HTTP method
         url: originalUrl, // Log originating URL
         requestBody: filteredBody, // Log the filtered request body
-        headers: filterSensitiveData(headers), // Log filtered request headers
-        ...extra // Include any additional information
+        headers // Log request headers
     });
 };
 
-/**
- * @function replaceVariables
- * @description Replaces template variables with actual claim data.
- * @param {Object} template - The email template object.
- * @param {Object} claim - The claim object containing data to replace in the template.
- * @returns {Object} The populated template with variables replaced.
- */
+// Function to replace template variables with actual claim data
 const replaceVariables = (template, claim) => {
-    if (!template || !claim) {
-        return { subject: '', body: '' };
-    }
-
     let body = template.body; // Get the email template body
-    let subject = template.subject || ''; // Get the email template subject with fallback
-    
     const variables = {
-        MVA: claim.mva || '',
-        CustomerName: claim.customerName || '',
-        CustomerEmail: claim.customerEmail || '',
-        CustomerNumber: claim.customerNumber || '',
-        CustomerAddress: claim.customerAddress || '',
-        CustomerDriversLicense: claim.customerDriversLicense || '',
-        CarMake: claim.carMake || '',
-        CarModel: claim.carModel || '',
-        CarYear: claim.carYear || '',
-        CarColor: claim.carColor || '',
-        CarVIN: claim.carVIN || '',
+        MVA: claim.mva,
+        CustomerName: claim.customerName,
+        CustomerEmail: claim.customerEmail,
+        CustomerNumber: claim.customerNumber,
+        CustomerAddress: claim.customerAddress,
+        CustomerDriversLicense: claim.customerDriversLicense,
+        CarMake: claim.carMake,
+        CarModel: claim.carModel,
+        CarYear: claim.carYear,
+        CarColor: claim.carColor,
+        CarVIN: claim.carVIN,
         AccidentDate: claim.accidentDate ? claim.accidentDate.toLocaleDateString() : '',
         Billable: claim.billable ? 'Yes' : 'No',
         IsRenterAtFault: claim.isRenterAtFault ? 'Yes' : 'No',
-        DamagesTotal: claim.damagesTotal || 0,
-        BodyShopName: claim.bodyShopName || '',
-        RANumber: claim.raNumber || '',
-        InsuranceCarrier: claim.insuranceCarrier || '',
-        InsuranceAgent: claim.insuranceAgent || '',
-        InsurancePhoneNumber: claim.insurancePhoneNumber || '',
-        InsuranceFaxNumber: claim.insuranceFaxNumber || '',
-        InsuranceAddress: claim.insuranceAddress || '',
-        InsuranceClaimNumber: claim.insuranceClaimNumber || '',
-        ThirdPartyName: claim.thirdPartyName || '',
-        ThirdPartyPhoneNumber: claim.thirdPartyPhoneNumber || '',
-        ThirdPartyInsuranceName: claim.thirdPartyInsuranceName || '',
-        ThirdPartyPolicyNumber: claim.thirdPartyPolicyNumber || '',
-        // Default empty string for any missing property
-        MissingProperty: '',
+        DamagesTotal: claim.damagesTotal,
+        BodyShopName: claim.bodyShopName,
+        RANumber: claim.raNumber,
+        InsuranceCarrier: claim.insuranceCarrier,
+        InsuranceAgent: claim.insuranceAgent,
+        InsurancePhoneNumber: claim.insurancePhoneNumber,
+        InsuranceFaxNumber: claim.insuranceFaxNumber,
+        InsuranceAddress: claim.insuranceAddress,
+        InsuranceClaimNumber: claim.insuranceClaimNumber,
+        ThirdPartyName: claim.thirdPartyName,
+        ThirdPartyPhoneNumber: claim.thirdPartyPhoneNumber,
+        ThirdPartyInsuranceName: claim.thirdPartyInsuranceName,
+        ThirdPartyPolicyNumber: claim.thirdPartyPolicyNumber,
     };
 
-    // Replace variables in the template body and subject
+    // Replace variables in the template body
     for (const [key, value] of Object.entries(variables)) {
-        const pattern = new RegExp(`{${key}}`, 'g');
-        body = body ? body.replace(pattern, value) : '';
-        subject = subject ? subject.replace(pattern, value) : '';
+        body = body.replace(new RegExp(`{${key}}`, 'g'), value);
     }
 
-    return { subject, body };
+    return { subject: template.subject, body };
 };
 
-/**
- * @route GET /form/:id
- * @description Route to display the email form.
- * @middleware ensureAuthenticated
- * @param {Object} req - The Express request object.
- * @param {Object} res - The Express response object.
- */
+// Route to display the email form
 router.get('/form/:id', ensureAuthenticated, async (req, res) => {
     logRequest(req, 'Displaying email form');
     try {
-        const claim = await Claim.findById(req.params.id);
-            
-        if (!claim) {
-            return res.status(404).send('Claim not found');
-        }
-        
-        const templates = await EmailTemplate.find();
-        
-        // For testing: if Accept header is 'application/json', return JSON
-        if (req.headers.accept === 'application/json' || process.env.NODE_ENV === 'test') {
-            return res.status(200).json({
-                view: 'email_form',
-                options: {
-                    claim,
-                    templates,
-                    template: { subject: '', body: '' }
-                }
-            });
-        }
-        
-        res.render('email_form', { 
-            claim, 
-            templates, 
-            template: { subject: '', body: '' } 
-        });
+        const claim = await Claim.findById(req.params.id); // Fetch the claim by ID
+        const templates = await EmailTemplate.find(); // Fetch all email templates
+        res.render('email_form', { claim, templates, template: { subject: '', body: '' } }); // Render the email form view
     } catch (err) {
-        logRequest(req, 'Error displaying email form', { error: err.message });
-        res.status(500).send('Server Error: ' + err.message);
+        logRequest(req, 'Error displaying email form', { error: err });
+        res.status(500).send('Server Error'); // Send server error response
     }
 });
 
-/**
- * @route GET /templates/:templateId
- * @description Route to get a specific email template and replace variables.
- * @middleware ensureAuthenticated
- * @param {Object} req - The Express request object.
- * @param {Object} res - The Express response object.
- */
+// Route to get a specific email template and replace variables
 router.get('/templates/:templateId', ensureAuthenticated, async (req, res) => {
     logRequest(req, `Fetching email template with ID: ${req.params.templateId}`);
     try {
-        const template = await EmailTemplate.findById(req.params.templateId);
-        
-        if (!template) {
-            return res.status(404).json({ error: 'Template not found' });
-        }
-        
-        // Check if claimId was provided in the query parameter
-        if (!req.query.claimId) {
-            return res.json(template);
-        }
-        
-        const claim = await Claim.findById(req.query.claimId);
-        
-        if (!claim) {
-            return res.status(404).json({ error: 'Claim not found' });
-        }
-        
-        const populatedTemplate = replaceVariables(template, claim);
-        logRequest(req, 'Email template fetched and variables replaced');
-        return res.status(200).json(populatedTemplate);
+        const template = await EmailTemplate.findById(req.params.templateId); // Fetch the email template by ID
+        const claim = await Claim.findById(req.query.claimId); // Fetch the claim by ID from query parameters
+        const populatedTemplate = replaceVariables(template, claim); // Replace template variables with claim data
+        logRequest(req, 'Email template fetched and variables replaced', { template: populatedTemplate });
+        res.json(populatedTemplate); // Send the populated template as JSON response
     } catch (err) {
-        logRequest(req, 'Error fetching email template', { error: err.message });
-        return res.status(500).json({ error: 'Server Error: ' + err.message });
+        logRequest(req, 'Error fetching email template', { error: err });
+        res.status(500).send('Server Error'); // Send server error response
     }
 });
 
-/**
- * @route GET /send/:claimId
- * @description Route to display the email sending form.
- * @middleware ensureAuthenticated
- * @middleware ensureRoles(['admin', 'manager'])
- * @param {Object} req - The Express request object.
- * @param {Object} res - The Express response object.
- */
+// Route to display the email sending form
 router.get('/send/:claimId', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
     logRequest(req, `Displaying email sending form for claim ID: ${req.params.claimId}`);
     try {
-        const claim = await Claim.findById(req.params.claimId);
-        if (!claim) {
-            return res.status(404).send('Claim not found');
-        }
-        
-        const templates = await EmailTemplate.find();
-        
-        // For testing: if Accept header is 'application/json', return JSON
-        if (req.headers.accept === 'application/json' || process.env.NODE_ENV === 'test') {
-            return res.status(200).json({
-                view: 'email_form',
-                options: {
-                    claim,
-                    templates,
-                    template: { subject: '', body: '' }
-                }
-            });
-        }
-        
-        res.render('email_form', { 
-            claim, 
-            templates, 
-            template: { subject: '', body: '' } 
-        });
+        const claim = await Claim.findById(req.params.claimId).exec(); // Fetch the claim by ID
+        const templates = await EmailTemplate.find().exec(); // Fetch all email templates
+        res.render('email_form', { claim, templates, body: '' }); // Render the email form view
     } catch (err) {
-        logRequest(req, 'Error displaying email sending form', { error: err.message });
-        res.status(500).send('Server Error: ' + err.message);
+        logRequest(req, 'Error displaying email sending form', { error: err });
+        res.status(500).send('Server Error'); // Send server error response
     }
 });
 
-/**
- * @route POST /send
- * @description Route to send an email.
- * @middleware ensureAuthenticated
- * @param {Object} req - The Express request object.
- * @param {Object} res - The Express response object.
- */
+// Route to send an email
 router.post('/send', ensureAuthenticated, async (req, res) => {
-    const { email, subject, body, html, attachments } = req.body;
-    
-    if (!email || !subject || (!body && !html)) {
-        return res.status(400).json({ error: 'Email, subject, and body/html are required' });
-    }
-    
-    logRequest(req, 'Sending email', { to: email, subject });
+    const { email, subject, body } = req.body; // Extract email details from the request body
+    logRequest(req, 'Sending email', { email, subject });
 
-    try {
-        // For testing environment, return success directly
-        if (process.env.NODE_ENV === 'test') {
-            return res.json({ 
-                success: true, 
-                message: 'Email sent successfully', 
-                messageId: 'test-message-id-123' 
-            });
+    // Create a transporter object using the Office365 SMTP transport
+    const transporter = nodemailer.createTransport({
+        host: 'smtp.office365.com', // SMTP server address for Office365
+        port: 587, // Port number for TLS/STARTTLS
+        secure: false, // Set to true if using port 465, false for other ports
+        auth: {
+            user: process.env.EMAIL_USER, // Email user from environment variables
+            pass: process.env.EMAIL_PASS  // Email password from environment variables
+        },
+        tls: {
+            ciphers: 'SSLv3' // Use SSLv3 for TLS
+        },
+        debug: true, // Enable debug output
+        logger: true // Enable logger
+    });
+
+    // Send mail with defined transport object
+    transporter.sendMail({
+        from: process.env.EMAIL_USER, // Sender address
+        to: email, // List of receivers
+        subject: subject, // Subject line
+        text: body, // Plain text body
+    }, (error, info) => {
+        if (error) {
+            logRequest(req, 'Error sending email', { error });
+            return res.status(500).json({ error: 'Failed to send email' }); // Send failure response
         }
-        
-        // Create a transporter object using the configuration from nodemailer.js
-        const transporter = nodemailer.createTransport(emailConfig);
-
-        // Email options
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: subject,
-            text: body || '',
-        };
-
-        // Add HTML content if available
-        if (html) {
-            mailOptions.html = html;
-        }
-
-        // Add attachments if available
-        if (attachments && Array.isArray(attachments)) {
-            mailOptions.attachments = attachments;
-        }
-
-        // Send mail with defined transport object
-        const info = await transporter.sendMail(mailOptions);
-        
         logRequest(req, 'Email sent successfully', { messageId: info.messageId });
-        res.json({ success: true, message: 'Email sent successfully', messageId: info.messageId });
-    } catch (error) {
-        logRequest(req, 'Error sending email', { error: error.message });
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to send email', 
-            details: error.message 
-        });
-    }
+        res.json({ success: 'Email sent successfully' }); // Send success response
+    });
 });
 
-// Export the router and utility functions (for testing)
-module.exports = router;
-
-// Export utility functions for testing if in test environment
-if (process.env.NODE_ENV === 'test') {
-    module.exports.filterSensitiveData = filterSensitiveData;
-    module.exports.replaceVariables = replaceVariables;
-    module.exports.logRequest = logRequest;
-}
+module.exports = router; // Export the router

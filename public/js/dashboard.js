@@ -1,6 +1,3 @@
-/**
- * Dashboard JavaScript functionality
- */
 document.addEventListener('DOMContentLoaded', () => {
     // Add new claim button handler
     const newClaimButton = document.getElementById('newClaimButton');
@@ -25,13 +22,4 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = '/claims/express';
         });
     }
-
-    // Handle toast notifications
-    const toasts = document.querySelectorAll('.toast');
-    toasts.forEach(toast => {
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 500);
-        }, 5000);
-    });
 }); 

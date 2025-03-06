@@ -27,156 +27,106 @@ const LocalStrategy = require('passport-local').Strategy; // Import Passport Loc
 const bcrypt = require('bcryptjs'); // Import bcrypt for password hashing and comparison
 const User = require('../models/User'); // Import User model to interact with the users collection in MongoDB
 const pinoLogger = require('../logger'); // Import Pino logger
-const Customer = require('../models/Customer');
 
 module.exports = function (passport) {
     // Define a new Passport LocalStrategy
-    passport.use('local', new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
-        // Log the email being used for authentication
-        pinoLogger.info({
-            message: 'Attempting to authenticate user',
-            email,
-            timestamp: new Date().toISOString()
-        });
-
-        try {
-            // Match user based on the provided email
-            const user = await User.findOne({ email: email });
-
-            // If no user is found with the provided email
-            if (!user) {
-                pinoLogger.warn({
-                    message: 'Authentication failed: email not registered',
-                    email,
-                    timestamp: new Date().toISOString()
-                });
-                return done(null, false, { message: 'That email is not registered' });
-            }
-
-            // Compare the provided password with the stored hashed password
-            const isMatch = await bcrypt.compare(password, user.password);
-            
+    passport.use(
+        new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+            // Log the email being used for authentication
             pinoLogger.info({
-                message: 'Password comparison completed',
+                message: 'Attempting to authenticate user',
                 email,
-                isMatch,
                 timestamp: new Date().toISOString()
             });
 
-            if (isMatch) {
+            try {
+                // Match user based on the provided email
+                const user = await User.findOne({ email: email });
+
+                // If no user is found with the provided email
+                if (!user) {
+                    pinoLogger.warn({
+                        message: 'Authentication failed: email not registered',
+                        email,
+                        timestamp: new Date().toISOString()
+                    });
+                    return done(null, false, { message: 'That email is not registered' });
+                }
+
+                // Compare the provided password with the stored hashed password
+                const isMatch = await bcrypt.compare(password, user.password);
+                
                 pinoLogger.info({
-                    message: 'Password matched',
+                    message: 'Password comparison completed',
+                    email,
+                    isMatch,
+                    timestamp: new Date().toISOString()
+                });
+
+                if (isMatch) {
+                    pinoLogger.info({
+                        message: 'Password matched',
+                        email,
+                        timestamp: new Date().toISOString()
+                    });
+                    return done(null, user); // Return the user object if passwords match
+                } else {
+                    pinoLogger.warn({
+                        message: 'Password did not match',
+                        email,
+                        timestamp: new Date().toISOString()
+                    });
+                    return done(null, false, { message: 'Password incorrect' }); // Return false if passwords do not match
+                }
+            } catch (err) {
+                pinoLogger.error({
+                    message: 'Error during user authentication',
+                    error: err.message,
                     email,
                     timestamp: new Date().toISOString()
                 });
-                return done(null, user); // Return the user object if passwords match
-            } else {
-                pinoLogger.warn({
-                    message: 'Password did not match',
-                    email,
-                    timestamp: new Date().toISOString()
-                });
-                return done(null, false, { message: 'Password incorrect' }); // Return false if passwords do not match
+                return done(err);
             }
-        } catch (err) {
-            pinoLogger.error({
-                message: 'Error during user authentication',
-                error: err.message,
-                email,
-                timestamp: new Date().toISOString()
-            });
-            return done(err);
-        }
-    }));
+        })
+    );
 
-    // New customer strategy
-    passport.use('customer-local', new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
-        pinoLogger.info({
-            message: 'Attempting to authenticate customer',
-            email,
-            timestamp: new Date().toISOString()
-        });
-
-        try {
-            const customer = await Customer.findOne({ email: email });
-
-            if (!customer) {
-                pinoLogger.warn({
-                    message: 'Authentication failed: customer email not registered',
-                    email,
-                    timestamp: new Date().toISOString()
-                });
-                return done(null, false, { message: 'That email is not registered' });
-            }
-
-            const isMatch = await customer.comparePassword(password);
-            
-            if (isMatch) {
-                await customer.updateLastLogin();
-                pinoLogger.info({
-                    message: 'Customer authenticated successfully',
-                    email,
-                    customerId: customer._id,
-                    timestamp: new Date().toISOString()
-                });
-                return done(null, customer);
-            } else {
-                pinoLogger.warn({
-                    message: 'Customer authentication failed: incorrect password',
-                    email,
-                    timestamp: new Date().toISOString()
-                });
-                return done(null, false, { message: 'Password incorrect' });
-            }
-        } catch (err) {
-            pinoLogger.error({
-                message: 'Error during customer authentication',
-                error: err.message,
-                email,
-                timestamp: new Date().toISOString()
-            });
-            return done(err);
-        }
-    }));
-
-    // Update serialization to handle both users and customers
+    // Serialize user instance to store user ID in the session
     passport.serializeUser((user, done) => {
         pinoLogger.info({
-            message: 'Serializing user/customer',
-            id: user.id,
-            role: user.role,
+            message: 'Serializing user',
+            userId: user.id,
             timestamp: new Date().toISOString()
         });
-        done(null, { id: user.id, role: user.role });
+        done(null, user.id);
     });
 
-    passport.deserializeUser(async (data, done) => {
+    // Deserialize user instance by user ID stored in the session
+    passport.deserializeUser(async (id, done) => {
         try {
-            const Model = data.role === 'customer' ? Customer : User;
-            const user = await Model.findById(data.id);
+            // Handle case where id is an object
+            const userId = typeof id === 'object' ? id.id : id;
             
+            const user = await User.findById(userId);
             if (!user) {
                 pinoLogger.warn({
-                    message: 'User/customer not found during deserialization',
-                    id: data.id,
-                    role: data.role,
+                    message: 'User not found during deserialization',
+                    userId: id,
                     timestamp: new Date().toISOString()
                 });
                 return done(null, false);
             }
 
             pinoLogger.info({
-                message: 'User/customer deserialized successfully',
-                id: data.id,
-                role: data.role,
+                message: 'User deserialized',
+                userId: id,
                 timestamp: new Date().toISOString()
             });
             done(null, user);
         } catch (err) {
             pinoLogger.error({
-                message: 'Error deserializing user/customer',
+                message: 'Error deserializing user',
                 error: err.message,
-                data,
+                userId: id,
                 timestamp: new Date().toISOString()
             });
             done(err, null);

@@ -183,15 +183,8 @@ const logRequest = (req, message, extra = {}) => {
 };
 
 // Home page route
-router.get('/', (req, res) => {
-    logRequest(req, 'Landing page accessed');
-    res.render('landing', { title: 'Welcome - Budget Claims System' });
-});
-
-// Add landing page route explicitly as well
-router.get('/landing', (req, res) => {
-    logRequest(req, 'Landing page accessed');
-    res.render('landing', { title: 'Welcome - Budget Claims System' });
+router.get('/', ensureAuthenticated, (req, res) => {
+    res.redirect('/dashboard');
 });
 
 // Login page route
@@ -454,12 +447,6 @@ router.get('/settings', ensureAuthenticated, ensureRole('admin'), async (req, re
             error: error.message
         });
     }
-});
-
-// Terms and Conditions page route
-router.get('/terms', (req, res) => {
-    logRequest(req, 'Terms and Conditions page accessed'); // Log route access
-    res.render('terms', { title: 'Terms and Conditions - Budget Claims System' }); // Render the terms page
 });
 
 module.exports = router; // Export the router

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Claims - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css"><!-- Link to the external CSS file for styling -->
+</head>
+<body>
+    <header>
+        <!-- Logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
+        <h1>Budget Claims System</h1> <!-- Main heading -->
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li class="Claims">
+                    <a href="javascript:void(0)" class="dropbtn">Claims</a> <!-- Dropdown trigger -->
+                    <div class="dropdown-content">
+                        <a href="/claims/search">Search Claims</a> <!-- Link to Search Claims -->
+                        <a href="/claims/add">Add Claim</a> <!-- Link to Add Claim -->
+                    </div>
+                </li>
+                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li class="Settings">
+                    <a href="javascript:void(0)" class="dropbtn">Settings</a> <!-- Dropdown trigger -->
+                    <div class="dropdown-content">
+                        <a href="/general-settings">General Settings</a> <!-- Link to General Settings -->
+                        <a href="/user-management">User Management</a> <!-- Link to User Management -->
+                        <a href="/email-templates">Email Templates</a> <!-- Link to Email Templates -->
+                    </div>
+                </li>
+                <li><a href="/help">Help</a></li> <!-- Link to Help -->
+                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Your Claims</h2>
+        <ul>
+            <% claims.forEach(claim => { %>
+                <li>
+                    <h3>MVA: <%= claim.mva %></h3>
+                    <p>Description: <%= claim.description %></p>
+                    <p>Status: <%= claim.status %></p>
+                    <p>Date: <%= new Date(claim.date).toLocaleDateString() %></p>
+                </li>
+            <% }) %>
+        </ul>
+    </main>
+</body>
+</html>
