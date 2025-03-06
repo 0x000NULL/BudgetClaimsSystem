@@ -288,44 +288,43 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Add hidden input to track invoice totals
-        let invoiceTotals = document.querySelector('input[name="invoiceTotals"]');
-        if (!invoiceTotals) {
-            invoiceTotals = document.createElement('input');
-            invoiceTotals.type = 'hidden';
-            invoiceTotals.name = 'invoiceTotals';
-            invoiceTotals.value = '[]';
-            document.querySelector('form').appendChild(invoiceTotals);
-        }
+        // Get the claim ID from the URL
+        const claimId = window.location.pathname.split('/').filter(Boolean)[1];
 
-        // Update invoice totals array
-        const totalsArray = JSON.parse(invoiceTotals.value);
-        const existingIndex = totalsArray.findIndex(item => item.fileName === currentInvoiceFile);
-        
-        if (existingIndex !== -1) {
-            totalsArray[existingIndex].total = amount;
-        } else {
-            totalsArray.push({
+        // Make PUT request to update invoice total
+        fetch(`/claims/${claimId}/invoice-total`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
                 fileName: currentInvoiceFile,
                 total: amount
-            });
-        }
-        
-        invoiceTotals.value = JSON.stringify(totalsArray);
-        
-        // Visual feedback
-        const fileItem = document.querySelector(`.file-item[data-filename="${currentInvoiceFile}"]`);
-        const existingTotal = fileItem.querySelector('.invoice-total');
-        if (existingTotal) {
-            existingTotal.textContent = `$${amount.toFixed(2)}`;
-        } else {
-            const totalSpan = document.createElement('span');
-            totalSpan.className = 'invoice-total';
-            totalSpan.textContent = `$${amount.toFixed(2)}`;
-            fileItem.querySelector('.file-info').appendChild(totalSpan);
-        }
-
-        closeModal();
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Visual feedback
+                const fileItem = document.querySelector(`.file-item[data-filename="${currentInvoiceFile}"]`);
+                const existingTotal = fileItem.querySelector('.invoice-total');
+                if (existingTotal) {
+                    existingTotal.textContent = `$${amount.toFixed(2)}`;
+                } else {
+                    const totalSpan = document.createElement('span');
+                    totalSpan.className = 'invoice-total';
+                    totalSpan.textContent = `$${amount.toFixed(2)}`;
+                    fileItem.querySelector('.file-info').appendChild(totalSpan);
+                }
+                closeModal();
+            } else {
+                alert('Failed to update invoice total');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating invoice total');
+        });
     });
 
     function closeModal() {

@@ -154,7 +154,7 @@ mongoose.connect(process.env.MONGO_URI)
 app.use(express.json()); // Parse incoming JSON requests
 app.use(express.urlencoded({ extended: false })); // Parse URL-encoded bodies
 app.use(cors()); // Enable CORS
-app.use(fileUpload({
+const fileUploadMiddleware = fileUpload({
     createParentPath: true,
     limits: {
         fileSize: 50 * 1024 * 1024 // 50MB max file size
@@ -162,8 +162,8 @@ app.use(fileUpload({
     abortOnLimit: true,
     useTempFiles: true,
     tempFileDir: '/tmp/',
-    debug: process.env.NODE_ENV === 'development'
-})); // Enable file uploads with dynamic size limit
+    debug: false // Disable debug mode
+});
 app.use(methodOverride('_method')); // Allow PUT and DELETE methods via POST
 if (process.env.NODE_ENV === 'production') {
     // Production security settings
@@ -286,7 +286,7 @@ app.use('/users', (req, res, next) => {
     pinoLogger.info('Accessing users route');
     next();
 }, require('./routes/users')); // User-related routes
-app.use('/claims', (req, res, next) => {
+app.use('/claims', fileUploadMiddleware, (req, res, next) => {
     pinoLogger.info('Accessing claims route');
     next();
 }, require('./routes/claims')); // Claim-related routes
@@ -330,7 +330,7 @@ app.use('/export', (req, res, next) => {
     pinoLogger.info('Accessing export route');
     next();
 }, exportRoutes); // Export functionality routes
-app.use('/import', (req, res, next) => {
+app.use('/import', fileUploadMiddleware, (req, res, next) => {
     pinoLogger.info('Accessing import route');
     next();
 }, require('./routes/import')); // Import functionality routes
