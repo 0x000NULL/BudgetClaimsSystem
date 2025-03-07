@@ -31,7 +31,7 @@ const { notifyNewClaim, notifyClaimStatusUpdate, notifyClaimAssigned, notifyClai
 const csv = require('csv-express'); // Import csv-express for CSV export
 const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
 const PDFDocument = require('pdfkit'); // Import PDFKit for PDF export
-const fs = require('fs'); // Import File System to handle file operations
+const fs = require('fs').promises; // Import File System to handle file operations
 const cacheManager = require('cache-manager'); // Import cache manager for caching
 const redisStore = require('cache-manager-redis-store'); // Import Redis store for cache manager
 const pinoLogger = require('../logger'); // Import Pino logger
@@ -43,16 +43,17 @@ const Settings = require('../models/Settings'); // Import Settings model
 const { uploadsPath } = require('../config/settings'); // Import uploadsPath from settings
 const logRequest = require('../middleware/auditLogger');
 const logger = require('../logger');
-const { isAuthenticated } = require('../middleware/auth');
-const { processRentalAgreement, generateClaimNumber } = require('../utils/rentalAgreementUtils');
-const { sendNotification } = require('../notifications/notify');
-const AuditLog = require('../models/AuditLog');
-const upload = require('express-fileupload')();
+const { processRentalAgreement } = require('../services/processRentalAgreement'); // Import rental agreement processing service
 
 // Create uploads directory if it doesn't exist
-if (!fs.existsSync(uploadsPath)) {
-    fs.mkdirSync(uploadsPath, { recursive: true });
-}
+(async () => {
+    try {
+        await fs.access(uploadsPath);
+    } catch {
+        await fs.mkdir(uploadsPath, { recursive: true });
+        logger.info(`Created uploads directory at ${uploadsPath}`);
+    }
+})();
 
 // Setup cache manager with Redis
 const cache = cacheManager.caching({
@@ -422,6 +423,121 @@ router.get('/express', ensureAuthenticated, ensureRoles(['admin', 'manager', 'em
     }
 });
 
+// Route for rental agreement-only claim creation
+router.post('/rental-agreement', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+    logRequest(req, 'Rental agreement-only claim creation initiated');
+
+    try {
+        // Check if rental agreement file is provided
+        if (!req.files || !req.files.rentalAgreement) {
+            return res.status(400).json({ error: 'Rental agreement file is required' });
+        }
+
+        const rentalAgreementFile = req.files.rentalAgreement;
+        const fileExtension = path.extname(rentalAgreementFile.name).toLowerCase();
+
+        // Validate file type
+        if (!['.pdf', '.doc', '.docx'].includes(fileExtension)) {
+            return res.status(400).json({ error: 'Invalid file type. Only PDF, DOC, and DOCX files are allowed.' });
+        }
+
+        // Get default status for new claims
+        const defaultStatus = await Status.findOne({ name: 'Open' });
+        if (!defaultStatus) {
+            throw new Error('Default status not found');
+        }
+
+        // Generate unique filename
+        const uniqueFilename = `RA_${Date.now()}_${Math.random().toString(36).substring(7)}${fileExtension}`;
+        const uploadPath = path.join(uploadsPath, uniqueFilename);
+
+        // Create initial claim object
+        const newClaim = new Claim({
+            status: defaultStatus._id,
+            files: {
+                rentalAgreement: [uniqueFilename]
+            }
+        });
+
+        try {
+            // Save the file
+            await rentalAgreementFile.mv(uploadPath);
+
+            // Extract data from rental agreement using the existing parsing service
+            const result = await processRentalAgreement(uploadPath);
+            
+            if (!result || !result.data) {
+                // If extraction fails, remove the uploaded file
+                await fs.unlink(uploadPath);
+                throw new Error('Failed to extract data from rental agreement');
+            }
+
+            const extractedData = result.data;
+
+            // Log extraction metadata
+            logger.info('Rental agreement extraction metadata:', {
+                confidence: result.metadata.extractionConfidence,
+                fieldsMatched: result.metadata.fieldsMatched,
+                totalFields: result.metadata.totalFields,
+                missingFields: result.metadata.requiredFieldsMissing,
+                errors: result.metadata.errors
+            });
+
+            // Update claim with extracted data
+            Object.assign(newClaim, {
+                raNumber: extractedData.raNumber,
+                customerName: extractedData.customerName,
+                mva: extractedData.customerNumber,
+                customerEmail: extractedData.customerEmail,
+                customerAddress: extractedData.customerAddress,
+                customerDriversLicense: extractedData.customerDriversLicense,
+                carMake: extractedData.carMake,
+                carModel: extractedData.carModel,
+                carYear: extractedData.carYear,
+                carColor: extractedData.carColor,
+                carVIN: extractedData.carVIN,
+                vehicleOdometer: extractedData.vehicleOdometer,
+                rentingLocation: extractedData.rentingLocation,
+                lossDamageWaiver: extractedData.lossDamageWaiver,
+                rentersLiabilityInsurance: extractedData.rentersLiabilityInsurance
+            });
+
+            // Save the claim
+            await newClaim.save();
+
+            // Notify relevant parties about the new claim
+            await notifyNewClaim(req.user.email, newClaim);
+
+            // Log the successful creation
+            logRequest(req, 'Rental agreement claim created successfully', { 
+                claimId: newClaim._id,
+                extractionConfidence: result.metadata.extractionConfidence,
+                fieldsMatched: result.metadata.fieldsMatched
+            });
+
+            // Return the created claim with extraction metadata
+            res.status(201).json({
+                message: 'Claim created successfully',
+                claim: newClaim,
+                extractionMetadata: {
+                    confidence: result.metadata.extractionConfidence,
+                    fieldsMatched: result.metadata.fieldsMatched,
+                    totalFields: result.metadata.totalFields,
+                    missingFields: result.metadata.requiredFieldsMissing,
+                    errors: result.metadata.errors
+                }
+            });
+
+        } catch (error) {
+            logRequest(req, 'Error creating rental agreement claim:', { error });
+            res.status(500).json({ error: error.message || 'Error creating claim' });
+        }
+    } catch (error) {
+        logRequest(req, 'Error creating rental agreement claim:', { error });
+        res.status(500).json({ error: error.message || 'Error creating claim' });
+    }
+});
+
 // Route to search for claims, accessible by admin, manager, and employee
 router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
     try {
@@ -777,7 +893,7 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
 
                     try {
                         // Check if file already exists
-                        if (fs.existsSync(uploadPath)) {
+                        if (fs.access(uploadPath)) {
                             // If file exists and has safe name, add uniqueness
                             const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
                             filename = `${path.basename(filename, ext)}-${uniqueSuffix}${ext}`;
@@ -807,8 +923,8 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
                             files[type].splice(index, 1);
                             // Remove file from disk
                             const filePath = path.join(uploadsPath, name);
-                            if (fs.existsSync(filePath)) {
-                                fs.unlinkSync(filePath);
+                            if (fs.access(filePath)) {
+                                await fs.unlink(filePath);
                             }
                         }
                     }
@@ -1396,18 +1512,18 @@ router.put('/:id/rename-file', ensureAuthenticated, ensureRoles(['admin', 'manag
         const oldPath = path.join(uploadsPath, oldName);
         const newPath = path.join(uploadsPath, finalNewName);
 
-        if (!fs.existsSync(oldPath)) {
+        if (!fs.access(oldPath)) {
             logger.error(`File ${oldPath} not found on disk`);
             return res.status(404).json({ success: false, message: 'File not found on disk' });
         }
 
-        if (fs.existsSync(newPath)) {
+        if (fs.access(newPath)) {
             logger.error(`File ${newPath} already exists`);
             return res.status(400).json({ success: false, message: 'A file with this name already exists' });
         }
 
         // Perform the rename operation
-        fs.renameSync(oldPath, newPath);
+        await fs.rename(oldPath, newPath);
 
         // Update the filename in the claim document
         const fileIndex = claim.files[category].indexOf(oldName);
@@ -1430,145 +1546,6 @@ router.put('/:id/rename-file', ensureAuthenticated, ensureRoles(['admin', 'manag
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
-});
-
-// Route for automated claim generation from rental agreement
-router.get('/auto-generate', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
-  try {
-    logger.info('Entering auto-generate route', {
-      user: req.user ? req.user._id : 'unknown',
-      session: req.sessionID,
-      timestamp: new Date().toISOString()
-    });
-
-    // Get flash messages before rendering
-    const errorMessages = req.flash('error');
-    const successMessages = req.flash('success');
-
-    logger.debug('Flash messages state:', {
-      error: errorMessages,
-      success: successMessages
-    });
-
-    // Create render parameters
-    const renderParams = {
-      title: 'Auto Generate Claim',
-      user: req.user,
-      messages: {
-        error: errorMessages,
-        success: successMessages
-      },
-      body: 'auto_generate_claim',
-      nonce: res.locals.nonce
-    };
-    
-    logger.debug('Attempting to render with params:', {
-      ...renderParams,
-      user: renderParams.user ? renderParams.user._id : 'unknown'
-    });
-
-    res.render('layout', renderParams);
-
-    logger.info('Successfully rendered auto-generate page');
-  } catch (error) {
-    logger.error('Error in auto-generate claim route:', {
-      error: {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      },
-      user: req.user ? req.user._id : 'unknown',
-      session: req.sessionID,
-      timestamp: new Date().toISOString()
-    });
-
-    // Check if response has already been sent
-    if (!res.headersSent) {
-      res.status(500).render('500', { 
-        message: 'Failed to load auto-generate claim page',
-        error: process.env.NODE_ENV === 'development' ? error : undefined
-      });
-    } else {
-      logger.error('Headers already sent when trying to render error page');
-    }
-  }
-});
-
-// POST route to handle automated claim creation
-router.post('/auto-generate', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), fileUpload(), async (req, res) => {
-  try {
-    if (!req.files || !req.files.rentalAgreement) {
-      req.flash('error', 'Please upload a rental agreement');
-      return res.redirect('/claims/auto-generate');
-    }
-
-    const file = req.files.rentalAgreement;
-    const uploadPath = path.join(uploadsPath, file.name);
-
-    // Move the uploaded file to the uploads directory
-    await file.mv(uploadPath);
-
-    // Process the rental agreement and extract data
-    const extractedData = await processRentalAgreement(uploadPath);
-    
-    // Generate unique claim number
-    const claimNumber = await generateClaimNumber();
-    
-    // Create new claim with extracted data
-    const claim = new Claim({
-      claimNumber,
-      status: 'pending_review', // Default status for auto-generated claims
-      customerName: extractedData.customerName,
-      customerEmail: extractedData.customerEmail,
-      customerAddress: extractedData.customerAddress,
-      customerNumber: extractedData.customerNumber,
-      customerDriversLicense: extractedData.customerDriversLicense,
-      carMake: extractedData.carMake,
-      carModel: extractedData.carModel,
-      carYear: extractedData.carYear,
-      carColor: extractedData.carColor,
-      carVIN: extractedData.carVIN,
-      vehicleOdometer: extractedData.vehicleOdometer,
-      raNumber: extractedData.raNumber,
-      rentingLocation: extractedData.rentingLocation,
-      ldwAccepted: extractedData.ldwAccepted,
-      rentersLiabilityInsurance: extractedData.rentersLiabilityInsurance,
-      lossDamageWaiver: extractedData.lossDamageWaiver,
-      files: {
-        rentalAgreements: [file.name]
-      },
-      createdBy: req.user._id,
-      createdAt: new Date(),
-      isAutoGenerated: true
-    });
-
-    await claim.save();
-
-    // Create audit trail entry
-    await AuditLog.create({
-      action: 'CLAIM_AUTO_GENERATED',
-      performedBy: req.user._id,
-      claimId: claim._id,
-      details: 'Claim automatically generated from rental agreement'
-    });
-
-    // Send notification
-    await sendNotification({
-      type: 'CLAIM_AUTO_GENERATED',
-      recipients: ['claims_manager'], // Adjust based on your notification requirements
-      data: {
-        claimNumber,
-        customerName: extractedData.customerName
-      }
-    });
-
-    req.flash('success', 'Claim automatically generated successfully');
-    res.redirect(`/claims/${claim._id}`);
-  } catch (error) {
-    logger.error('Error in auto-generating claim:', error);
-    req.flash('error', 'Failed to auto-generate claim: ' + error.message);
-    res.redirect('/claims/auto-generate');
-  }
 });
 
 module.exports = router; // Export the router

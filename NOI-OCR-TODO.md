@@ -104,7 +104,7 @@
 
 ### New Requirements for Automatic Claim Creation
 - [ ] **Automated Claim Generation**
-  - [ ] Create dedicated route for rental agreement-only claim creation
+  - [x] Create dedicated route for rental agreement-only claim creation
   - [ ] Implement automatic claim number generation
   - [ ] Set up default claim status for auto-generated claims
   - [ ] Create validation pipeline for extracted data

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Rental Agreement - Budget Claims System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .drag-drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .drag-drop-zone.dragover {
+            background: #e9ecef;
+            border-color: #0d6efd;
+        }
+        .preview-card {
+            display: none;
+            margin-top: 20px;
+        }
+        .confidence-indicator {
+            height: 10px;
+            border-radius: 5px;
+            background-color: #e9ecef;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .confidence-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .error-message {
+            display: none;
+            margin-top: 10px;
+        }
+        .success-message {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Processing rental agreement...</p>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <h1 class="display-5">Create Claim from Rental Agreement</h1>
+                    <p class="lead text-muted">Upload a rental agreement to automatically create a new claim</p>
+                </div>
+
+                <!-- Upload Zone -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div id="uploadZone" class="drag-drop-zone">
+                            <i class="fas fa-file-upload fa-3x mb-3 text-muted"></i>
+                            <h4>Drag & Drop Rental Agreement</h4>
+                            <p class="text-muted">or click to select file</p>
+                            <p class="small text-muted">Supported formats: PDF, DOC, DOCX</p>
+                            <input type="file" id="fileInput" class="d-none" accept=".pdf,.doc,.docx">
+                        </div>
+
+                        <!-- Error Message -->
+                        <div id="errorMessage" class="alert alert-danger error-message" role="alert"></div>
+
+                        <!-- Success Message -->
+                        <div id="successMessage" class="alert alert-success success-message" role="alert"></div>
+
+                        <!-- Preview Card -->
+                        <div id="previewCard" class="preview-card">
+                            <h4 class="mb-3">Extracted Information</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">RA Number</label>
+                                        <div id="raNumber" class="form-control-plaintext"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Customer Name</label>
+                                        <div id="customerName" class="form-control-plaintext"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Customer Email</label>
+                                        <div id="customerEmail" class="form-control-plaintext"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Customer Address</label>
+                                        <div id="customerAddress" class="form-control-plaintext"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Vehicle Information</label>
+                                        <div id="vehicleInfo" class="form-control-plaintext"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Insurance Information</label>
+                                        <div id="insuranceInfo" class="form-control-plaintext"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Renting Location</label>
+                                        <div id="rentingLocation" class="form-control-plaintext"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Extraction Confidence -->
+                            <div class="mb-3">
+                                <label class="form-label">Extraction Confidence</label>
+                                <div class="confidence-indicator">
+                                    <div id="confidenceBar" class="confidence-bar"></div>
+                                </div>
+                                <small class="text-muted">Based on <span id="fieldsMatched">0</span> of <span id="totalFields">0</span> fields matched</small>
+                            </div>
+
+                            <!-- Create Claim Button -->
+                            <div class="text-center mt-4">
+                                <button id="createClaimBtn" class="btn btn-primary btn-lg" disabled>
+                                    Create Claim
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+            const previewCard = document.getElementById('previewCard');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const loadingOverlay = document.querySelector('.loading-overlay');
+            const createClaimBtn = document.getElementById('createClaimBtn');
+
+            // Drag and drop handlers
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            uploadZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+
+            function handleFiles(files) {
+                if (files.length === 0) return;
+
+                const file = files[0];
+                const allowedTypes = ['.pdf', '.doc', '.docx'];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+                if (!allowedTypes.includes(fileExtension)) {
+                    showError('Invalid file type. Please upload a PDF, DOC, or DOCX file.');
+                    return;
+                }
+
+                uploadFile(file);
+            }
+
+            function uploadFile(file) {
+                const formData = new FormData();
+                formData.append('rentalAgreement', file);
+
+                showLoading();
+                hideError();
+                hideSuccess();
+
+                fetch('/claims/rental-agreement', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    displayPreview(data);
+                    showSuccess('Rental agreement processed successfully!');
+                    createClaimBtn.disabled = false;
+                })
+                .catch(error => {
+                    showError(error.message || 'Error processing rental agreement');
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+            }
+
+            function displayPreview(data) {
+                const claim = data.claim;
+                const metadata = data.extractionMetadata;
+
+                // Update basic information
+                document.getElementById('raNumber').textContent = claim.raNumber || 'Not found';
+                document.getElementById('customerName').textContent = claim.customerName || 'Not found';
+                document.getElementById('customerEmail').textContent = claim.customerEmail || 'Not found';
+                document.getElementById('customerAddress').textContent = claim.customerAddress || 'Not found';
+
+                // Update vehicle information
+                const vehicleInfo = [
+                    claim.carYear,
+                    claim.carMake,
+                    claim.carModel,
+                    claim.carColor,
+                    `VIN: ${claim.carVIN}`
+                ].filter(Boolean).join(' ');
+                document.getElementById('vehicleInfo').textContent = vehicleInfo || 'Not found';
+
+                // Update insurance information
+                const insuranceInfo = [
+                    `LDW: ${claim.lossDamageWaiver ? 'Yes' : 'No'}`,
+                    `Liability Insurance: ${claim.rentersLiabilityInsurance ? 'Yes' : 'No'}`
+                ].join(', ');
+                document.getElementById('insuranceInfo').textContent = insuranceInfo;
+
+                // Update renting location
+                document.getElementById('rentingLocation').textContent = claim.rentingLocation || 'Not found';
+
+                // Update confidence indicators
+                const confidenceBar = document.getElementById('confidenceBar');
+                confidenceBar.style.width = `${metadata.confidence * 100}%`;
+                confidenceBar.style.backgroundColor = getConfidenceColor(metadata.confidence);
+
+                document.getElementById('fieldsMatched').textContent = metadata.fieldsMatched;
+                document.getElementById('totalFields').textContent = metadata.totalFields;
+
+                // Show the preview card
+                previewCard.style.display = 'block';
+            }
+
+            function getConfidenceColor(confidence) {
+                if (confidence >= 0.8) return '#28a745'; // Green
+                if (confidence >= 0.6) return '#ffc107'; // Yellow
+                return '#dc3545'; // Red
+            }
+
+            function showLoading() {
+                loadingOverlay.style.display = 'flex';
+            }
+
+            function hideLoading() {
+                loadingOverlay.style.display = 'none';
+            }
+
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            }
+
+            function hideError() {
+                errorMessage.style.display = 'none';
+            }
+
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+            }
+
+            function hideSuccess() {
+                successMessage.style.display = 'none';
+            }
+
+            // Handle claim creation
+            createClaimBtn.addEventListener('click', () => {
+                // Redirect to the claim view page
+                window.location.href = `/claims/${claimId}`;
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
     <title><%= title %></title> <!-- Title of the document, dynamically set -->
     <link rel="stylesheet" href="/css/styles.css"> <!-- Link to external CSS file for styling -->
-    <!-- Add Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Add Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <header>
@@ -23,7 +19,6 @@
                     <div class="dropdown-content">
                         <a href="/claims/search">Search Claims</a> <!-- Link to Search Claims -->
                         <a href="/claims/add">Add Claim</a> <!-- Link to Add Claim -->
-                        <a href="/claims/auto-generate">Auto Generate Claim</a>
                     </div>
                 </li>
                 <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
@@ -41,11 +36,7 @@
     </header>
     <main>
         <!-- Main content injected here -->
-        <%- include(locals.body || 'error', locals) %>
+        <%- include(body, { totalClaims, openClaims, inProgressClaims, closedClaims, avgResolutionTime }) %>
     </main>
-
-    <!-- Add Bootstrap JS and its dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
 </body>
 </html>
