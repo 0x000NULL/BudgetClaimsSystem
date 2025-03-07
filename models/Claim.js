@@ -181,6 +181,16 @@ const ClaimSchema = new Schema({
         ref: 'Location',
         required: false
     },
+    // Field for pickup location
+    pickupLocation: {
+        type: String,
+        required: false
+    },
+    // Field for return location
+    returnLocation: {
+        type: String,
+        required: false
+    },
     // Field for whether LDW was accepted
     ldwAccepted: {
         type: String, // Data type is Boolean
@@ -388,6 +398,42 @@ ClaimSchema.pre('save', async function(next) {
         
         next();
     } catch (error) {
+        next(error);
+    }
+});
+
+// Add pre-save middleware for handling renting location
+ClaimSchema.pre('save', async function(next) {
+    try {
+        // Only process if we have a pickup location
+        if (this.pickupLocation) {
+            const Location = mongoose.model('Location');
+            
+            // Extract the street address part (before the comma)
+            const streetAddress = this.pickupLocation.split(',')[0].trim();
+            
+            // Try to find existing location by street address
+            let location = await Location.findOne({
+                name: { $regex: new RegExp(streetAddress, 'i') }
+            });
+            
+            // If location doesn't exist, create it
+            if (!location) {
+                location = await Location.create({
+                    name: streetAddress,
+                    address: this.pickupLocation,
+                    isActive: true
+                });
+                logger.info(`Created new location: ${streetAddress}`);
+            }
+            
+            // Set the rentingLocation to the location's ID
+            this.rentingLocation = location._id;
+        }
+        
+        next();
+    } catch (error) {
+        logger.error('Error processing renting location:', error);
         next(error);
     }
 });

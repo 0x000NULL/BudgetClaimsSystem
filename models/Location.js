@@ -7,6 +7,15 @@ const locationSchema = new mongoose.Schema({
         trim: true,
         unique: true,
         uniqueCaseInsensitive: true
+    },
+    address: {
+        type: String,
+        required: false,
+        trim: true
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true
