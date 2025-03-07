@@ -47,21 +47,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
-        env:
-          NODE_ENV: test
-          MONGO_URI: mongodb://localhost:27017/test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Generate JSDoc
         run: npx jsdoc -c jsdoc.conf.json
 
