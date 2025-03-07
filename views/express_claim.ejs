@@ -237,22 +237,14 @@
                     if (data.error) {
                         throw new Error(data.error);
                     }
-                    fillFormWithData(data.claim);
-                    showSuccess('Rental agreement processed successfully! Form has been filled with extracted data.');
+                    showSuccess('Rental agreement processed successfully! Redirecting to claim...');
+                    // Immediate redirect to the new claim
+                    window.location.href = `/claims/${data.claim._id}`;
                 })
                 .catch(error => {
                     showError(error.message || 'Error processing rental agreement');
-                })
-                .finally(() => {
                     hideLoading();
                 });
-            }
-
-            function fillFormWithData(claim) {
-                // Fill form fields with extracted data
-                if (claim.raNumber) document.getElementById('raNumber').value = claim.raNumber;
-                if (claim.customerName) document.getElementById('customerName').value = claim.customerName;
-                if (claim.customerNumber) document.getElementById('mva').value = claim.customerNumber;
             }
 
             function showLoading() {
