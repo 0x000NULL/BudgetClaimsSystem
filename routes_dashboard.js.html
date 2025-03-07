@@ -118,25 +118,23 @@ router.get('/dashboard', ensureAuthenticated, async (req, res) => {
             ])
         );
 
-        // Get status IDs for different categories
-        const openStatusId = statusMap.get('open')?.id;
-        const closedStatusId = statusMap.get('closed')?.id;
-        const cancelledStatusId = statusMap.get('cancelled')?.id;
-        const deniedStatusId = statusMap.get('denied')?.id;
-
-        // Create arrays for status groupings
-        const closedStatuses = [closedStatusId, cancelledStatusId, deniedStatusId].filter(Boolean);
+        // Get status IDs for counts
+        const openStatus = statusMap.get('open');
+        const inProgressStatus = statusMap.get('in progress');
+        const closedStatus = statusMap.get('closed');
 
         // Get counts and recent claims in parallel
         const [
             totalClaims,
             openClaims,
+            inProgressClaims,
             closedClaims,
             recentClaims
         ] = await Promise.all([
             Claim.countDocuments(),
-            openStatusId ? Claim.countDocuments({ status: openStatusId }) : 0,
-            closedStatuses.length > 0 ? Claim.countDocuments({ status: { $in: closedStatuses } }) : 0,
+            openStatus ? Claim.countDocuments({ status: openStatus.id }) : 0,
+            inProgressStatus ? Claim.countDocuments({ status: inProgressStatus.id }) : 0,
+            closedStatus ? Claim.countDocuments({ status: closedStatus.id }) : 0,
             Claim.find()
                 .sort({ updatedAt: -1 })
                 .limit(5)
@@ -144,14 +142,6 @@ router.get('/dashboard', ensureAuthenticated, async (req, res) => {
                 .lean()
                 .exec()
         ]);
-
-        // Ensure we have valid numbers for calculations
-        const validOpenClaims = Number(openClaims) || 0;
-        const validClosedClaims = Number(closedClaims) || 0;
-        const validTotalClaims = Number(totalClaims) || 0;
-
-        // Calculate pending claims (all claims that are not open or closed)
-        const pendingClaims = Math.max(0, validTotalClaims - (validOpenClaims + validClosedClaims));
 
         // Transform claims with better null handling
         const transformedClaims = recentClaims.map(claim => ({
@@ -161,28 +151,26 @@ router.get('/dashboard', ensureAuthenticated, async (req, res) => {
             updatedAt: claim.updatedAt,
             status: {
                 name: claim.status?.name || 'Pending',
-                color: claim.status?.color || '#6c757d',
+                color: claim.status?.color || '#6c757d', // Default gray color
                 description: claim.status?.description || 'Status pending',
                 textColor: claim.status?.color ? getContrastColor(claim.status.color) : '#ffffff'
             }
         }));
 
-        // Add debug logging
+        // Add debug logging to help troubleshoot
         pinoLogger.debug({
-            message: 'Dashboard statistics',
-            totalClaims: validTotalClaims,
-            openClaims: validOpenClaims,
-            pendingClaims,
-            closedClaims: validClosedClaims,
-            recentClaimsCount: recentClaims.length
+            message: 'Dashboard recent claims',
+            recentClaimsCount: recentClaims.length,
+            transformedClaimsCount: transformedClaims.length,
+            sampleClaim: transformedClaims[0]
         });
 
         res.render('dashboard', {
             title: 'Dashboard',
-            totalClaims: validTotalClaims,
-            openClaims: validOpenClaims,
-            pendingClaims,
-            closedClaims: validClosedClaims,
+            totalClaims,
+            openClaims,
+            inProgressClaims,
+            closedClaims,
             recentClaims: transformedClaims,
             user: req.user
         });
@@ -232,13 +220,13 @@ module.exports = router; // Export the router
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#isCustomerAuthenticated">isCustomerAuthenticated</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li><li><a href="global.html#toggleDateInputs">toggleDateInputs</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_customers.html">routes/customers</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Feb 13 2025 19:37:25 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Mar 07 2025 22:47:07 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>

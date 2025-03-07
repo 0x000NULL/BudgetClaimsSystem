@@ -59,7 +59,7 @@ const { notifyNewClaim, notifyClaimStatusUpdate, notifyClaimAssigned, notifyClai
 const csv = require('csv-express'); // Import csv-express for CSV export
 const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
 const PDFDocument = require('pdfkit'); // Import PDFKit for PDF export
-const fs = require('fs'); // Import File System to handle file operations
+const fs = require('fs').promises; // Import File System to handle file operations
 const cacheManager = require('cache-manager'); // Import cache manager for caching
 const redisStore = require('cache-manager-redis-store'); // Import Redis store for cache manager
 const pinoLogger = require('../logger'); // Import Pino logger
@@ -68,9 +68,20 @@ const Location = require('../models/Location'); // Import Location model
 const DamageType = require('../models/DamageType'); // Import DamageType model
 const fileUpload = require('express-fileupload');
 const Settings = require('../models/Settings'); // Import Settings model
-const uploadsPath = require('../config/settings');
+const { uploadsPath } = require('../config/settings'); // Import uploadsPath from settings
 const logRequest = require('../middleware/auditLogger');
 const logger = require('../logger');
+const { processRentalAgreement } = require('../services/processRentalAgreement'); // Import rental agreement processing service
+
+// Create uploads directory if it doesn't exist
+(async () => {
+    try {
+        await fs.access(uploadsPath);
+    } catch {
+        await fs.mkdir(uploadsPath, { recursive: true });
+        logger.info(`Created uploads directory at ${uploadsPath}`);
+    }
+})();
 
 // Setup cache manager with Redis
 const cache = cacheManager.caching({
@@ -112,8 +123,20 @@ const validateFile = (file, category) => {
     return errors;
 };
 
-// Helper function to sanitize filename
+// Helper function to check if a filename is already safe
+const isSafeFilename = (filename) => {
+    // Check if filename only contains alphanumeric characters, dots, hyphens, and underscores
+    // and is not too long
+    return filename.length &lt;= 100 &amp;&amp; /^[a-zA-Z0-9._-]+$/.test(filename);
+};
+
+// Helper function to sanitize filename only if needed
 const sanitizeFilename = (filename) => {
+    // If the filename is already safe, return it unchanged
+    if (isSafeFilename(filename)) {
+        return filename;
+    }
+    // Otherwise sanitize it
     return filename.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
 };
 
@@ -428,6 +451,140 @@ router.get('/express', ensureAuthenticated, ensureRoles(['admin', 'manager', 'em
     }
 });
 
+// Route for rental agreement-only claim creation
+router.post('/rental-agreement', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+    logRequest(req, 'Rental agreement-only claim creation initiated');
+
+    try {
+        // Check if rental agreement file is provided
+        if (!req.files || !req.files.rentalAgreement) {
+            return res.status(400).json({ error: 'Rental agreement file is required' });
+        }
+
+        const rentalAgreementFile = req.files.rentalAgreement;
+        const fileExtension = path.extname(rentalAgreementFile.name).toLowerCase();
+
+        // Validate file type
+        if (!['.pdf', '.doc', '.docx'].includes(fileExtension)) {
+            return res.status(400).json({ error: 'Invalid file type. Only PDF, DOC, and DOCX files are allowed.' });
+        }
+
+        // Get default status for new claims
+        const defaultStatus = await Status.findOne({ name: 'Open' });
+        if (!defaultStatus) {
+            throw new Error('Default status not found');
+        }
+
+        // Generate unique filename
+        const uniqueFilename = `RA_${Date.now()}_${Math.random().toString(36).substring(7)}${fileExtension}`;
+        const uploadPath = path.join(uploadsPath, uniqueFilename);
+
+        // Save the file
+        await rentalAgreementFile.mv(uploadPath);
+
+        // Extract data from rental agreement using the existing parsing service
+        const result = await processRentalAgreement(uploadPath);
+        const extractedData = result.data;
+        console.log('Extracted data:', extractedData);
+
+        if (!extractedData) {
+            // If extraction fails, remove the uploaded file
+            await fs.unlink(uploadPath);
+            throw new Error('Failed to extract data from rental agreement');
+        }
+
+        // Handle location
+        let locationId = null;
+        if (extractedData.pickupLocation) {
+            try {
+                const fullAddress = extractedData.pickupLocation;
+                // Extract street address (first line before comma)
+                const streetAddress = fullAddress.split(',')[0].trim().toUpperCase();
+                
+                console.log('Processing location:', { fullAddress, streetAddress });
+
+                // Try to find existing location
+                let location = await Location.findOne({
+                    name: { $regex: new RegExp(`^${streetAddress}$`, 'i') }
+                });
+
+                if (location) {
+                    console.log('Found existing location:', location._id);
+                    locationId = location._id;
+                } else {
+                    // Create new location
+                    location = new Location({
+                        name: streetAddress,
+                        address: fullAddress
+                    });
+                    await location.save();
+                    console.log('Created new location:', location._id);
+                    locationId = location._id;
+                }
+            } catch (locationError) {
+                console.error('Error processing location:', locationError);
+            }
+        } else {
+            console.warn('No pickup location found in extracted data');
+        }
+
+        // Create claim with location
+        const claim = new Claim({
+            status: defaultStatus._id,
+            raNumber: extractedData.raNumber,
+            customerName: extractedData.customerName,
+            mva: extractedData.customerNumber,  // Map customerNumber to mva
+            customerEmail: extractedData.customerEmail,
+            customerAddress: extractedData.customerAddress,
+            customerDriversLicense: extractedData.customerDriversLicense,
+            carMake: extractedData.carMake,
+            carModel: extractedData.carModel,
+            carYear: extractedData.carYear,
+            carColor: extractedData.carColor,
+            carVIN: extractedData.carVIN,
+            vehicleOdometer: extractedData.vehicleOdometer,
+            pickupLocation: extractedData.pickupLocation,
+            rentingLocation: locationId,  // Set the location ID
+            lossDamageWaiver: extractedData.lossDamageWaiver,
+            rentersLiabilityInsurance: extractedData.rentersLiabilityInsurance,
+            createdBy: req.user._id,
+            files: {
+                rentalAgreement: [uniqueFilename]
+            }
+        });
+
+        console.log('Saving claim with data:', claim);
+        await claim.save();
+
+        // Notify relevant parties about the new claim
+        await notifyNewClaim(req.user.email, claim);
+
+        // Log the successful creation
+        logRequest(req, 'Rental agreement claim created successfully', { 
+            claimId: claim._id,
+            extractionConfidence: result.metadata.extractionConfidence,
+            fieldsMatched: result.metadata.fieldsMatched
+        });
+
+        // Return the created claim with extraction metadata
+        res.status(201).json({
+            message: 'Claim created successfully',
+            claim: claim,
+            extractionMetadata: {
+                confidence: result.metadata.extractionConfidence,
+                fieldsMatched: result.metadata.fieldsMatched,
+                totalFields: result.metadata.totalFields,
+                missingFields: result.metadata.requiredFieldsMissing,
+                errors: result.metadata.errors
+            }
+        });
+
+    } catch (error) {
+        logRequest(req, 'Error creating rental agreement claim:', { error });
+        res.status(500).json({ error: error.message || 'Error creating claim' });
+    }
+});
+
 // Route to search for claims, accessible by admin, manager, and employee
 router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
     try {
@@ -445,7 +602,13 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
         if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
         if (vin) filter.carVIN = new RegExp(vin, 'i'); // Case-insensitive search for VIN
         if (claimNumber) filter.claimNumber = new RegExp(claimNumber, 'i'); // Case-insensitive search for claim number
-        if (damageType) filter.damageType = { $in: Array.isArray(damageType) ? damageType : [damageType] }; // Search for any of the selected damage types
+        if (damageType) {
+            if (Array.isArray(damageType)) {
+                filter.damageType = { $in: damageType };
+            } else {
+                filter.damageType = damageType;
+            }
+        }
         if (status) {
             // Handle single status ID
             filter.status = status; // No need for $in since status should be a single value
@@ -476,22 +639,19 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
 
         const claims = await Claim.find(filter)
             .populate('status')
+            .populate('damageType')
             .skip(skip)
             .limit(resultsPerPage)
             .lean();
 
-        // Process claims status
-        claims.forEach(claim => {
-            if (Array.isArray(claim.status)) {
-                const statusName = claim.status[0];
-                const matchingStatus = allStatuses.find(s => s.name === statusName);
-                if (matchingStatus) {
-                    claim.status = { _id: matchingStatus._id, name: matchingStatus.name };
-                } else {
-                    claim.status = { name: statusName };
-                }
-            }
-        });
+        // Process claims to get damage type names
+        const processedClaims = claims.map(claim => ({
+            ...claim,
+            damageType: claim.damageType ? 
+                (Array.isArray(claim.damageType) ? 
+                    claim.damageType.map(dt => dt.name || dt).join(', ') : 
+                    claim.damageType.name || claim.damageType) : ''
+        }));
 
         // Build query string
         const queryString = Object.entries(req.query)
@@ -502,7 +662,7 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
         // Check if this is an AJAX request
         if (req.xhr || req.headers.accept.includes('application/json')) {
             return res.json({
-                claims,
+                claims: processedClaims,
                 page,
                 totalPages,
                 totalClaims,
@@ -513,10 +673,10 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
 
         // Regular HTML response
         res.render('claims_search', {
-            claims,
+            claims: processedClaims,
             filter,
             damageTypes,
-            statuses: allStatuses,
+            statuses,
             locations,
             resultsPerPage,
             page,
@@ -552,73 +712,43 @@ router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res
 // POST /claims - Add a new claim
 router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, res) => {
     try {
-        // Clean and validate the data before creating claim
-        const cleanedData = { ...req.body };
-
-        // Handle damagesTotal - convert "unknown" to null or remove if invalid
-        if (cleanedData.damagesTotal) {
-            if (cleanedData.damagesTotal === 'unknown' || isNaN(cleanedData.damagesTotal)) {
-                delete cleanedData.damagesTotal; // Remove the field if it's invalid
-            } else {
-                cleanedData.damagesTotal = Number(cleanedData.damagesTotal); // Convert to number
-            }
-        }
-
-        // Find or create the "Open" status
-        let openStatus = await Status.findOne({ name: 'Open' });
-        if (!openStatus) {
-            openStatus = await Status.create({ name: 'Open' });
-            logger.info('Created default Open status:', { statusId: openStatus._id });
-        }
-
-        // Handle status - if it's an array, take the first value
-        let statusToUse;
-        if (cleanedData.status) {
-            const statusName = Array.isArray(cleanedData.status) ? cleanedData.status[0] : cleanedData.status;
-            const foundStatus = await Status.findOne({ name: statusName });
-            statusToUse = foundStatus ? foundStatus._id : openStatus._id;
-        } else {
-            statusToUse = openStatus._id;
-        }
-
-        logger.info('Status to be used:', {
-            providedStatus: cleanedData.status,
-            resolvedStatus: statusToUse
+        // Log the incoming request data (excluding sensitive info)
+        logger.info('Creating new claim with data:', {
+            ...req.body,
+            // Exclude any sensitive fields if present
+            customerDriversLicense: req.body.customerDriversLicense ? '[REDACTED]' : undefined,
+            // Add other sensitive fields to redact as needed
         });
 
-        const claimData = {
-            ...cleanedData,
-            status: statusToUse,
-            createdBy: req.user._id,
-            files: initializeFileCategories(),
-            notes: []
-        };
+        // Get the default 'Open' status
+        const defaultStatus = await Status.findOne({ name: 'Open' });
+        if (!defaultStatus) {
+            throw new Error('Default status "Open" not found. Please ensure statuses are properly configured.');
+        }
 
-        // Remove any invalid or unnecessary fields
-        ['status', 'damagesTotal'].forEach(field => {
-            if (claimData[field] === 'unknown' || claimData[field] === '') {
-                delete claimData[field];
-            }
+        // Create new claim with default status
+        const newClaim = new Claim({
+            ...req.body,
+            status: defaultStatus._id, // Set the default status
+            createdBy: req.user._id
         });
-
-        // Log the complete claim data before creation
-        logger.info('Attempting to create claim with data:', {
-            ...filterSensitiveData(claimData),
-            status: claimData.status
-        });
-
-        // Create new claim
-        const newClaim = new Claim(claimData);
         
-        // Save the claim
-        await newClaim.save();
+        // Save the claim (claim number will be generated automatically)
+        try {
+            await newClaim.save();
+            logger.info('New claim created successfully:', { 
+                claimId: newClaim._id,
+                claimNumber: newClaim.claimNumber
+            });
+        } catch (saveError) {
+            logger.error('Error saving new claim:', {
+                error: saveError.message,
+                stack: saveError.stack,
+                validationErrors: saveError.errors
+            });
+            throw saveError; // Re-throw to be caught by outer try-catch
+        }
         
-        logger.info('New claim created successfully:', { 
-            claimId: newClaim._id,
-            claimNumber: newClaim.claimNumber,
-            status: newClaim.status
-        });
-
         // Send notification
         try {
             await notifyNewClaim(req.user.email, newClaim);
@@ -647,7 +777,7 @@ router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, r
         logger.error('Error in claim creation:', {
             error: error.message,
             stack: error.stack,
-            body: filterSensitiveData(req.body)
+            body: req.body
         });
 
         // If this is an API request, send JSON error response
@@ -658,13 +788,9 @@ router.post('/', ensureAuthenticated, logActivity('create claim'), async (req, r
                 details: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         } else {
-            // For regular form submissions, render error page with appropriate message
-            const errorMessage = error.name === 'ValidationError' 
-                ? 'Please fill in all required fields'
-                : 'Error creating claim';
-                
+            // For regular form submissions, render error page
             res.status(500).render('500', {
-                message: errorMessage,
+                message: 'Error creating claim',
                 error: process.env.NODE_ENV === 'development' ? error.message : undefined,
                 stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
@@ -769,26 +895,117 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
         // Remove the note fields from updateData
         delete updateData.newNote;
         delete updateData.newNotes;
-        delete updateData['newNotes[]'];
         delete updateData.deletedNotes;
 
-        // Update the claim with timestamps option
+        // Handle file uploads
+        const fileCategories = ['photos', 'documents', 'invoices', 'incidentReports', 'correspondence', 'rentalAgreement', 'policeReport'];
+        const fileErrors = [];
+        const files = claim.files || {};
+
+        // Process each file category
+        for (const category of fileCategories) {
+            if (req.files &amp;&amp; req.files[category]) {
+                const uploadedFiles = Array.isArray(req.files[category]) ? req.files[category] : [req.files[category]];
+                
+                // Initialize category array if it doesn't exist
+                if (!files[category]) {
+                    files[category] = [];
+                }
+
+                // Process each uploaded file
+                for (const file of uploadedFiles) {
+                    // Validate file
+                    const errors = validateFile(file, category);
+                    if (errors.length > 0) {
+                        fileErrors.push(...errors);
+                        continue;
+                    }
+
+                    // Get the original filename and extension
+                    const ext = path.extname(file.name);
+                    const originalName = path.basename(file.name, ext);
+                    
+                    // If original name is safe, use it, otherwise sanitize it
+                    let filename;
+                    if (isSafeFilename(file.name)) {
+                        filename = file.name;
+                    } else {
+                        // If we need to sanitize, add uniqueness to avoid collisions
+                        const sanitizedName = sanitizeFilename(originalName);
+                        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                        filename = `${category}-${uniqueSuffix}${ext}`;
+                    }
+                    
+                    const uploadPath = path.join(uploadsPath, filename);
+
+                    try {
+                        // Check if file already exists
+                        if (fs.access(uploadPath)) {
+                            // If file exists and has safe name, add uniqueness
+                            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                            filename = `${path.basename(filename, ext)}-${uniqueSuffix}${ext}`;
+                        }
+                        
+                        // Move file to uploads directory
+                        await file.mv(path.join(uploadsPath, filename));
+                        files[category].push(filename);
+                        logger.info(`File uploaded successfully: ${filename}`);
+                    } catch (error) {
+                        logger.error('Error uploading file:', error);
+                        fileErrors.push(`Error uploading ${file.name}: ${error.message}`);
+                    }
+                }
+            }
+        }
+
+        // Handle file removals
+        if (req.body.removedFiles) {
+            try {
+                const removedFiles = JSON.parse(req.body.removedFiles);
+                for (const removedFile of removedFiles) {
+                    const { type, name } = typeof removedFile === 'string' ? JSON.parse(removedFile) : removedFile;
+                    if (files[type]) {
+                        const index = files[type].indexOf(name);
+                        if (index !== -1) {
+                            files[type].splice(index, 1);
+                            // Remove file from disk
+                            const filePath = path.join(uploadsPath, name);
+                            if (fs.access(filePath)) {
+                                await fs.unlink(filePath);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                logger.error('Error processing removed files:', error);
+            }
+        }
+
+        // Update the files in updateData
+        updateData.files = files;
+
+        // If there are file errors, render the form with errors
+        if (fileErrors.length > 0) {
+            const statuses = await Status.find().sort({ name: 1 });
+            const locations = await Location.find().sort({ name: 1 });
+            const damageTypes = await DamageType.find().sort({ name: 1 });
+            return res.render('claims_edit', {
+                claim: { ...claim.toObject(), ...updateData },
+                statuses,
+                locations,
+                damageTypes,
+                fileErrors
+            });
+        }
+
+        // Update the claim
         const updatedClaim = await Claim.findByIdAndUpdate(
             claimId,
             updateData,
-            { 
-                new: true,
-                timestamps: true // Ensure timestamps are updated
-            }
+            { new: true }
         );
 
-        // Log the update
-        logger.info('Claim updated:', {
-            claimId: updatedClaim._id,
-            updatedAt: updatedClaim.updatedAt,
-            status: updatedClaim.status
-        });
-
+        logger.info('Claim updated:', updatedClaim);
         await notifyClaimStatusUpdate(req.user.email, updatedClaim);
         
         // Redirect back to the claim view
@@ -897,11 +1114,36 @@ router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
     logRequest(req, 'Fetching claim details with ID:', { claimId });
 
     try {
-        const claim = await Claim.findById(claimId).populate('rentingLocation').exec(); // Populate rentingLocation
+        const claim = await Claim.findById(claimId)
+            .populate('rentingLocation')
+            .populate('status')
+            .exec();
+            
         if (!claim) {
             logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Claim not found' });
         }
+
+        // Add debug logging for rentingLocation
+        console.log('Claim rentingLocation:', {
+            raw: claim.rentingLocation,
+            populated: claim.populated('rentingLocation'),
+            name: claim.rentingLocation?.name
+        });
+
+        // Handle damageType population manually
+        if (claim.damageType) {
+            if (Array.isArray(claim.damageType)) {
+                const damageTypes = await DamageType.find({
+                    _id: { $in: claim.damageType }
+                });
+                claim.damageType = damageTypes;
+            } else {
+                const damageType = await DamageType.findById(claim.damageType);
+                claim.damageType = damageType ? [damageType] : [];
+            }
+        }
+        
         logRequest(req, 'Claim details fetched:', { claim });
         res.render('claim_view', { title: 'View Claim', claim });
     } catch (err) {
@@ -947,7 +1189,60 @@ router.post('/location/add', ensureAuthenticated, ensureRoles(['admin', 'manager
     } catch (error) {
         res.render('500', { message: 'Error adding location' });
     }
-})
+});
+
+// Migration route to fix damageType references
+router.post('/migrate-damage-types', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    try {
+        const claims = await Claim.find({
+            damageType: { $type: 'string' }
+        });
+
+        for (const claim of claims) {
+            if (typeof claim.damageType === 'string' || (Array.isArray(claim.damageType) &amp;&amp; claim.damageType.every(dt => typeof dt === 'string'))) {
+                const damageTypeIds = Array.isArray(claim.damageType) ? claim.damageType : [claim.damageType];
+                claim.damageType = damageTypeIds;
+                await claim.save();
+            }
+        }
+
+        res.json({ message: 'Migration completed successfully' });
+    } catch (error) {
+        logger.error('Error migrating damage types:', error);
+        res.status(500).json({ error: 'Error during migration' });
+    }
+});
+
+// Migration route to fix rentingLocation references
+router.post('/migrate-renting-locations', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    try {
+        const claims = await Claim.find({
+            rentingLocation: { $type: 'string' }
+        });
+
+        for (const claim of claims) {
+            if (typeof claim.rentingLocation === 'string') {
+                // Find the location by name
+                const location = await Location.findOne({ 
+                    name: { $regex: new RegExp(`^${claim.rentingLocation}$`, 'i') }
+                });
+                
+                if (location) {
+                    claim.rentingLocation = location._id;
+                    await claim.save();
+                    logger.info(`Updated rentingLocation for claim ${claim._id}`);
+                } else {
+                    logger.warn(`Could not find location for name: ${claim.rentingLocation} in claim ${claim._id}`);
+                }
+            }
+        }
+
+        res.json({ message: 'Migration completed successfully' });
+    } catch (error) {
+        logger.error('Error migrating renting locations:', error);
+        res.status(500).json({ error: 'Error during migration' });
+    }
+});
 
 // Fetch all statuses
 router.get('/statuses', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
@@ -1227,6 +1522,79 @@ function calculateAdminFee(invoiceTotals) {
     return adminFee;
 }
 
+// Route to rename a file in a claim
+router.put('/:id/rename-file', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+    const claimId = req.params.id;
+    const { category, oldName, newName } = req.body;
+
+    try {
+        // Find the claim
+        const claim = await Claim.findById(claimId);
+        if (!claim) {
+            logger.error(`Claim not found with ID: ${claimId}`);
+            return res.status(404).json({ success: false, message: 'Claim not found' });
+        }
+
+        // Validate that the file exists in the specified category
+        if (!claim.files || !claim.files[category] || !claim.files[category].includes(oldName)) {
+            logger.error(`File ${oldName} not found in category ${category}`);
+            return res.status(404).json({ success: false, message: 'File not found in claim' });
+        }
+
+        // Validate new filename
+        const ext = path.extname(oldName);
+        const newNameWithExt = newName.endsWith(ext) ? newName : newName + ext;
+        
+        // Only sanitize if the new name isn't safe
+        const finalNewName = isSafeFilename(newNameWithExt) ? newNameWithExt : sanitizeFilename(newNameWithExt);
+
+        // Validate file with new name
+        const dummyFile = { name: finalNewName };
+        const validationErrors = validateFile(dummyFile, category);
+        if (validationErrors.length > 0) {
+            return res.status(400).json({ success: false, errors: validationErrors });
+        }
+
+        // Rename file on disk
+        const oldPath = path.join(uploadsPath, oldName);
+        const newPath = path.join(uploadsPath, finalNewName);
+
+        if (!fs.access(oldPath)) {
+            logger.error(`File ${oldPath} not found on disk`);
+            return res.status(404).json({ success: false, message: 'File not found on disk' });
+        }
+
+        if (fs.access(newPath)) {
+            logger.error(`File ${newPath} already exists`);
+            return res.status(400).json({ success: false, message: 'A file with this name already exists' });
+        }
+
+        // Perform the rename operation
+        await fs.rename(oldPath, newPath);
+
+        // Update the filename in the claim document
+        const fileIndex = claim.files[category].indexOf(oldName);
+        claim.files[category][fileIndex] = finalNewName;
+        await claim.save();
+
+        logger.info(`File renamed successfully from ${oldName} to ${finalNewName}`);
+        res.json({ 
+            success: true, 
+            message: 'File renamed successfully',
+            oldName: oldName,
+            newName: finalNewName
+        });
+
+    } catch (error) {
+        logger.error('Error renaming file:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error renaming file',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
 module.exports = router; // Export the router</code></pre>
         </article>
     </section>
@@ -1237,13 +1605,13 @@ module.exports = router; // Export the router</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#isCustomerAuthenticated">isCustomerAuthenticated</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li><li><a href="global.html#toggleDateInputs">toggleDateInputs</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-routes_api.html">routes/api</a></li><li><a href="module-routes_auditLogs.html">routes/auditLogs</a></li><li><a href="module-routes_customers.html">routes/customers</a></li><li><a href="module-routes_export.html">routes/export</a></li><li><a href="module-routes_import.html">routes/import</a></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_reports.html">routes/reports</a></li><li><a href="module-routes_users.html">routes/users</a></li></ul><h3>Global</h3><ul><li><a href="global.html#express">express</a></li><li><a href="global.html#filterSensitiveData">filterSensitiveData</a></li><li><a href="global.html#logActivity">logActivity</a></li><li><a href="global.html#logRequest">logRequest</a></li><li><a href="global.html#replaceVariables">replaceVariables</a></li><li><a href="global.html#sensitiveFields">sensitiveFields</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Feb 13 2025 19:37:25 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Mar 07 2025 22:47:07 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
