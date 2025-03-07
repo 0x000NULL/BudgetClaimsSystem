@@ -89,8 +89,20 @@ const validateFile = (file, category) => {
     return errors;
 };
 
-// Helper function to sanitize filename
+// Helper function to check if a filename is already safe
+const isSafeFilename = (filename) => {
+    // Check if filename only contains alphanumeric characters, dots, hyphens, and underscores
+    // and is not too long
+    return filename.length <= 100 && /^[a-zA-Z0-9._-]+$/.test(filename);
+};
+
+// Helper function to sanitize filename only if needed
 const sanitizeFilename = (filename) => {
+    // If the filename is already safe, return it unchanged
+    if (isSafeFilename(filename)) {
+        return filename;
+    }
+    // Otherwise sanitize it
     return filename.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
 };
 
@@ -741,15 +753,33 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
                         continue;
                     }
 
-                    // Generate unique filename
+                    // Get the original filename and extension
                     const ext = path.extname(file.name);
-                    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                    const filename = `${category}-${uniqueSuffix}${ext}`;
+                    const originalName = path.basename(file.name, ext);
+                    
+                    // If original name is safe, use it, otherwise sanitize it
+                    let filename;
+                    if (isSafeFilename(file.name)) {
+                        filename = file.name;
+                    } else {
+                        // If we need to sanitize, add uniqueness to avoid collisions
+                        const sanitizedName = sanitizeFilename(originalName);
+                        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                        filename = `${category}-${uniqueSuffix}${ext}`;
+                    }
+                    
                     const uploadPath = path.join(uploadsPath, filename);
 
                     try {
+                        // Check if file already exists
+                        if (fs.existsSync(uploadPath)) {
+                            // If file exists and has safe name, add uniqueness
+                            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                            filename = `${path.basename(filename, ext)}-${uniqueSuffix}${ext}`;
+                        }
+                        
                         // Move file to uploads directory
-                        await file.mv(uploadPath);
+                        await file.mv(path.join(uploadsPath, filename));
                         files[category].push(filename);
                         logger.info(`File uploaded successfully: ${filename}`);
                     } catch (error) {
@@ -1346,10 +1376,12 @@ router.put('/:id/rename-file', ensureAuthenticated, ensureRoles(['admin', 'manag
         // Validate new filename
         const ext = path.extname(oldName);
         const newNameWithExt = newName.endsWith(ext) ? newName : newName + ext;
-        const sanitizedNewName = sanitizeFilename(newNameWithExt);
+        
+        // Only sanitize if the new name isn't safe
+        const finalNewName = isSafeFilename(newNameWithExt) ? newNameWithExt : sanitizeFilename(newNameWithExt);
 
         // Validate file with new name
-        const dummyFile = { name: sanitizedNewName };
+        const dummyFile = { name: finalNewName };
         const validationErrors = validateFile(dummyFile, category);
         if (validationErrors.length > 0) {
             return res.status(400).json({ success: false, errors: validationErrors });
@@ -1357,7 +1389,7 @@ router.put('/:id/rename-file', ensureAuthenticated, ensureRoles(['admin', 'manag
 
         // Rename file on disk
         const oldPath = path.join(uploadsPath, oldName);
-        const newPath = path.join(uploadsPath, sanitizedNewName);
+        const newPath = path.join(uploadsPath, finalNewName);
 
         if (!fs.existsSync(oldPath)) {
             logger.error(`File ${oldPath} not found on disk`);
@@ -1374,15 +1406,15 @@ router.put('/:id/rename-file', ensureAuthenticated, ensureRoles(['admin', 'manag
 
         // Update the filename in the claim document
         const fileIndex = claim.files[category].indexOf(oldName);
-        claim.files[category][fileIndex] = sanitizedNewName;
+        claim.files[category][fileIndex] = finalNewName;
         await claim.save();
 
-        logger.info(`File renamed successfully from ${oldName} to ${sanitizedNewName}`);
+        logger.info(`File renamed successfully from ${oldName} to ${finalNewName}`);
         res.json({ 
             success: true, 
             message: 'File renamed successfully',
             oldName: oldName,
-            newName: sanitizedNewName
+            newName: finalNewName
         });
 
     } catch (error) {
