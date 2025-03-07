@@ -422,7 +422,13 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
         if (customerName) filter.customerName = new RegExp(customerName, 'i'); // Case-insensitive search
         if (vin) filter.carVIN = new RegExp(vin, 'i'); // Case-insensitive search for VIN
         if (claimNumber) filter.claimNumber = new RegExp(claimNumber, 'i'); // Case-insensitive search for claim number
-        if (damageType) filter.damageType = { $in: Array.isArray(damageType) ? damageType : [damageType] }; // Search for any of the selected damage types
+        if (damageType) {
+            if (Array.isArray(damageType)) {
+                filter.damageType = { $in: damageType };
+            } else {
+                filter.damageType = damageType;
+            }
+        }
         if (status) {
             // Handle single status ID
             filter.status = status; // No need for $in since status should be a single value
@@ -453,22 +459,19 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
 
         const claims = await Claim.find(filter)
             .populate('status')
+            .populate('damageType')
             .skip(skip)
             .limit(resultsPerPage)
             .lean();
 
-        // Process claims status
-        claims.forEach(claim => {
-            if (Array.isArray(claim.status)) {
-                const statusName = claim.status[0];
-                const matchingStatus = allStatuses.find(s => s.name === statusName);
-                if (matchingStatus) {
-                    claim.status = { _id: matchingStatus._id, name: matchingStatus.name };
-                } else {
-                    claim.status = { name: statusName };
-                }
-            }
-        });
+        // Process claims to get damage type names
+        const processedClaims = claims.map(claim => ({
+            ...claim,
+            damageType: claim.damageType ? 
+                (Array.isArray(claim.damageType) ? 
+                    claim.damageType.map(dt => dt.name || dt).join(', ') : 
+                    claim.damageType.name || claim.damageType) : ''
+        }));
 
         // Build query string
         const queryString = Object.entries(req.query)
@@ -479,7 +482,7 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
         // Check if this is an AJAX request
         if (req.xhr || req.headers.accept.includes('application/json')) {
             return res.json({
-                claims,
+                claims: processedClaims,
                 page,
                 totalPages,
                 totalClaims,
@@ -490,10 +493,10 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
 
         // Regular HTML response
         res.render('claims_search', {
-            claims,
+            claims: processedClaims,
             filter,
             damageTypes,
-            statuses: allStatuses,
+            statuses,
             locations,
             resultsPerPage,
             page,
@@ -913,11 +916,36 @@ router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
     logRequest(req, 'Fetching claim details with ID:', { claimId });
 
     try {
-        const claim = await Claim.findById(claimId).populate('rentingLocation').exec(); // Populate rentingLocation
+        const claim = await Claim.findById(claimId)
+            .populate('rentingLocation')
+            .populate('status')
+            .exec();
+            
         if (!claim) {
             logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Claim not found' });
         }
+
+        // Add debug logging for rentingLocation
+        console.log('Claim rentingLocation:', {
+            raw: claim.rentingLocation,
+            populated: claim.populated('rentingLocation'),
+            name: claim.rentingLocation?.name
+        });
+
+        // Handle damageType population manually
+        if (claim.damageType) {
+            if (Array.isArray(claim.damageType)) {
+                const damageTypes = await DamageType.find({
+                    _id: { $in: claim.damageType }
+                });
+                claim.damageType = damageTypes;
+            } else {
+                const damageType = await DamageType.findById(claim.damageType);
+                claim.damageType = damageType ? [damageType] : [];
+            }
+        }
+        
         logRequest(req, 'Claim details fetched:', { claim });
         res.render('claim_view', { title: 'View Claim', claim });
     } catch (err) {
@@ -963,7 +991,60 @@ router.post('/location/add', ensureAuthenticated, ensureRoles(['admin', 'manager
     } catch (error) {
         res.render('500', { message: 'Error adding location' });
     }
-})
+});
+
+// Migration route to fix damageType references
+router.post('/migrate-damage-types', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    try {
+        const claims = await Claim.find({
+            damageType: { $type: 'string' }
+        });
+
+        for (const claim of claims) {
+            if (typeof claim.damageType === 'string' || (Array.isArray(claim.damageType) && claim.damageType.every(dt => typeof dt === 'string'))) {
+                const damageTypeIds = Array.isArray(claim.damageType) ? claim.damageType : [claim.damageType];
+                claim.damageType = damageTypeIds;
+                await claim.save();
+            }
+        }
+
+        res.json({ message: 'Migration completed successfully' });
+    } catch (error) {
+        logger.error('Error migrating damage types:', error);
+        res.status(500).json({ error: 'Error during migration' });
+    }
+});
+
+// Migration route to fix rentingLocation references
+router.post('/migrate-renting-locations', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {
+    try {
+        const claims = await Claim.find({
+            rentingLocation: { $type: 'string' }
+        });
+
+        for (const claim of claims) {
+            if (typeof claim.rentingLocation === 'string') {
+                // Find the location by name
+                const location = await Location.findOne({ 
+                    name: { $regex: new RegExp(`^${claim.rentingLocation}$`, 'i') }
+                });
+                
+                if (location) {
+                    claim.rentingLocation = location._id;
+                    await claim.save();
+                    logger.info(`Updated rentingLocation for claim ${claim._id}`);
+                } else {
+                    logger.warn(`Could not find location for name: ${claim.rentingLocation} in claim ${claim._id}`);
+                }
+            }
+        }
+
+        res.json({ message: 'Migration completed successfully' });
+    } catch (error) {
+        logger.error('Error migrating renting locations:', error);
+        res.status(500).json({ error: 'Error during migration' });
+    }
+});
 
 // Fetch all statuses
 router.get('/statuses', ensureAuthenticated, ensureRoles(['admin']), async (req, res) => {

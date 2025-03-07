@@ -168,14 +168,22 @@
                 <p><%= claim.lossDamageWaiver %></p>
 
                 <label>Damage Type:</label>
-                <ul>
-                    <% claim.damageType.forEach(type => { %>
-                        <li><%= type %></li>
-                    <% }) %>
-                </ul>
+                <% if (claim.damageType) { %>
+                    <% if (Array.isArray(claim.damageType)) { %>
+                        <ul>
+                            <% claim.damageType.forEach(type => { %>
+                                <li><%= typeof type === 'object' ? type.name : type %></li>
+                            <% }) %>
+                        </ul>
+                    <% } else { %>
+                        <p><%= typeof claim.damageType === 'object' ? claim.damageType.name : claim.damageType %></p>
+                    <% } %>
+                <% } else { %>
+                    <p>Not specified</p>
+                <% } %>
 
                 <label>Status:</label>
-                <p><%= claim.status %></p>
+                <p><%= claim.status ? claim.status.name : 'Not specified' %></p>
 
                 <label>Files:</label>
                 <div class="files-section">              

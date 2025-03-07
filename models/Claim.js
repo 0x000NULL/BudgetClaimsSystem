@@ -177,8 +177,9 @@ const ClaimSchema = new Schema({
     },
     // Field for the renting location
     rentingLocation: {
-        type: String, // Data type is String
-        required: false // This field is not required
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Location',
+        required: false
     },
     // Field for whether LDW was accepted
     ldwAccepted: {
@@ -211,10 +212,11 @@ const ClaimSchema = new Schema({
         required: false // This field is not required
     },
     // Field for the damage type
-    damageType: {
-        type: [String], // Data type is an array of strings
-        required: false // This field is not required
-    },
+    damageType: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DamageType',
+        required: false
+    }],
     // Field for the claim status
     status: {
         type: mongoose.Schema.Types.ObjectId,

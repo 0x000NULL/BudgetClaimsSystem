@@ -206,7 +206,7 @@
                                     <td><%= claim.mva %></td>
                                     <td><%= claim.customerName %></td>
                                     <td><%= claim.carVIN %></td>
-                                    <td><%= claim.damageType.join(', ') %></td>
+                                    <td><%= claim.damageType %></td>
                                     <td>
                                         <% if (Array.isArray(claim.status)) { %>
                                             <%= claim.status[0] %> <!-- Display first status if it's an array -->
