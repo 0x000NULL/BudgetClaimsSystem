@@ -558,14 +558,18 @@ const documentTemplates = {
         description: 'Location where the vehicle was picked up',
         required: false,
         regexPatterns: [
-          /Pickup Location\s*:\s*(4475[^\n]+?)(?=\s+Return Location|\s{2,}|$)/i
+          /Pickup Location\s*:\s*(4475[^\n]+?)(?=\s+Return Location|\s{2,}|$)/i,
+          /Pickup Location\s*:\s*([^\n]+?)(?=\s+Return Location|\s{2,}|$)/i
         ],
         validations: [],
         transformations: [(value) => {
           if (!value) return value;
-          // Clean up the value and combine with city/state/zip
+          // Clean up the value and combine with city/state/zip if not present
           const address = value.trim();
-          return `${address}, LAS VEGAS, NV 89103`;
+          if (!/LAS VEGAS,\s*NV/i.test(address)) {
+            return `${address}, LAS VEGAS, NV 89103`;
+          }
+          return address;
         }]
       },
       

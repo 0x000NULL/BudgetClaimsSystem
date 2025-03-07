@@ -451,87 +451,106 @@ router.post('/rental-agreement', ensureAuthenticated, ensureRoles(['admin', 'man
         const uniqueFilename = `RA_${Date.now()}_${Math.random().toString(36).substring(7)}${fileExtension}`;
         const uploadPath = path.join(uploadsPath, uniqueFilename);
 
-        // Create initial claim object
-        const newClaim = new Claim({
+        // Save the file
+        await rentalAgreementFile.mv(uploadPath);
+
+        // Extract data from rental agreement using the existing parsing service
+        const result = await processRentalAgreement(uploadPath);
+        const extractedData = result.data;
+        console.log('Extracted data:', extractedData);
+
+        if (!extractedData) {
+            // If extraction fails, remove the uploaded file
+            await fs.unlink(uploadPath);
+            throw new Error('Failed to extract data from rental agreement');
+        }
+
+        // Handle location
+        let locationId = null;
+        if (extractedData.pickupLocation) {
+            try {
+                const fullAddress = extractedData.pickupLocation;
+                // Extract street address (first line before comma)
+                const streetAddress = fullAddress.split(',')[0].trim().toUpperCase();
+                
+                console.log('Processing location:', { fullAddress, streetAddress });
+
+                // Try to find existing location
+                let location = await Location.findOne({
+                    name: { $regex: new RegExp(`^${streetAddress}$`, 'i') }
+                });
+
+                if (location) {
+                    console.log('Found existing location:', location._id);
+                    locationId = location._id;
+                } else {
+                    // Create new location
+                    location = new Location({
+                        name: streetAddress,
+                        address: fullAddress
+                    });
+                    await location.save();
+                    console.log('Created new location:', location._id);
+                    locationId = location._id;
+                }
+            } catch (locationError) {
+                console.error('Error processing location:', locationError);
+            }
+        } else {
+            console.warn('No pickup location found in extracted data');
+        }
+
+        // Create claim with location
+        const claim = new Claim({
             status: defaultStatus._id,
+            raNumber: extractedData.raNumber,
+            customerName: extractedData.customerName,
+            mva: extractedData.customerNumber,  // Map customerNumber to mva
+            customerEmail: extractedData.customerEmail,
+            customerAddress: extractedData.customerAddress,
+            customerDriversLicense: extractedData.customerDriversLicense,
+            carMake: extractedData.carMake,
+            carModel: extractedData.carModel,
+            carYear: extractedData.carYear,
+            carColor: extractedData.carColor,
+            carVIN: extractedData.carVIN,
+            vehicleOdometer: extractedData.vehicleOdometer,
+            pickupLocation: extractedData.pickupLocation,
+            rentingLocation: locationId,  // Set the location ID
+            lossDamageWaiver: extractedData.lossDamageWaiver,
+            rentersLiabilityInsurance: extractedData.rentersLiabilityInsurance,
+            createdBy: req.user._id,
             files: {
                 rentalAgreement: [uniqueFilename]
             }
         });
 
-        try {
-            // Save the file
-            await rentalAgreementFile.mv(uploadPath);
+        console.log('Saving claim with data:', claim);
+        await claim.save();
 
-            // Extract data from rental agreement using the existing parsing service
-            const result = await processRentalAgreement(uploadPath);
-            
-            if (!result || !result.data) {
-                // If extraction fails, remove the uploaded file
-                await fs.unlink(uploadPath);
-                throw new Error('Failed to extract data from rental agreement');
-            }
+        // Notify relevant parties about the new claim
+        await notifyNewClaim(req.user.email, claim);
 
-            const extractedData = result.data;
+        // Log the successful creation
+        logRequest(req, 'Rental agreement claim created successfully', { 
+            claimId: claim._id,
+            extractionConfidence: result.metadata.extractionConfidence,
+            fieldsMatched: result.metadata.fieldsMatched
+        });
 
-            // Log extraction metadata
-            logger.info('Rental agreement extraction metadata:', {
+        // Return the created claim with extraction metadata
+        res.status(201).json({
+            message: 'Claim created successfully',
+            claim: claim,
+            extractionMetadata: {
                 confidence: result.metadata.extractionConfidence,
                 fieldsMatched: result.metadata.fieldsMatched,
                 totalFields: result.metadata.totalFields,
                 missingFields: result.metadata.requiredFieldsMissing,
                 errors: result.metadata.errors
-            });
+            }
+        });
 
-            // Update claim with extracted data
-            Object.assign(newClaim, {
-                raNumber: extractedData.raNumber,
-                customerName: extractedData.customerName,
-                mva: extractedData.customerNumber,
-                customerEmail: extractedData.customerEmail,
-                customerAddress: extractedData.customerAddress,
-                customerDriversLicense: extractedData.customerDriversLicense,
-                carMake: extractedData.carMake,
-                carModel: extractedData.carModel,
-                carYear: extractedData.carYear,
-                carColor: extractedData.carColor,
-                carVIN: extractedData.carVIN,
-                vehicleOdometer: extractedData.vehicleOdometer,
-                rentingLocation: extractedData.rentingLocation,
-                lossDamageWaiver: extractedData.lossDamageWaiver,
-                rentersLiabilityInsurance: extractedData.rentersLiabilityInsurance
-            });
-
-            // Save the claim
-            await newClaim.save();
-
-            // Notify relevant parties about the new claim
-            await notifyNewClaim(req.user.email, newClaim);
-
-            // Log the successful creation
-            logRequest(req, 'Rental agreement claim created successfully', { 
-                claimId: newClaim._id,
-                extractionConfidence: result.metadata.extractionConfidence,
-                fieldsMatched: result.metadata.fieldsMatched
-            });
-
-            // Return the created claim with extraction metadata
-            res.status(201).json({
-                message: 'Claim created successfully',
-                claim: newClaim,
-                extractionMetadata: {
-                    confidence: result.metadata.extractionConfidence,
-                    fieldsMatched: result.metadata.fieldsMatched,
-                    totalFields: result.metadata.totalFields,
-                    missingFields: result.metadata.requiredFieldsMissing,
-                    errors: result.metadata.errors
-                }
-            });
-
-        } catch (error) {
-            logRequest(req, 'Error creating rental agreement claim:', { error });
-            res.status(500).json({ error: error.message || 'Error creating claim' });
-        }
     } catch (error) {
         logRequest(req, 'Error creating rental agreement claim:', { error });
         res.status(500).json({ error: error.message || 'Error creating claim' });
