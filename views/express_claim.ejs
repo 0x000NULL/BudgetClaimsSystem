@@ -132,37 +132,54 @@
         </div>
 
         <!-- Manual Form Entry -->
-        <form action="/claims" method="POST" class="claim-info">
+        <form action="/claims" method="POST" class="claim-info" enctype="multipart/form-data">
             <!-- MVA Number -->
             <div>
                 <label for="mva">MVA Number *</label>
                 <input type="text" id="mva" name="mva" required>
             </div>
 
-            <!-- Accident Date -->
-            <div>
-                <label for="accidentDate">Accident Date *</label>
-                <input type="date" id="accidentDate" name="accidentDate" required>
-            </div>
-
             <!-- Customer Name -->
             <div>
-                <label for="customerName">Customer Name *</label>
-                <input type="text" id="customerName" name="customerName" required>
+                <label for="customerName">Customer Name</label>
+                <input type="text" id="customerName" name="customerName">
             </div>
 
             <!-- RA Number -->
             <div>
-                <label for="raNumber">RA Number *</label>
-                <input type="text" id="raNumber" name="raNumber" required>
+                <label for="raNumber">RA Number</label>
+                <input type="text" id="raNumber" name="raNumber">
+            </div>
+
+            <!-- Photo Upload Section -->
+            <div class="mt-3">
+                <label for="photoUpload" class="form-label">Upload Photos (Optional)</label>
+                <div class="input-group mb-3">
+                    <input type="file" class="form-control" id="photoUpload" name="photos" multiple accept="image/*">
+                    <label class="input-group-text" for="photoUpload">
+                        <i class="fas fa-camera me-2"></i>Browse
+                    </label>
+                </div>
+                <div id="photoHelp" class="form-text text-muted">
+                    <small>Upload photos of damage, vehicle condition, etc. Accepted formats: JPG, PNG, JPEG. <span class="text-danger">Maximum 5MB per image.</span></small>
+                </div>
+                <div id="photoCount" class="form-text mb-2 d-none">
+                    <span class="badge bg-primary" id="selectedPhotoCount">0</span> photos selected
+                </div>
+                <div id="photoPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
             </div>
 
             <!-- Hidden Status Field - Set to "Pending" by default -->
             <input type="hidden" name="status[]" value="Pending">
 
-            <div class="button-group">
-                <button type="submit" class="btn">Create Express Claim</button>
-                <a href="/claims" class="btn" style="background-color: #6c757d;">Cancel</a>
+            <!-- Button Group with improved styling -->
+            <div class="button-group d-flex justify-content-between mt-4">
+                <a href="/claims" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check-circle me-1"></i>Create Express Claim
+                </button>
             </div>
         </form>
     </div>
@@ -172,7 +189,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Set default date to today
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('accidentDate').value = today;
+            if (document.getElementById('accidentDate')) {
+                document.getElementById('accidentDate').value = today;
+            }
 
             // Get DOM elements
             const uploadZone = document.getElementById('uploadZone');
@@ -180,30 +199,95 @@
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
             const loadingOverlay = document.querySelector('.loading-overlay');
+            
+            // Photo upload preview
+            const photoUpload = document.getElementById('photoUpload');
+            const photoPreview = document.getElementById('photoPreview');
+            const photoCount = document.getElementById('photoCount');
+            const selectedPhotoCount = document.getElementById('selectedPhotoCount');
+            
+            if (photoUpload) {
+                photoUpload.addEventListener('change', function() {
+                    // Clear existing previews
+                    photoPreview.innerHTML = '';
+                    
+                    if (this.files && this.files.length > 0) {
+                        // Update photo count
+                        selectedPhotoCount.textContent = this.files.length;
+                        photoCount.classList.remove('d-none');
+                        
+                        // Create and append preview for each file
+                        Array.from(this.files).forEach(file => {
+                            if (!file.type.match('image.*')) {
+                                return;
+                            }
+                            
+                            // Check file size (max 5MB)
+                            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+                            if (file.size > maxSize) {
+                                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                                const warning = document.createElement('div');
+                                warning.className = 'alert alert-warning mt-2';
+                                warning.innerHTML = `<strong>Warning:</strong> ${file.name} (${fileSizeMB}MB) exceeds the 5MB limit and may be rejected.`;
+                                photoPreview.appendChild(warning);
+                            }
+                            
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const previewContainer = document.createElement('div');
+                                previewContainer.className = 'position-relative';
+                                
+                                const img = document.createElement('img');
+                                img.src = e.target.result;
+                                img.className = 'img-thumbnail';
+                                img.style.width = '100px';
+                                img.style.height = '100px';
+                                img.style.objectFit = 'cover';
+                                
+                                const fileName = document.createElement('div');
+                                fileName.className = 'small text-truncate';
+                                fileName.style.maxWidth = '100px';
+                                fileName.textContent = file.name;
+                                
+                                previewContainer.appendChild(img);
+                                previewContainer.appendChild(fileName);
+                                photoPreview.appendChild(previewContainer);
+                            };
+                            
+                            reader.readAsDataURL(file);
+                        });
+                    } else {
+                        // No files selected
+                        photoCount.classList.add('d-none');
+                    }
+                });
+            }
 
             // Drag and drop handlers
-            uploadZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadZone.classList.add('dragover');
-            });
+            if (uploadZone) {
+                uploadZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadZone.classList.add('dragover');
+                });
 
-            uploadZone.addEventListener('dragleave', () => {
-                uploadZone.classList.remove('dragover');
-            });
+                uploadZone.addEventListener('dragleave', () => {
+                    uploadZone.classList.remove('dragover');
+                });
 
-            uploadZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadZone.classList.remove('dragover');
-                handleFiles(e.dataTransfer.files);
-            });
+                uploadZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadZone.classList.remove('dragover');
+                    handleFiles(e.dataTransfer.files);
+                });
 
-            uploadZone.addEventListener('click', () => {
-                fileInput.click();
-            });
+                uploadZone.addEventListener('click', () => {
+                    fileInput.click();
+                });
 
-            fileInput.addEventListener('change', (e) => {
-                handleFiles(e.target.files);
-            });
+                fileInput.addEventListener('change', (e) => {
+                    handleFiles(e.target.files);
+                });
+            }
 
             function handleFiles(files) {
                 if (files.length === 0) return;

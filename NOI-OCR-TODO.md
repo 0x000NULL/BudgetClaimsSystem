@@ -105,17 +105,17 @@
 ### New Requirements for Automatic Claim Creation
 - [ ] **Automated Claim Generation**
   - [x] Create dedicated route for rental agreement-only claim creation
-  - [ ] Implement automatic claim number generation
-  - [ ] Set up default claim status for auto-generated claims
+  - [x] Implement automatic claim number generation
+  - [x] Set up default claim status for auto-generated claims
   - [ ] Create validation pipeline for extracted data
   - [ ] Implement error handling for incomplete/invalid data
-  - [ ] Add notification system for new auto-generated claims
+  - [x] Add notification system for new auto-generated claims
   - [ ] Create audit trail for automated claim creation
 
 ### UI Implementation for Auto-Claim Creation
 - [ ] **Upload Interface**
-  - [ ] Create drag-and-drop zone specifically for rental agreements
-  - [ ] Add progress indicator for OCR processing
+  - [x] Create drag-and-drop zone specifically for rental agreements
+  - [x] Add progress indicator for OCR processing
   - [ ] Implement preview of extracted data before claim creation
   - [ ] Add manual override/correction interface
   - [ ] Create success/error notification system
@@ -165,7 +165,7 @@
 
 ### Document Management System
 - [ ] **Document Organization**
-  - [ ] Create document categorization system
+  - [x] Create document categorization system
   - [ ] Implement document tagging
   - [ ] Add document search functionality
   - [ ] Create document relationship mapping
@@ -176,17 +176,17 @@
 
 ### User Interface
 - [ ] **Upload Interface**
-  - [ ] Create drag-and-drop upload zone
+  - [x] Create drag-and-drop upload zone
   - [ ] Add multi-file upload support
   - [ ] Implement upload progress indicators
   - [ ] Create file type validation feedback
-  - [ ] Add file preview functionality
+  - [x] Add file preview functionality
   - [ ] Implement upload retry mechanism
   - [ ] Create upload queue management
   - [ ] Add batch upload support
 
 - [ ] **Document Processing Interface**
-  - [ ] Create document review workflow
+  - [  ] Create document review workflow
   - [ ] Implement data extraction preview
   - [ ] Add manual data correction interface
   - [ ] Create document comparison view
