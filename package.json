@@ -1,6 +1,6 @@
 {
   "name": "budget-claims-system",
-  "version": "1.4.41",
+  "version": "1.5.2",
   "description": "A system to manage vehicle claims.",
   "main": "server.js",
   "scripts": {
