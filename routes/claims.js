@@ -48,10 +48,42 @@ const { processRentalAgreement } = require('../services/processRentalAgreement')
 // Create uploads directory if it doesn't exist
 (async () => {
     try {
-        await fs.access(uploadsPath);
-    } catch {
-        await fs.mkdir(uploadsPath, { recursive: true });
-        logger.info(`Created uploads directory at ${uploadsPath}`);
+        // Ensure the main uploads directory exists
+        await fs.promises.access(uploadsPath, fs.constants.F_OK);
+        logger.info(`Uploads directory exists at ${uploadsPath}`);
+    } catch (error) {
+        try {
+            await fs.promises.mkdir(uploadsPath, { recursive: true });
+            logger.info(`Created uploads directory at ${uploadsPath}`);
+        } catch (mkdirError) {
+            logger.error(`Failed to create uploads directory at ${uploadsPath}: ${mkdirError.message}`);
+        }
+    }
+    
+    // Initialize all file categories
+    const categories = [
+        'photos', 
+        'documents', 
+        'invoices', 
+        'incidentReports', 
+        'correspondence', 
+        'rentalAgreement', 
+        'policeReport'
+    ];
+    
+    // Create subdirectories for each category if they don't exist
+    for (const category of categories) {
+        const categoryPath = path.join(uploadsPath, category);
+        try {
+            await fs.promises.access(categoryPath, fs.constants.F_OK);
+        } catch (error) {
+            try {
+                await fs.promises.mkdir(categoryPath, { recursive: true });
+                logger.info(`Created directory for ${category} at ${categoryPath}`);
+            } catch (mkdirError) {
+                logger.error(`Failed to create directory for ${category}: ${mkdirError.message}`);
+            }
+        }
     }
 })();
 
@@ -66,13 +98,33 @@ const cache = cacheManager.caching({
 // Helper function to validate file
 const validateFile = (file, category) => {
     const ext = path.extname(file.name).toLowerCase();
-    const allowedTypes = category === 'photos' ? global.ALLOWED_FILE_TYPES.photos :
-                        category === 'invoices' ? global.ALLOWED_FILE_TYPES.invoices :
-                        global.ALLOWED_FILE_TYPES.documents;
-
-    const sizeLimit = category === 'photos' ? global.MAX_FILE_SIZES.photos :
-                     category === 'invoices' ? global.MAX_FILE_SIZES.invoices :
-                     global.MAX_FILE_SIZES.documents;
+    
+    // Map categories to their appropriate allowed types
+    let allowedTypes;
+    let sizeLimit;
+    
+    switch(category) {
+        case 'photos':
+            allowedTypes = global.ALLOWED_FILE_TYPES.photos;
+            sizeLimit = global.MAX_FILE_SIZES.photos;
+            break;
+        case 'invoices':
+            allowedTypes = global.ALLOWED_FILE_TYPES.invoices;
+            sizeLimit = global.MAX_FILE_SIZES.invoices;
+            break;
+        case 'rentalAgreement':
+        case 'policeReport':
+        case 'incidentReports':
+        case 'correspondence':
+            // These categories should accept document types
+            allowedTypes = global.ALLOWED_FILE_TYPES.documents;
+            sizeLimit = global.MAX_FILE_SIZES.documents;
+            break;
+        default:
+            // For any other category, use document types as default
+            allowedTypes = global.ALLOWED_FILE_TYPES.documents;
+            sizeLimit = global.MAX_FILE_SIZES.documents;
+    }
 
     const errors = [];
 
@@ -133,7 +185,16 @@ const filterSensitiveData = (data) => {
 
 // Helper function to initialize file categories
 const initializeFileCategories = (existingFiles = {}) => {
-    const categories = ['photos', 'documents', 'invoices'];
+    const categories = [
+        'photos', 
+        'documents', 
+        'invoices', 
+        'incidentReports', 
+        'correspondence', 
+        'rentalAgreement', 
+        'policeReport'
+    ];
+    
     const files = { ...existingFiles };
     
     categories.forEach(category => {
@@ -941,11 +1002,14 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
                     const uploadPath = path.join(uploadsPath, filename);
 
                     try {
-                        // Check if file already exists
-                        if (fs.access(uploadPath)) {
+                        // Check if file already exists - using fs.promises.access and try/catch
+                        try {
+                            await fs.promises.access(uploadPath, fs.constants.F_OK);
                             // If file exists and has safe name, add uniqueness
                             const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
                             filename = `${path.basename(filename, ext)}-${uniqueSuffix}${ext}`;
+                        } catch (err) {
+                            // File doesn't exist, which is fine
                         }
                         
                         // Move file to uploads directory
@@ -972,8 +1036,12 @@ router.put('/:id', ensureAuthenticated, logActivity('update claim'), async (req,
                             files[type].splice(index, 1);
                             // Remove file from disk
                             const filePath = path.join(uploadsPath, name);
-                            if (fs.access(filePath)) {
-                                await fs.unlink(filePath);
+                            try {
+                                await fs.promises.access(filePath, fs.constants.F_OK);
+                                await fs.promises.unlink(filePath);
+                            } catch (err) {
+                                // File doesn't exist, no need to delete
+                                logger.warn(`Attempted to delete non-existent file: ${filePath}`);
                             }
                         }
                     }

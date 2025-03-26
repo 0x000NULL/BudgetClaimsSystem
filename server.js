@@ -106,15 +106,15 @@ require('./notifications/reminderScheduler');
 
 // Define global settings variables
 global.MAX_FILE_SIZES = {
-    photos: 5 * 1024 * 1024,    // Default 5MB
-    documents: 10 * 1024 * 1024, // Default 10MB
-    invoices: 10 * 1024 * 1024   // Default 10MB
+    photos: 50 * 1024 * 1024,    // Default 50MB
+    documents: 500 * 1024 * 1024, // Default 500MB
+    invoices: 500 * 1024 * 1024   // Default 500MB
 };
 
 global.MAX_FILES_PER_CATEGORY = {
-    photos: 10,    // Default 10 files
-    documents: 5,  // Default 5 files
-    invoices: 5    // Default 5 files
+    photos: 100,    // Default 100 files
+    documents: 50,  // Default 50 files
+    invoices: 50    // Default 50 files
 };
 
 global.ALLOWED_FILE_TYPES = {
@@ -334,6 +334,12 @@ app.use('/import', fileUploadMiddleware, (req, res, next) => {
     pinoLogger.info('Accessing import route');
     next();
 }, require('./routes/import')); // Import functionality routes
+
+// NOI (Notice of Intent) routes
+app.use('/noi', (req, res, next) => {
+    pinoLogger.info('Accessing NOI route');
+    next();
+}, require('./routes/noi')); // NOI functionality routes
 
 // Start the server and listen on the specified port
 const PORT = process.env.PORT || 5000; // Use the port from environment variables or default to 5000

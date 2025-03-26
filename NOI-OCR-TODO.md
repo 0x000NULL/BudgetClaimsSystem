@@ -3,22 +3,22 @@
 ## Notice of Intent (NOI) Template Implementation
 
 ### Template Creation & Management
-- [ ] **Word Document Template Design**
-  - [ ] Create base NOI Word template with merge fields
-  - [ ] Add company letterhead and branding
-  - [ ] Define standard NOI sections and formatting
-  - [ ] Create template version control system
-  - [ ] Add template preview functionality
-  - [ ] Implement template validation checks
+- [x] **PDF Template Design**
+  - [x] Create base NOI PDF template with fillable form fields
+  - [x] Add company letterhead and branding
+  - [x] Define standard NOI sections and formatting
+  - [x] Create template version control system
+  - [x] Add template preview functionality
+  - [x] Implement template validation checks
 
 ### Document Generation System
-- [ ] **NOI Document Generation**
-  - [ ] Implement document generation service using docx-templater
-  - [ ] Add merge field mapping from claim data
-  - [ ] Create address formatting utility
-  - [ ] Implement document caching mechanism
-  - [ ] Add error handling for generation failures
-  - [ ] Create document preview functionality
+- [x] **NOI Document Generation**
+  - [x] Implement document generation service using PDF manipulation library (pdf-lib or similar)
+  - [x] Add form field mapping from claim data
+  - [x] Create address formatting utility
+  - [x] Implement document caching mechanism
+  - [x] Add error handling for generation failures
+  - [x] Create document preview functionality
 
 ### UI Implementation
 - [ ] **Claim View Integration**
@@ -48,12 +48,12 @@
   - [ ] Performance testing for large batches
 
 ### Documentation
-- [ ] **NOI System Documentation**
-  - [ ] Template modification guide
+- [x] **NOI System Documentation**
+  - [x] Template modification guide
   - [ ] Printer setup instructions
   - [ ] User guide for NOI generation
   - [ ] Troubleshooting documentation
-  - [ ] API documentation for NOI services
+  - [x] API documentation for NOI services
   - [ ] System architecture documentation
 
 ## Document Upload & Claim Creation System
