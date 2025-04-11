@@ -23,7 +23,6 @@
  * @requires ./routes/index
  * @requires ./routes/users
  * @requires ./routes/claims
- * @requires ./routes/dashboard
  * @requires ./routes/api
  * @requires ./routes/feedback
  * @requires ./routes/customers

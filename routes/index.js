@@ -133,6 +133,7 @@
     */
 const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
+const LiabilityClaim = require('../models/LiabilityClaim'); // Import the LiabilityClaim model
 const User = require('../models/User'); // Import the User model to interact with the users collection in MongoDB
 const AuditLog = require('../models/AuditLog'); // Import the AuditLog model to interact with audit logs
 const DamageType = require('../models/DamageType'); // Import the DamageType model to interact with damage types collection in MongoDB
@@ -220,13 +221,18 @@ router.get('/dashboard', ensureAuthenticated, ensureRoles(['admin', 'manager']),
         const inProgressStatus = statusMap.get('in progress');
         const closedStatus = statusMap.get('closed');
 
-        // Get counts and recent claims in parallel
+        // Get counts and recent claims in parallel for both claim types
         const [
             totalClaims,
             openClaims,
             inProgressClaims,
             closedClaims,
-            recentClaims
+            recentClaims,
+            totalLiabilityClaims,
+            openLiabilityClaims,
+            inProgressLiabilityClaims,
+            closedLiabilityClaims,
+            recentLiabilityClaims
         ] = await Promise.all([
             Claim.countDocuments(),
             openStatus ? Claim.countDocuments({ status: openStatus.id }) : 0,
@@ -238,22 +244,28 @@ router.get('/dashboard', ensureAuthenticated, ensureRoles(['admin', 'manager']),
                 .populate('status')
                 .select('claimNumber customerName status updatedAt createdAt')
                 .lean()
+                .exec(),
+            LiabilityClaim.countDocuments(),
+            openStatus ? LiabilityClaim.countDocuments({ status: openStatus.id }) : 0,
+            inProgressStatus ? LiabilityClaim.countDocuments({ status: inProgressStatus.id }) : 0,
+            closedStatus ? LiabilityClaim.countDocuments({ status: closedStatus.id }) : 0,
+            LiabilityClaim.find()
+                .sort({ updatedAt: -1 })
+                .limit(5)
+                .populate('status')
+                .select('claimNumber customerName status updatedAt createdAt')
+                .lean()
                 .exec()
         ]);
 
-        // Add debug logging
-        console.log('Recent Claims Debug:', {
-            count: recentClaims.length,
-            claims: recentClaims.map(claim => ({
-                id: claim._id,
-                claimNumber: claim.claimNumber,
-                updatedAt: claim.updatedAt,
-                status: claim.status?.name
-            }))
-        });
+        // Calculate new statistics
+        const totalAllClaims = totalClaims + totalLiabilityClaims;
+        const openDamageClaims = openClaims + inProgressClaims;
+        const openLiabilityClaimsTotal = openLiabilityClaims + inProgressLiabilityClaims;
+        const totalClosedClaims = closedClaims + closedLiabilityClaims;
 
         // Transform claims with better null handling
-        const transformedClaims = recentClaims.map(claim => ({
+        const transformClaims = (claims) => claims.map(claim => ({
             _id: claim._id,
             claimNumber: claim.claimNumber || 'N/A',
             customerName: claim.customerName || 'No Name Provided',
@@ -263,44 +275,45 @@ router.get('/dashboard', ensureAuthenticated, ensureRoles(['admin', 'manager']),
                 color: claim.status?.color || '#6c757d',
                 description: claim.status?.description || 'Status pending',
                 textColor: claim.status?.color ? getContrastColor(claim.status.color) : '#ffffff'
-            }
+            },
+            isLiability: claim.claimNumber?.endsWith('L') || false
         }));
 
-        // Calculate average resolution time
-        const closedClaimsWithResolutionTime = await Claim.find({ status: closedStatus?.id });
-        let totalResolutionTime = 0;
-        closedClaimsWithResolutionTime.forEach(claim => {
-            const resolutionTime = (claim.updatedAt - claim.createdAt) / (1000 * 60 * 60 * 24); // Time in days
-            totalResolutionTime += resolutionTime;
-        });
-        const avgResolutionTime = closedClaimsWithResolutionTime.length ? totalResolutionTime / closedClaimsWithResolutionTime.length : 0;
+        const transformedClaims = transformClaims(recentClaims);
+        const transformedLiabilityClaims = transformClaims(recentLiabilityClaims);
 
-        // Prepare render data
-        const renderData = {
-            title: 'Dashboard - Budget Claims System',
-            totalClaims,
-            openClaims,
-            inProgressClaims,
-            closedClaims,
-            avgResolutionTime,
-            recentClaims: transformedClaims,
+        // Combine and sort all recent claims by updatedAt
+        const allRecentClaims = [...transformedClaims, ...transformedLiabilityClaims]
+            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+            .slice(0, 5);
+
+        res.render('dashboard', {
+            title: 'Dashboard',
+            totalAllClaims,
+            openLiabilityClaims: openLiabilityClaimsTotal,
+            openDamageClaims,
+            totalClosedClaims,
+            recentClaims: allRecentClaims,
             user: req.user
+        });
+
+    } catch (error) {
+        pinoLogger.error({
+            message: 'Dashboard error',
+            error: error.message,
+            stack: error.stack
+        });
+        
+        // Prepare error data for the view
+        const errorData = {
+            message: 'Error loading dashboard',
+            error: process.env.NODE_ENV === 'development' ? {
+                message: error.message,
+                stack: error.stack
+            } : {}
         };
 
-        logRequest(req, 'Render data prepared for dashboard', { 
-            renderData: {
-                ...renderData,
-                recentClaimsCount: transformedClaims.length
-            }
-        });
-
-        res.render('dashboard', renderData);
-    } catch (err) {
-        logRequest(req, 'Error fetching dashboard data', { error: err.message });
-        res.status(500).render('error', {
-            message: 'Error loading dashboard',
-            error: process.env.NODE_ENV === 'development' ? err : {}
-        });
+        res.status(500).render('error', errorData);
     }
 });
 

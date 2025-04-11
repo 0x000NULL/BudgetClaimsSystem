@@ -94,6 +94,7 @@
             border-radius: 6px;
             padding: 15px;
             transition: transform 0.2s;
+            position: relative;
         }
 
         .claim-item:hover {
@@ -105,6 +106,30 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
+        }
+
+        .claim-type {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8em;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background-color: #e9ecef;
+            color: #495057;
+        }
+
+        .claim-type.liability {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .claim-status {
+            background-color: var(--status-bg);
+            color: var(--status-text);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
         }
 
         .claim-details {
@@ -141,6 +166,12 @@
         .btn-link:hover {
             text-decoration: underline;
         }
+
+        .stat-description {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -176,19 +207,19 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>Dashboard Overview</h2>
             <div style="display: flex; gap: 20px;">
-                <button id="liabilityToggle" class="toggle-btn" style="
+                <button id="liabilityToggle" class="toggle-btn active" data-type="liability" style="
                     padding: 8px 16px;
                     border: 1px solid #007bff;
-                    background-color: white;
-                    color: #007bff;
+                    background-color: #007bff;
+                    color: white;
                     border-radius: 4px;
                     cursor: pointer;
                 ">Liability</button>
-                <button id="physicalToggle" class="toggle-btn" style="
+                <button id="physicalToggle" class="toggle-btn active" data-type="physical" style="
                     padding: 8px 16px;
                     border: 1px solid #007bff;
-                    background-color: white;
-                    color: #007bff;
+                    background-color: #007bff;
+                    color: white;
                     border-radius: 4px;
                     cursor: pointer;
                 ">Physical</button>
@@ -198,19 +229,23 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-label">Total Claims</div>
-                <div class="stat-number"><%= totalClaims %></div>
+                <div class="stat-number" id="totalClaims"><%= totalAllClaims %></div>
+                <div class="stat-description">Combined damage and liability claims</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Open Claims</div>
-                <div class="stat-number"><%= openClaims %></div>
+                <div class="stat-label">Open Liability Claims</div>
+                <div class="stat-number" id="openLiabilityClaims"><%= openLiabilityClaims %></div>
+                <div class="stat-description">Liability claims not yet closed</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">In Progress</div>
-                <div class="stat-number"><%= inProgressClaims %></div>
+                <div class="stat-label">Open Damage Claims</div>
+                <div class="stat-number" id="openDamageClaims"><%= openDamageClaims %></div>
+                <div class="stat-description">Damage claims not yet closed</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Closed Claims</div>
-                <div class="stat-number"><%= closedClaims %></div>
+                <div class="stat-label">Total Closed Claims</div>
+                <div class="stat-number" id="totalClosedClaims"><%= totalClosedClaims %></div>
+                <div class="stat-description">Combined closed damage and liability claims</div>
             </div>
         </div>
 
@@ -225,26 +260,23 @@
                 <h3>Recent Activity</h3>
                 <a href="/claims/search" class="view-all">View All Claims →</a>
             </div>
-            <div class="claims-list">
+            <div class="claims-list" id="recentClaimsList">
                 <% if (recentClaims && recentClaims.length > 0) { %>
                     <% recentClaims.forEach(claim => { %>
-                        <div class="claim-item">
+                        <div class="claim-item" data-type="<%= claim.isLiability ? 'liability' : 'physical' %>">
                             <div class="claim-header">
                                 <strong>Claim #<%= claim.claimNumber %></strong>
-                                <span class="claim-status" style="
-                                    background-color: <%= claim.status.color %>;
-                                    color: <%= claim.status.textColor %>;
-                                    padding: 4px 8px;
-                                    border-radius: 4px;
-                                    font-size: 0.9em;
-                                ">
-                                    <%= claim.status.name %>
+                                <span class="claim-type <%= claim.isLiability ? 'liability' : '' %>">
+                                    <%= claim.isLiability ? 'Liability' : 'Physical' %>
                                 </span>
                             </div>
                             <div class="claim-details">
                                 <span>Customer: <%= claim.customerName %></span>
                                 <span>Updated: <%= new Date(claim.updatedAt).toLocaleDateString() %></span>
                             </div>
+                            <span class="claim-status" style="--status-bg: <%= claim.status.color %>; --status-text: <%= claim.status.textColor %>;">
+                                <%= claim.status.name %>
+                            </span>
                             <a href="/claims/<%= claim._id %>" class="claim-link">View Details →</a>
                         </div>
                     <% }); %>
