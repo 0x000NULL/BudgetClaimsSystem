@@ -1,86 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"> <!-- Set the character encoding for the document -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensure proper rendering and touch zooming on mobile devices -->
-    <title>Reports - Budget Claims System</title> <!-- Title of the document -->
-    <link rel="stylesheet" href="/css/styles.css"> <!-- Link to the external CSS file for styling -->
-    <link rel="stylesheet" href="/js/bootstrap-datepicker.min.css"> <!-- Bootstrap Datepicker CSS -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Builder - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/report-builder.css">
+    <link rel="stylesheet" href="/js/bootstrap-datepicker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
 </head>
 <body>
     <header>
-        <!-- Logo and navigation -->
-        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo"> <!-- Company logo -->
-        <h1>Budget Claims System</h1> <!-- Main heading -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Budget Claims System</h1>
         <nav>
             <ul>
-                <li><a href="/dashboard">Dashboard</a></li> <!-- Link to Dashboard -->
+                <li><a href="/dashboard">Dashboard</a></li>
                 <li class="Claims">
-                    <a href="javascript:void(0)" class="dropbtn">Claims</a> <!-- Dropdown trigger -->
+                    <a href="javascript:void(0)" class="dropbtn">Claims</a>
                     <div class="dropdown-content">
-                        <a href="/claims/search">Search Claims</a> <!-- Link to Search Claims -->
-                        <a href="/claims/add">Add Claim</a> <!-- Link to Add Claim -->
+                        <a href="/claims/search">Search Claims</a>
+                        <a href="/claims/add">Add Claim</a>
                     </div>
                 </li>
-                <li><a href="/reports">Reports</a></li> <!-- Link to Reports -->
+                <li><a href="/reports">Reports</a></li>
                 <li class="Settings">
-                    <a href="javascript:void(0)" class="dropbtn">Settings</a> <!-- Dropdown trigger -->
+                    <a href="javascript:void(0)" class="dropbtn">Settings</a>
                     <div class="dropdown-content">
-                        <a href="/general-settings">General Settings</a> <!-- Link to General Settings -->
-                        <a href="/user-management">User Management</a> <!-- Link to User Management -->
-                        <a href="/email-templates">Email Templates</a> <!-- Link to Email Templates -->
+                        <a href="/general-settings">General Settings</a>
+                        <a href="/user-management">User Management</a>
+                        <a href="/email-templates">Email Templates</a>
                     </div>
                 </li>
-                <li><a href="/help">Help</a></li> <!-- Link to Help -->
-                <li><a href="/logout">Logout</a></li> <!-- Link to Logout -->
+                <li><a href="/help">Help</a></li>
+                <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
-    <main>
-        <h2>Generate Report</h2> <!-- Section heading -->
 
-        <!-- Form to generate reports -->
-        <form action="/reports/generate" method="POST">
-            <label for="format">Select Format:</label> <!-- Label for format selection -->
-            <select name="format" id="format" required> <!-- Dropdown to select report format -->
-                <option value="csv">CSV</option>
-                <option value="excel">Excel</option>
-                <option value="pdf">PDF</option>
-            </select>
-            <br><br>
-            <label for="startDate">Select Start Date:</label> <!-- Label for start date selection -->
-            <input type="text" id="startDate" name="startDate" class="datepicker" required> <!-- Input for start date with datepicker class -->
-            <br><br>
-            <label for="endDate">Select End Date:</label> <!-- Label for end date selection -->
-            <input type="text" id="endDate" name="endDate" class="datepicker" required> <!-- Input for end date with datepicker class -->
-            <br><br>
-            <label for="allTime">
-                <input type="checkbox" id="allTime" name="allTime"> Output All Time <!-- Checkbox for outputting all time data -->
-            </label>
-            <br><br>
-            <button type="submit">Generate Report</button> <!-- Button to submit the form -->
+    <main class="report-builder">
+        <h2>Report Builder</h2>
+        <p class="subtitle">Create custom reports by selecting fields, applying filters, and choosing your preferred output format.</p>
+
+        <form action="/reports/generate" method="POST" id="reportForm">
+            <!-- Fields Section -->
+            <div class="builder-section">
+                <h3>Select Fields to Include</h3>
+                <p class="section-description">Choose the data fields you want to include in your report. You can select multiple fields from different categories.</p>
+                
+                <div class="field-group">
+                    <!-- Basic Information -->
+                    <div class="field-category">
+                        <h4>Basic Information</h4>
+                        <div class="field-item" data-field="claimNumber">
+                            <input type="checkbox" name="fields[]" value="claimNumber" id="field-claimNumber">
+                            <label for="field-claimNumber">Claim Number</label>
+                        </div>
+                        <div class="field-item" data-field="mva">
+                            <input type="checkbox" name="fields[]" value="mva" id="field-mva">
+                            <label for="field-mva">MVA Number</label>
+                        </div>
+                        <div class="field-item" data-field="date">
+                            <input type="checkbox" name="fields[]" value="date" id="field-date">
+                            <label for="field-date">Claim Date</label>
+                        </div>
+                        <div class="field-item" data-field="status">
+                            <input type="checkbox" name="fields[]" value="status" id="field-status">
+                            <label for="field-status">Status</label>
+                        </div>
+                    </div>
+
+                    <!-- Customer Information -->
+                    <div class="field-category">
+                        <h4>Customer Information</h4>
+                        <div class="field-item" data-field="customerName">
+                            <input type="checkbox" name="fields[]" value="customerName" id="field-customerName">
+                            <label for="field-customerName">Customer Name</label>
+                        </div>
+                        <div class="field-item" data-field="customerNumber">
+                            <input type="checkbox" name="fields[]" value="customerNumber" id="field-customerNumber">
+                            <label for="field-customerNumber">Customer Number</label>
+                        </div>
+                        <div class="field-item" data-field="customerEmail">
+                            <input type="checkbox" name="fields[]" value="customerEmail" id="field-customerEmail">
+                            <label for="field-customerEmail">Customer Email</label>
+                        </div>
+                        <div class="field-item" data-field="customerAddress">
+                            <input type="checkbox" name="fields[]" value="customerAddress" id="field-customerAddress">
+                            <label for="field-customerAddress">Customer Address</label>
+                        </div>
+                    </div>
+
+                    <!-- Vehicle Information -->
+                    <div class="field-category">
+                        <h4>Vehicle Information</h4>
+                        <div class="field-item" data-field="carMake">
+                            <input type="checkbox" name="fields[]" value="carMake" id="field-carMake">
+                            <label for="field-carMake">Car Make</label>
+                        </div>
+                        <div class="field-item" data-field="carModel">
+                            <input type="checkbox" name="fields[]" value="carModel" id="field-carModel">
+                            <label for="field-carModel">Car Model</label>
+                        </div>
+                        <div class="field-item" data-field="carYear">
+                            <input type="checkbox" name="fields[]" value="carYear" id="field-carYear">
+                            <label for="field-carYear">Car Year</label>
+                        </div>
+                        <div class="field-item" data-field="carColor">
+                            <input type="checkbox" name="fields[]" value="carColor" id="field-carColor">
+                            <label for="field-carColor">Car Color</label>
+                        </div>
+                        <div class="field-item" data-field="carVIN">
+                            <input type="checkbox" name="fields[]" value="carVIN" id="field-carVIN">
+                            <label for="field-carVIN">Car VIN</label>
+                        </div>
+                    </div>
+
+                    <!-- Insurance Information -->
+                    <div class="field-category">
+                        <h4>Insurance Information</h4>
+                        <div class="field-item" data-field="insuranceCarrier">
+                            <input type="checkbox" name="fields[]" value="insuranceCarrier" id="field-insuranceCarrier">
+                            <label for="field-insuranceCarrier">Insurance Carrier</label>
+                        </div>
+                        <div class="field-item" data-field="insurancePolicyNumber">
+                            <input type="checkbox" name="fields[]" value="insurancePolicyNumber" id="field-insurancePolicyNumber">
+                            <label for="field-insurancePolicyNumber">Insurance Policy Number</label>
+                        </div>
+                        <div class="field-item" data-field="insuranceClaimNumber">
+                            <input type="checkbox" name="fields[]" value="insuranceClaimNumber" id="field-insuranceClaimNumber">
+                            <label for="field-insuranceClaimNumber">Insurance Claim Number</label>
+                        </div>
+                    </div>
+
+                    <!-- Financial Information -->
+                    <div class="field-category">
+                        <h4>Financial Information</h4>
+                        <div class="field-item" data-field="damagesTotal">
+                            <input type="checkbox" name="fields[]" value="damagesTotal" id="field-damagesTotal">
+                            <label for="field-damagesTotal">Total Damages</label>
+                        </div>
+                        <div class="field-item" data-field="billable">
+                            <input type="checkbox" name="fields[]" value="billable" id="field-billable">
+                            <label for="field-billable">Billable</label>
+                        </div>
+                    </div>
+
+                    <!-- Additional Information -->
+                    <div class="field-category">
+                        <h4>Additional Information</h4>
+                        <div class="field-item" data-field="description">
+                            <input type="checkbox" name="fields[]" value="description" id="field-description">
+                            <label for="field-description">Description</label>
+                        </div>
+                        <div class="field-item" data-field="notes">
+                            <input type="checkbox" name="fields[]" value="notes" id="field-notes">
+                            <label for="field-notes">Notes</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="builder-section">
+                <h3>Apply Filters</h3>
+                <p class="section-description">Add filters to narrow down your report data. You can add multiple filters and combine them.</p>
+                <div id="filter-container">
+                    <div class="filter-group">
+                        <div class="filter-row">
+                            <select name="filterField[]" class="filter-field">
+                                <option value="">Select Field</option>
+                                <option value="date">Date</option>
+                                <option value="status">Status</option>
+                                <option value="customerName">Customer Name</option>
+                                <option value="insuranceCarrier">Insurance Carrier</option>
+                                <option value="damagesTotal">Total Damages</option>
+                            </select>
+                            <select name="filterOperator[]" class="filter-operator">
+                                <option value="">Select Operator</option>
+                                <option value="equals">Equals</option>
+                                <option value="contains">Contains</option>
+                                <option value="greaterThan">Greater Than</option>
+                                <option value="lessThan">Less Than</option>
+                                <option value="between">Between</option>
+                            </select>
+                            <input type="text" name="filterValue[]" class="filter-value" placeholder="Enter value">
+                            <span class="remove-filter tooltip">
+                                ×
+                                <span class="tooltiptext">Remove this filter</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="add-filter tooltip">
+                    + Add Filter
+                    <span class="tooltiptext">Add another filter to narrow down your results</span>
+                </div>
+            </div>
+
+            <!-- Format Section -->
+            <div class="builder-section">
+                <h3>Select Output Format</h3>
+                <p class="section-description">Choose the format for your report output. Each format has different features and compatibility.</p>
+                <div class="format-options">
+                    <div class="format-option selected" data-format="csv">
+                        <input type="radio" name="format" value="csv" id="format-csv" checked>
+                        <label for="format-csv">CSV</label>
+                        <p class="format-description">Comma-separated values, compatible with most spreadsheet software</p>
+                    </div>
+                    <div class="format-option" data-format="excel">
+                        <input type="radio" name="format" value="excel" id="format-excel">
+                        <label for="format-excel">Excel</label>
+                        <p class="format-description">Microsoft Excel format with formatting and multiple sheets</p>
+                    </div>
+                    <div class="format-option" data-format="pdf">
+                        <input type="radio" name="format" value="pdf" id="format-pdf">
+                        <label for="format-pdf">PDF</label>
+                        <p class="format-description">Portable Document Format, suitable for printing and sharing</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="builder-section">
+                <h3>Report Preview</h3>
+                <p class="section-description">Review your report configuration before generating. Make sure all settings are correct.</p>
+                <div class="preview-section">
+                    <p>Select fields and filters to see a preview of your report.</p>
+                </div>
+            </div>
+
+            <div class="builder-section">
+                <button type="submit" class="generate-button">Generate Report</button>
+            </div>
         </form>
     </main>
-    <script src="/js/jquery-3.6.0.min.js"></script> <!-- jQuery for easier DOM manipulation -->
-    <script src="/js/bootstrap-datepicker.min.js"></script> <!-- Bootstrap Datepicker JS -->
-    <script>
-        $(function() {
-            // Initialize the datepicker
-            $('.datepicker').datepicker({
-                format: 'mm/dd/yyyy', // Date format
-                autoclose: true, // Automatically close the datepicker after selection
-                todayHighlight: true // Highlight today's date
-            });
 
-            // Disable the date range inputs if "Output All Time" is checked
-            $('#allTime').on('change', function() {
-                if ($(this).is(':checked')) {
-                    $('.datepicker').attr('disabled', 'disabled').val(''); // Disable date inputs and clear their values
-                } else {
-                    $('.datepicker').removeAttr('disabled'); // Enable date inputs
-                }
-            });
-        });
-    </script>
+    <script src="/js/jquery-3.6.0.min.js"></script>
+    <script src="/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script src="/js/report-builder.js"></script>
 </body>
 </html>
+
