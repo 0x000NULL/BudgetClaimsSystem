@@ -44,7 +44,7 @@ function updateResults(url) {
                                 <td>${claim.mva || ''}</td>
                                 <td>${claim.customerName || ''}</td>
                                 <td>${claim.carVIN || ''}</td>
-                                <td>${(claim.damageType || []).join(', ')}</td>
+                                <td>${Array.isArray(claim.damageType) ? claim.damageType.join(', ') : (claim.damageType || '')}</td>
                                 <td>${claim.status?.name || 'Unknown Status'}</td>
                                 <td>${new Date(claim.date).toLocaleDateString()}</td>
                                 <td>
