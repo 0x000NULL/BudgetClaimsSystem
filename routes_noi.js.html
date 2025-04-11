@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: routes/noiRoutes.js</title>
+    <title>JSDoc: Source: routes/noi.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: routes/noiRoutes.js</h1>
+    <h1 class="page-title">Source: routes/noi.js</h1>
 
     
 
@@ -39,6 +39,7 @@ const path = require('path');
 const noiService = require('../services/noiService');
 const Claim = require('../models/Claim');
 const { ensureAuthenticated } = require('../middleware/auth');
+const logger = require('../logger');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -75,6 +76,7 @@ router.get('/templates', async (req, res) => {
     const result = noiService.listTemplates();
     res.json(result);
   } catch (error) {
+    logger.error('Error listing NOI templates:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to list templates',
@@ -98,6 +100,7 @@ router.get('/templates/current', async (req, res) => {
       validationResult
     });
   } catch (error) {
+    logger.error('Error getting current template:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get current template',
@@ -139,6 +142,7 @@ router.post('/templates/upload', upload.single('template'), async (req, res) => 
       });
     }
   } catch (error) {
+    logger.error('Error uploading template:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to upload template',
@@ -160,6 +164,7 @@ router.post('/templates/preview', async (req, res) => {
     
     res.json(previewResult);
   } catch (error) {
+    logger.error('Error generating template preview:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to generate preview',
@@ -177,11 +182,69 @@ router.get('/templates/preview-data', (req, res) => {
     const html = noiService.generateDataPreviewHtml();
     res.send(html);
   } catch (error) {
+    logger.error('Error generating data preview:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to generate data preview',
       details: error.message
     });
+  }
+});
+
+/**
+ * @route POST /noi/generate
+ * @description Generates a NOI document from a template
+ */
+router.post('/generate', ensureAuthenticated, async (req, res) => {
+  try {
+    const claimData = req.body;
+    
+    // Validate required fields
+    if (!claimData.claimNumber) {
+      return res.status(400).json({ error: 'Claim number is required' });
+    }
+    
+    // Generate the document
+    const result = await noiService.generateNoiDocument(claimData);
+    
+    res.json({
+      success: true,
+      message: 'NOI document generated successfully',
+      document: result
+    });
+  } catch (error) {
+    logger.error('Error generating NOI document:', error);
+    res.status(500).json({ error: 'Failed to generate document', details: error.message });
+  }
+});
+
+/**
+ * @route POST /noi/generate-pdf
+ * @description Generates a NOI PDF document using the fillable PDF template
+ */
+router.post('/generate-pdf', ensureAuthenticated, async (req, res) => {
+  try {
+    const claimData = req.body;
+    
+    // Validate required fields
+    if (!claimData.claimNumber) {
+      return res.status(400).json({ error: 'Claim number is required' });
+    }
+    
+    // Generate the PDF
+    const result = await noiService.generateNoiPdf(claimData);
+    
+    res.json({
+      success: true,
+      message: 'NOI PDF document generated successfully',
+      document: {
+        path: result.path,
+        fileName: result.fileName
+      }
+    });
+  } catch (error) {
+    logger.error('Error generating NOI PDF document:', error);
+    res.status(500).json({ error: 'Failed to generate PDF document', details: error.message });
   }
 });
 
@@ -216,7 +279,7 @@ router.post('/generate/:claimId', ensureAuthenticated, async (req, res) => {
     const fileName = path.basename(result.documentPath);
     
     // Log paths for debugging
-    console.log('NOI Generated:', {
+    logger.info('NOI Generated:', {
       fullPath: result.documentPath,
       fileName: fileName,
       returnedFileName: result.fileName
@@ -224,7 +287,7 @@ router.post('/generate/:claimId', ensureAuthenticated, async (req, res) => {
     
     // Verify the file exists
     if (!fs.existsSync(result.documentPath)) {
-      console.error('Generated file does not exist:', result.documentPath);
+      logger.error('Generated file does not exist:', result.documentPath);
       return res.status(500).json({
         success: false,
         error: 'Generated file does not exist on server'
@@ -266,11 +329,31 @@ router.post('/generate/:claimId', ensureAuthenticated, async (req, res) => {
       fromCache: result.fromCache || false
     });
   } catch (error) {
-    console.error('NOI generation error:', error);
+    logger.error('NOI generation error:', error);
     return res.status(500).json({
       success: false,
       error: error.message || 'Failed to generate NOI document'
     });
+  }
+});
+
+/**
+ * @route GET /noi/download/:filename
+ * @description Downloads a generated NOI document
+ */
+router.get('/download/:filename', ensureAuthenticated, (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, '../uploads/noi', filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    
+    res.download(filePath);
+  } catch (error) {
+    logger.error('Error downloading NOI document:', error);
+    res.status(500).json({ error: 'Failed to download document' });
   }
 });
 
@@ -290,7 +373,7 @@ module.exports = router; </code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Mar 26 2025 15:21:35 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Apr 11 2025 14:34:56 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
