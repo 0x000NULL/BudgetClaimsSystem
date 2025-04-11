@@ -1236,42 +1236,50 @@ input[type="file"] {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 0;
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
 }
 
 .invoice-name {
     flex-grow: 1;
-}
-
-.invoice-amount {
-    text-align: right;
-    min-width: 100px; /* Ensures consistent alignment */
-    font-family: monospace; /* Makes numbers align better */
+    margin-right: 10px;
+    word-break: break-word;
 }
 
 .invoice-amount-container {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 200px;
+}
+
+.invoice-amount {
+    font-family: monospace;
+    font-size: 1.1em;
+    min-width: 80px;
+    text-align: right;
 }
 
 .invoice-edit-input {
     width: 100px;
-    padding: 4px;
-    border: 1px solid #ccc;
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
     border-radius: 4px;
     font-family: monospace;
+    font-size: 1.1em;
     text-align: right;
 }
 
 .btn-edit-invoice {
-    background-color: #007bff;
-    color: white;
+    padding: 4px 12px;
     border: none;
     border-radius: 4px;
-    padding: 4px 12px;
+    background-color: #007bff;
+    color: white;
     cursor: pointer;
-    font-size: 0.9em;
     min-width: 60px;
 }
 
@@ -1285,6 +1293,14 @@ input[type="file"] {
 
 .btn-edit-invoice.save:hover {
     background-color: #218838;
+}
+
+/* Admin fee styles */
+#adminFeeAmount {
+    font-family: monospace;
+    font-size: 1.1em;
+    color: #0066cc;
+    font-weight: bold;
 }
 
 .error-container {

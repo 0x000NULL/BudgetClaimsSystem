@@ -302,7 +302,12 @@ const LiabilityClaimSchema = new Schema({
             ref: 'User',
             default: null
         }
-    }]
+    }],
+    // Field for storing admin fee
+    adminFee: {
+        type: Number,
+        default: 0
+    }
 }, {
     timestamps: true, // This should be true
     strict: true // Enforce schema validation

@@ -1174,7 +1174,7 @@ router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager'
     }
 });
 
-// Route to view a specific claim by ID, with options to edit or delete, accessible by admin, manager, and employee
+// Route to view a specific claim by ID
 router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed claim details'), async (req, res) => {
     const claimId = req.params.id;
     logRequest(req, 'Fetching claim details with ID:', { claimId });
@@ -1188,6 +1188,27 @@ router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
         if (!claim) {
             logRequest(req, `Claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Claim not found' });
+        }
+
+        // Initialize invoice totals for any invoice files that don't have totals
+        if (claim.files && claim.files.invoices && claim.files.invoices.length > 0) {
+            if (!claim.invoiceTotals) {
+                claim.invoiceTotals = [];
+            }
+
+            // Check each invoice file
+            const existingTotals = new Set(claim.invoiceTotals.map(it => it.fileName));
+            const newTotals = claim.files.invoices
+                .filter(fileName => !existingTotals.has(fileName))
+                .map(fileName => ({
+                    fileName: fileName,
+                    total: 0
+                }));
+
+            if (newTotals.length > 0) {
+                claim.invoiceTotals.push(...newTotals);
+                await claim.save();
+            }
         }
 
         // Check if there's a corresponding liability claim
@@ -1528,8 +1549,16 @@ router.put('/:id/invoice-total', ensureAuthenticated, ensureRoles(['admin', 'man
     const { fileName, total } = req.body;
 
     try {
-        // Find the claim
-        const claim = await Claim.findById(claimId);
+        // Try to find regular claim first
+        let claim = await Claim.findById(claimId);
+        let isLiabilityClaim = false;
+
+        // If not found, try to find liability claim
+        if (!claim) {
+            claim = await LiabilityClaim.findById(claimId);
+            isLiabilityClaim = true;
+        }
+
         if (!claim) {
             console.error(`Claim not found with ID: ${claimId}`);
             return res.status(404).json({ 
@@ -1540,53 +1569,55 @@ router.put('/:id/invoice-total', ensureAuthenticated, ensureRoles(['admin', 'man
 
         // Find and update the specific invoice total
         const invoiceIndex = claim.invoiceTotals.findIndex(inv => inv.fileName === fileName);
+        
         if (invoiceIndex !== -1) {
-            // Log the update
-            console.log(`Updating invoice total for ${fileName}:`, {
-                oldTotal: claim.invoiceTotals[invoiceIndex].total,
-                newTotal: total
-            });
-
-            // Update the total
+            // Update existing total
             claim.invoiceTotals[invoiceIndex].total = parseFloat(total);
-            await claim.save();
-
-            // Return success with updated data
-            res.json({ 
-                success: true,
-                data: {
-                    invoiceTotal: claim.invoiceTotals[invoiceIndex],
-                    adminFee: calculateAdminFee(claim.invoiceTotals)
-                }
-            });
         } else {
-            console.error(`Invoice not found: ${fileName} in claim ${claimId}`);
-            res.status(404).json({ 
-                success: false, 
-                message: 'Invoice not found' 
+            // Create new total
+            claim.invoiceTotals.push({
+                fileName: fileName,
+                total: parseFloat(total)
             });
         }
+
+        // Calculate total of all invoices
+        const totalInvoices = claim.invoiceTotals.reduce((sum, invoice) => sum + (invoice.total || 0), 0);
+
+        // Calculate admin fee based on total
+        let adminFee = 0;
+        if (totalInvoices >= 100 && totalInvoices < 500) {
+            adminFee = 50;
+        } else if (totalInvoices >= 500 && totalInvoices < 1500) {
+            adminFee = 100;
+        } else if (totalInvoices >= 1500) {
+            adminFee = 150;
+        }
+
+        // Update the claim with the new admin fee
+        claim.adminFee = adminFee;
+
+        // Save the changes
+        await claim.save();
+
+        // Return success with updated data
+        res.json({ 
+            success: true,
+            data: {
+                invoiceTotal: claim.invoiceTotals.find(inv => inv.fileName === fileName),
+                adminFee: adminFee,
+                totalInvoices: totalInvoices
+            }
+        });
     } catch (error) {
         console.error('Error updating invoice total:', error);
-        res.render('500', { message: 'Error updating invoice total' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error updating invoice total',
+            error: error.message
+        });
     }
 });
-
-// Helper function to calculate admin fee
-function calculateAdminFee(invoiceTotals) {
-    const totalInvoices = invoiceTotals.reduce((sum, invoice) => sum + (invoice.total || 0), 0);
-    let adminFee = 0;
-    
-    if (totalInvoices >= 100 && totalInvoices < 500) {
-        adminFee = 50;
-    } else if (totalInvoices >= 500 && totalInvoices < 1500) {
-        adminFee = 100;
-    } else if (totalInvoices >= 1500) {
-        adminFee = 150;
-    }
-    
-    return adminFee;
-}
 
 // Route to rename a file in a claim
 router.put('/:id/rename-file', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
@@ -1725,6 +1756,27 @@ router.get('/liability/:id', ensureAuthenticated, ensureRoles(['admin', 'manager
         if (!claim) {
             logRequest(req, `Liability claim with ID ${claimId} not found`, { level: 'error' });
             return res.status(404).render('404', { message: 'Liability claim not found' });
+        }
+
+        // Initialize invoice totals for any invoice files that don't have totals
+        if (claim.files && claim.files.invoices && claim.files.invoices.length > 0) {
+            if (!claim.invoiceTotals) {
+                claim.invoiceTotals = [];
+            }
+
+            // Check each invoice file
+            const existingTotals = new Set(claim.invoiceTotals.map(it => it.fileName));
+            const newTotals = claim.files.invoices
+                .filter(fileName => !existingTotals.has(fileName))
+                .map(fileName => ({
+                    fileName: fileName,
+                    total: 0
+                }));
+
+            if (newTotals.length > 0) {
+                claim.invoiceTotals.push(...newTotals);
+                await claim.save();
+            }
         }
 
         // Find the original damage claim

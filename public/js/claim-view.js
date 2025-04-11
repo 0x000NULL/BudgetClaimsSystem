@@ -108,6 +108,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Handle Enter key in invoice total input
+    document.querySelectorAll('.invoice-edit-input').forEach(input => {
+        input.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                this.closest('.invoice-item').querySelector('.btn-edit-invoice').click();
+            }
+        });
+    });
+
+    // Handle Escape key to cancel editing
+    document.querySelectorAll('.invoice-edit-input').forEach(input => {
+        input.addEventListener('keyup', function(e) {
+            if (e.key === 'Escape') {
+                const invoiceItem = this.closest('.invoice-item');
+                const amountSpan = invoiceItem.querySelector('.invoice-amount');
+                const button = invoiceItem.querySelector('.btn-edit-invoice');
+                
+                this.style.display = 'none';
+                amountSpan.style.display = 'inline-block';
+                button.textContent = 'Edit';
+                button.classList.remove('save');
+            }
+        });
+    });
+
     // Function to update admin fee
     function updateAdminFee() {
         const invoiceTotals = Array.from(document.querySelectorAll('.invoice-amount'))
