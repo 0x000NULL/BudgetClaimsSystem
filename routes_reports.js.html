@@ -72,12 +72,25 @@
  * @param {Object} res - The Express response object.
  * @returns {Promise&lt;void>}
  */
+
+ /**
+ * Route to handle report preview
+ * Only accessible to authenticated users with 'admin' or 'manager' roles.
+ * 
+ * @name POST /preview
+ * @function
+ * @memberof module:routes/reports
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object.
+ * @returns {Promise&lt;void>}
+ */
 const express = require('express'); // Import Express to create a router
 const Claim = require('../models/Claim'); // Import the Claim model to interact with the claims collection in MongoDB
+const LiabilityClaim = require('../models/LiabilityClaim');
 const { ensureAuthenticated, ensureRoles } = require('../middleware/auth'); // Import authentication and role-checking middleware
 const logActivity = require('../middleware/activityLogger'); // Import activity logging middleware
 const ExcelJS = require('exceljs'); // Import ExcelJS for Excel export
-const pdfkit = require('pdfkit'); // Import PDFKit for PDF export
+const PDFDocument = require('pdfkit'); // Import PDFKit for PDF export
 const csv = require('csv-express'); // Import csv-express for CSV export
 const pinoLogger = require('../logger'); // Import Pino logger
 
@@ -122,79 +135,261 @@ const logRequest = (req, message, extra = {}) => {
     });
 };
 
-// Route to render the reports page
-// Only accessible to authenticated users with 'admin' or 'manager' roles
+// Helper function to build MongoDB query from filters
+function buildQueryFromFilters(filters) {
+    const query = {};
+    
+    filters.forEach(filter => {
+        const { field, operator, value } = filter;
+        
+        switch (operator) {
+            case 'equals':
+                query[field] = value;
+                break;
+            case 'contains':
+                query[field] = { $regex: value, $options: 'i' };
+                break;
+            case 'greaterThan':
+                query[field] = { $gt: value };
+                break;
+            case 'lessThan':
+                query[field] = { $lt: value };
+                break;
+            case 'between':
+                const [start, end] = value.split(',').map(v => v.trim());
+                query[field] = { $gte: start, $lte: end };
+                break;
+        }
+    });
+    
+    return query;
+}
+
+// Helper function to format data for different output types
+function formatDataForOutput(claims, fields) {
+    return claims.map(claim => {
+        const formattedClaim = {};
+        fields.forEach(field => {
+            // Handle nested fields
+            if (field.includes('.')) {
+                const [parent, child] = field.split('.');
+                formattedClaim[field] = claim[parent]?.[child] || '';
+            } else {
+                formattedClaim[field] = claim[field] || '';
+            }
+        });
+        return formattedClaim;
+    });
+}
+
+// Route to display the report builder page
 router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager']), (req, res) => {
-    logRequest(req, 'Reports route accessed');
-    res.render('reports', { title: 'Reports - Budget Claims System' }); // Render the reports page
+    res.render('reports', { 
+        title: 'Report Builder - Budget Claims System',
+        user: req.user
+    });
 });
 
-// Route to generate and download reports in various formats (CSV, Excel, PDF)
-// Only accessible to authenticated users with 'admin' or 'manager' roles
+// Route to handle report generation
 router.post('/generate', ensureAuthenticated, ensureRoles(['admin', 'manager']), async (req, res) => {
-    const { format, startDate, endDate } = req.body; // Extract report parameters from the request body
-    logRequest(req, 'Generating report with parameters:', { format, startDate, endDate });
-
-    // Build a filter object based on the provided date range
-    let filter = {};
-    if (startDate || endDate) {
-        filter.date = {};
-        if (startDate) filter.date.$gte = new Date(startDate); // Set the start date filter
-        if (endDate) filter.date.$lte = new Date(endDate); // Set the end date filter
-    }
-
     try {
-        // Fetch claims from the database based on the filter
-        const claims = await Claim.find(filter).exec();
-        logRequest(req, 'Claims fetched for report:', { claims });
-
-        if (format === 'csv') {
-            // Export claims to CSV
-            logRequest(req, 'Exporting claims to CSV');
-            res.csv(claims, true); // Send CSV response
-        } else if (format === 'excel') {
-            // Export claims to Excel
-            logRequest(req, 'Exporting claims to Excel');
-            const workbook = new ExcelJS.Workbook(); // Create a new workbook
-            const worksheet = workbook.addWorksheet('Claims'); // Add a worksheet to the workbook
-            worksheet.columns = [
-                { header: 'MVA', key: 'mva', width: 10 },
-                { header: 'Customer Name', key: 'customerName', width: 30 },
-                { header: 'Description', key: 'description', width: 50 },
-                { header: 'Status', key: 'status', width: 10 },
-                { header: 'Date', key: 'date', width: 15 }
-            ]; // Define worksheet columns
-            claims.forEach(claim => {
-                worksheet.addRow(claim); // Add each claim as a row in the worksheet
-            });
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            res.setHeader('Content-Disposition', 'attachment; filename=claims.xlsx');
-            await workbook.xlsx.write(res); // Write the workbook to the response
-            res.end(); // End the response
-        } else if (format === 'pdf') {
-            // Export claims to PDF
-            logRequest(req, 'Exporting claims to PDF');
-            const doc = new pdfkit(); // Create a new PDF document
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', 'attachment; filename=claims.pdf');
-            doc.pipe(res); // Pipe the PDF document to the response
-            doc.text('Claims Report', { align: 'center' }); // Add a title to the PDF
-            claims.forEach(claim => {
-                doc.text(`MVA: ${claim.mva}`);
-                doc.text(`Customer Name: ${claim.customerName}`);
-                doc.text(`Description: ${claim.description}`);
-                doc.text(`Status: ${claim.status}`);
-                doc.text(`Date: ${new Date(claim.date).toLocaleDateString()}`);
-                doc.moveDown(); // Add space between claims
-            });
-            doc.end(); // Finalize the PDF document
-        } else {
-            logRequest(req, 'Invalid report format:', { format });
-            res.status(400).json({ msg: 'Invalid format' }); // Respond with an error for invalid formats
+        // Parse the JSON strings from form data
+        const fields = JSON.parse(req.body.fields);
+        const filters = req.body.filters ? JSON.parse(req.body.filters) : [];
+        const format = req.body.format;
+        
+        console.log('Received report generation request:', { fields, filters, format });
+        
+        // Validate required fields
+        if (!fields || !Array.isArray(fields) || fields.length === 0) {
+            console.error('Invalid fields:', fields);
+            return res.status(400).json({ error: 'At least one field must be selected' });
         }
-    } catch (err) {
-        logRequest(req, 'Error generating report:', { error: err });
-        res.status(500).json({ error: err.message }); // Respond with an error for any exceptions
+        
+        // Build query from filters
+        const query = filters ? buildQueryFromFilters(filters) : {};
+        console.log('Built query:', query);
+        
+        // Fetch claims based on query
+        const claims = await Claim.find(query).lean();
+        const liabilityClaims = await LiabilityClaim.find(query).lean();
+        const allClaims = [...claims, ...liabilityClaims];
+        
+        console.log('Found claims:', allClaims.length);
+        
+        // Format data for output
+        const formattedData = formatDataForOutput(allClaims, fields);
+        console.log('Formatted data:', formattedData);
+        
+        // Generate report based on selected format
+        switch (format) {
+            case 'csv':
+                res.csv(formattedData, true);
+                break;
+                
+            case 'excel':
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Claims Report');
+                
+                // Add headers
+                worksheet.columns = fields.map(field => ({
+                    header: field.split('.').pop().replace(/([A-Z])/g, ' $1').trim(),
+                    key: field,
+                    width: 20
+                }));
+                
+                // Add data
+                formattedData.forEach(row => {
+                    worksheet.addRow(row);
+                });
+                
+                // Set response headers
+                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                res.setHeader('Content-Disposition', 'attachment; filename=claims-report.xlsx');
+                
+                // Write to response
+                await workbook.xlsx.write(res);
+                res.end();
+                break;
+                
+            case 'pdf':
+                const doc = new PDFDocument();
+                
+                // Set response headers
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', 'attachment; filename=claims-report.pdf');
+                
+                // Pipe PDF to response
+                doc.pipe(res);
+                
+                // Add title
+                doc.fontSize(20).text('Claims Report', { align: 'center' });
+                doc.moveDown();
+                
+                // Add date
+                doc.fontSize(12).text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'right' });
+                doc.moveDown();
+                
+                // Add table headers
+                const tableHeaders = fields.map(field => 
+                    field.split('.').pop().replace(/([A-Z])/g, ' $1').trim()
+                );
+                
+                // Calculate column widths
+                const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+                const columnWidth = pageWidth / fields.length;
+                
+                // Draw table headers
+                doc.font('Helvetica-Bold');
+                tableHeaders.forEach((header, i) => {
+                    doc.text(header, doc.page.margins.left + (i * columnWidth), doc.y, {
+                        width: columnWidth,
+                        align: 'left'
+                    });
+                });
+                
+                // Draw table rows
+                doc.font('Helvetica');
+                formattedData.forEach(row => {
+                    doc.moveDown();
+                    fields.forEach((field, i) => {
+                        doc.text(String(row[field] || ''), 
+                            doc.page.margins.left + (i * columnWidth), 
+                            doc.y, {
+                                width: columnWidth,
+                                align: 'left'
+                            });
+                    });
+                });
+                
+                // Finalize PDF
+                doc.end();
+                break;
+                
+            default:
+                console.error('Invalid format specified:', format);
+                return res.status(400).json({ error: 'Invalid format specified' });
+        }
+    } catch (error) {
+        console.error('Error generating report:', error);
+        res.status(500).json({ error: 'Failed to generate report: ' + error.message });
+    }
+});
+
+// Route to handle report preview
+router.post('/preview', ensureAuthenticated, ensureRoles(['admin', 'manager']), express.json(), async (req, res) => {
+    try {
+        const { fields, filters, format } = req.body;
+        
+        console.log('Received preview request:', { fields, filters, format });
+        
+        // Validate required fields
+        if (!fields || !Array.isArray(fields) || fields.length === 0) {
+            console.error('Invalid fields:', fields);
+            return res.status(400).json({ error: 'At least one field must be selected' });
+        }
+        
+        // Build query from filters
+        const query = filters ? buildQueryFromFilters(filters) : {};
+        console.log('Built query:', query);
+        
+        // Fetch a limited number of claims for preview
+        const claims = await Claim.find(query).limit(5).lean();
+        const liabilityClaims = await LiabilityClaim.find(query).limit(5).lean();
+        const allClaims = [...claims, ...liabilityClaims];
+        
+        console.log('Found claims:', allClaims.length);
+        
+        // Format data for preview
+        const formattedData = formatDataForOutput(allClaims, fields);
+        console.log('Formatted data:', formattedData);
+        
+        // Generate preview HTML
+        let previewHtml = `
+            &lt;h4>Preview Data (First 5 Records)&lt;/h4>
+            &lt;div class="preview-table">
+                &lt;table>
+                    &lt;thead>
+                        &lt;tr>
+                            ${fields.map(field => `
+                                &lt;th>${field.split('.').pop().replace(/([A-Z])/g, ' $1').trim()}&lt;/th>
+                            `).join('')}
+                        &lt;/tr>
+                    &lt;/thead>
+                    &lt;tbody>
+                        ${formattedData.map(row => `
+                            &lt;tr>
+                                ${fields.map(field => `
+                                    &lt;td>${row[field] || ''}&lt;/td>
+                                `).join('')}
+                            &lt;/tr>
+                        `).join('')}
+                    &lt;/tbody>
+                &lt;/table>
+            &lt;/div>
+            &lt;div class="preview-summary">
+                &lt;p>&lt;strong>Total Records:&lt;/strong> ${allClaims.length}&lt;/p>
+                &lt;p>&lt;strong>Selected Fields:&lt;/strong> ${fields.join(', ')}&lt;/p>
+                ${filters &amp;&amp; filters.length > 0 ? `
+                    &lt;p>&lt;strong>Filters Applied:&lt;/strong>&lt;/p>
+                    &lt;ul>
+                        ${filters.map(filter => `
+                            &lt;li>${filter.field} ${filter.operator} ${filter.value}&lt;/li>
+                        `).join('')}
+                    &lt;/ul>
+                ` : ''}
+            &lt;/div>
+        `;
+        
+        res.send(previewHtml);
+    } catch (error) {
+        console.error('Error generating preview:', error);
+        res.status(500).send(`
+            &lt;div class="error-message">
+                &lt;h4>Error Generating Preview&lt;/h4>
+                &lt;p>${error.message}&lt;/p>
+            &lt;/div>
+        `);
     }
 });
 
@@ -215,7 +410,7 @@ module.exports = router; // Export the router
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Apr 11 2025 14:57:08 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Apr 11 2025 15:22:48 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
