@@ -20,6 +20,7 @@
  * @requires ../models/Status
  * @requires ../models/Location
  * @requires ../models/DamageType
+ * @requires ../models/LiabilityClaim
  */
 
 const express = require('express'); // Import Express to create a router
@@ -44,6 +45,7 @@ const { uploadsPath } = require('../config/settings'); // Import uploadsPath fro
 const logRequest = require('../middleware/auditLogger');
 const logger = require('../logger');
 const { processRentalAgreement } = require('../services/processRentalAgreement'); // Import rental agreement processing service
+const LiabilityClaim = require('../models/LiabilityClaim'); // Import the LiabilityClaim model
 
 // Create uploads directory if it doesn't exist
 (async () => {
@@ -726,20 +728,9 @@ router.get('/search', ensureAuthenticated, ensureRoles(['admin', 'manager', 'emp
     }
 });
 
-
-// Route to get all claims or filter claims based on query parameters, accessible by admin, manager, and employee
-router.get('/', ensureAuthenticated, logActivity('view claims'), async (req, res) => {
-    try {
-        let query = {};
-        if (req.query.status) {
-            query.status = req.query.status;
-        }
-        const claims = await Claim.find(query).sort({ createdAt: -1 });
-        res.json(claims);
-    } catch (error) {
-        logger.error('Error fetching claims:', error);
-        res.render('500', { message: 'Error fetching claims' });
-    }
+// Route to redirect root claims path to search view
+router.get('/', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('view claims'), (req, res) => {
+    res.redirect('/claims/search');
 });
 
 // POST /claims - Add a new claim
@@ -1142,18 +1133,23 @@ router.post('/bulk/export', ensureAuthenticated, ensureRoles(['admin', 'manager'
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Claims');
             worksheet.columns = [
-                { header: 'MVA', key: 'mva', width: 10 },
-                { header: 'Customer Name', key: 'customerName', width: 30 },
-                { header: 'Description', key: 'description', width: 50 },
-                { header: 'Status', key: 'status', width: 10 },
-                { header: 'Date', key: 'date', width: 15 }
+                { header: 'Claim #', key: 'claimNumber', width: 15 },
+                { header: 'Status', key: 'status', width: 15 },
+                { header: 'Date', key: 'date', width: 15 },
+                // Add other columns as needed
             ];
             claims.forEach(claim => {
-                worksheet.addRow(claim);
+                worksheet.addRow({
+                    claimNumber: claim.claimNumber,
+                    status: claim.status,
+                    date: claim.date,
+                    // Add other fields as needed
+                });
             });
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.setHeader('Content-Disposition', 'attachment; filename=claims.xlsx');
-            workbook.xlsx.write(res).then(() => res.end());
+            await workbook.xlsx.write(res);
+            res.end();
         } else if (format === 'pdf') {
             logRequest(req, 'Exporting claims to PDF');
             const doc = new PDFDocument();
@@ -1194,13 +1190,9 @@ router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
             return res.status(404).render('404', { message: 'Claim not found' });
         }
 
-        // Add debug logging for rentingLocation
-        console.log('Claim rentingLocation:', {
-            raw: claim.rentingLocation,
-            populated: claim.populated('rentingLocation'),
-            name: claim.rentingLocation?.name
-        });
-
+        // Check if there's a corresponding liability claim
+        const liabilityClaim = await LiabilityClaim.findOne({ mva: claim.mva });
+        
         // Handle damageType population manually
         if (claim.damageType) {
             if (Array.isArray(claim.damageType)) {
@@ -1215,7 +1207,11 @@ router.get('/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employ
         }
         
         logRequest(req, 'Claim details fetched:', { claim });
-        res.render('claim_view', { title: 'View Claim', claim });
+        res.render('claim_view', { 
+            title: 'View Claim', 
+            claim,
+            liabilityClaimId: liabilityClaim ? liabilityClaim._id : null
+        });
     } catch (err) {
         logRequest(req, 'Error fetching claim details:', { error: err });
         res.status(500).render('500', { message: 'Internal Server Error' });
@@ -1662,6 +1658,100 @@ router.put('/:id/rename-file', ensureAuthenticated, ensureRoles(['admin', 'manag
             message: 'Error renaming file',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
+    }
+});
+
+// Route to create a liability claim from an existing claim
+router.get('/:id/create-liability', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), async (req, res) => {
+    const claimId = req.params.id;
+    logRequest(req, `Creating liability claim from claim with ID: ${claimId}`);
+
+    try {
+        // Find the original claim
+        const originalClaim = await Claim.findById(claimId)
+            .populate('status')
+            .populate('rentingLocation')
+            .populate('damageType');
+
+        if (!originalClaim) {
+            logRequest(req, `Original claim with ID ${claimId} not found`, { level: 'error' });
+            return res.status(404).render('404', { message: 'Claim not found' });
+        }
+
+        // Create a new liability claim with the same data
+        const liabilityClaimData = originalClaim.toObject();
+        
+        // Remove MongoDB-specific fields
+        delete liabilityClaimData._id;
+        delete liabilityClaimData.__v;
+        delete liabilityClaimData.claimNumber; // This will be regenerated with "L" suffix
+        
+        // Create the new liability claim
+        const liabilityClaim = new LiabilityClaim(liabilityClaimData);
+        
+        // Save the new liability claim
+        await liabilityClaim.save();
+        
+        // Log the successful creation
+        logRequest(req, 'Liability claim created successfully', { 
+            originalClaimId: claimId,
+            liabilityClaimId: liabilityClaim._id,
+            liabilityClaimNumber: liabilityClaim.claimNumber
+        });
+
+        // Redirect to the liability claim view instead of regular claim view
+        res.redirect(`/claims/liability/${liabilityClaim._id}`);
+
+    } catch (error) {
+        logRequest(req, 'Error creating liability claim:', { error });
+        res.status(500).render('500', { 
+            message: 'Error creating liability claim',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Route to view a liability claim
+router.get('/liability/:id', ensureAuthenticated, ensureRoles(['admin', 'manager', 'employee']), logActivity('Viewed liability claim details'), async (req, res) => {
+    const claimId = req.params.id;
+    logRequest(req, 'Fetching liability claim details with ID:', { claimId });
+
+    try {
+        const claim = await LiabilityClaim.findById(claimId)
+            .populate('rentingLocation')
+            .populate('status')
+            .exec();
+            
+        if (!claim) {
+            logRequest(req, `Liability claim with ID ${claimId} not found`, { level: 'error' });
+            return res.status(404).render('404', { message: 'Liability claim not found' });
+        }
+
+        // Find the original damage claim
+        const originalClaim = await Claim.findOne({ mva: claim.mva });
+
+        // Handle damageType population manually
+        if (claim.damageType) {
+            if (Array.isArray(claim.damageType)) {
+                const damageTypes = await DamageType.find({
+                    _id: { $in: claim.damageType }
+                });
+                claim.damageType = damageTypes;
+            } else {
+                const damageType = await DamageType.findById(claim.damageType);
+                claim.damageType = damageType ? [damageType] : [];
+            }
+        }
+        
+        logRequest(req, 'Liability claim details fetched:', { claim });
+        res.render('liability_claim_view', { 
+            title: 'View Liability Claim', 
+            claim,
+            originalClaimId: originalClaim ? originalClaim._id : null
+        });
+    } catch (err) {
+        logRequest(req, 'Error fetching liability claim details:', { error: err });
+        res.status(500).render('500', { message: 'Internal Server Error' });
     }
 });
 

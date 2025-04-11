@@ -51,7 +51,7 @@ const Status = require('../models/Status'); // Import the Status model to intera
 const Location = require('../models/Location'); // Import the Location model to interact with the locations collection in MongoDB
 const crypto = require('crypto');
 const { parse } = require('csv-parse');
-const xlsx = require('xlsx');
+const ExcelJS = require('exceljs');
 const os = require('os');
 const debug = require('debug')('app:import');
 const mongoose = require('mongoose');
@@ -136,18 +136,21 @@ const handleFileUpload = async (file, allowedExtensions) => {
  */
 const convertExcelToCsv = async (filePath) => {
     try {
-        // Read the Excel file
-        const workbook = xlsx.readFile(filePath);
+        // Read the Excel file using ExcelJS
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(filePath);
         
         // Get the first sheet
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const worksheet = workbook.getWorksheet(1);
         
-        // Convert to array of arrays first
-        const data = xlsx.utils.sheet_to_json(firstSheet, { 
-            header: 1,
-            raw: false,
-            dateNF: 'MM/DD/YY',
-            defval: '' // Default empty cells to empty string
+        // Convert to array of arrays
+        const data = [];
+        worksheet.eachRow((row, rowNumber) => {
+            const rowData = row.values.map(cell => {
+                if (cell && cell.text) return cell.text;
+                return cell || '';
+            });
+            data.push(rowData);
         });
 
         // Find and clean the header row

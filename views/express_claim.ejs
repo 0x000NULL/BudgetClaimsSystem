@@ -159,6 +159,9 @@
                     <label class="input-group-text" for="photoUpload">
                         <i class="fas fa-camera me-2"></i>Browse
                     </label>
+                    <button type="button" class="btn btn-outline-primary" id="cameraButton">
+                        <i class="fas fa-camera me-2"></i>Take Photo
+                    </button>
                 </div>
                 <div id="photoHelp" class="form-text text-muted">
                     <small>Upload photos of damage, vehicle condition, etc. Accepted formats: JPG, PNG, JPEG. <span class="text-danger">Maximum 50MB per image.</span></small>
@@ -167,6 +170,28 @@
                     <span class="badge bg-primary" id="selectedPhotoCount">0</span> photos selected
                 </div>
                 <div id="photoPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
+
+                <!-- Camera Modal -->
+                <div class="modal fade" id="cameraModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Take Photo</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="text-center">
+                                    <video id="cameraPreview" autoplay playsinline style="max-width: 100%;"></video>
+                                    <canvas id="cameraCanvas" style="display: none;"></canvas>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" id="captureButton">Capture Photo</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Hidden Status Field - Set to "Pending" by default -->
@@ -206,32 +231,84 @@
             const photoCount = document.getElementById('photoCount');
             const selectedPhotoCount = document.getElementById('selectedPhotoCount');
             
-            if (photoUpload) {
-                photoUpload.addEventListener('change', function() {
-                    // Clear existing previews
-                    photoPreview.innerHTML = '';
-                    
-                    if (this.files && this.files.length > 0) {
-                        // Update photo count
-                        selectedPhotoCount.textContent = this.files.length;
-                        photoCount.classList.remove('d-none');
-                        
-                        // Create and append preview for each file
-                        Array.from(this.files).forEach(file => {
-                            if (!file.type.match('image.*')) {
-                                return;
+            // Camera functionality
+            const cameraButton = document.getElementById('cameraButton');
+            const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+            const cameraPreview = document.getElementById('cameraPreview');
+            const cameraCanvas = document.getElementById('cameraCanvas');
+            const captureButton = document.getElementById('captureButton');
+            let stream = null;
+
+            if (cameraButton) {
+                cameraButton.addEventListener('click', async () => {
+                    try {
+                        // Check if running on HTTPS
+                        if (window.location.protocol !== 'https:') {
+                            showError('Camera access requires a secure connection (HTTPS). Please ensure you are using HTTPS.');
+                            return;
+                        }
+
+                        // Check if mediaDevices API is supported
+                        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                            // For iOS Safari, we need to use the legacy API
+                            const getUserMedia = navigator.getUserMedia ||
+                                navigator.webkitGetUserMedia ||
+                                navigator.mozGetUserMedia ||
+                                navigator.msGetUserMedia;
+
+                            if (!getUserMedia) {
+                                throw new Error('Camera access is not supported on this device/browser');
                             }
-                            
-                            // Check file size (max 5MB)
-                            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-                            if (file.size > maxSize) {
-                                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                                const warning = document.createElement('div');
-                                warning.className = 'alert alert-warning mt-2';
-                                warning.innerHTML = `<strong>Warning:</strong> ${file.name} (${fileSizeMB}MB) exceeds the 5MB limit and may be rejected.`;
-                                photoPreview.appendChild(warning);
+
+                            // Use the legacy API
+                            getUserMedia.call(navigator, { video: true }, 
+                                (stream) => {
+                                    cameraPreview.srcObject = stream;
+                                    cameraModal.show();
+                                },
+                                (err) => {
+                                    showError('Error accessing camera: ' + err.message);
+                                }
+                            );
+                        } else {
+                            // Use the modern API
+                            stream = await navigator.mediaDevices.getUserMedia({ 
+                                video: { 
+                                    facingMode: 'environment', // Prefer back camera on mobile
+                                    width: { ideal: 1920 },
+                                    height: { ideal: 1080 }
+                                } 
+                            });
+                            cameraPreview.srcObject = stream;
+                            cameraModal.show();
+                        }
+                    } catch (err) {
+                        showError('Error accessing camera: ' + (err.message || 'Camera access is not supported'));
+                        console.error('Camera error:', err);
+                    }
+                });
+            }
+
+            if (captureButton) {
+                captureButton.addEventListener('click', () => {
+                    try {
+                        const context = cameraCanvas.getContext('2d');
+                        cameraCanvas.width = cameraPreview.videoWidth;
+                        cameraCanvas.height = cameraPreview.videoHeight;
+                        context.drawImage(cameraPreview, 0, 0);
+
+                        // Convert canvas to blob with better quality
+                        cameraCanvas.toBlob((blob) => {
+                            if (!blob) {
+                                throw new Error('Failed to capture photo');
                             }
+
+                            const file = new File([blob], `camera_photo_${Date.now()}.jpg`, { 
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
                             
+                            // Create preview
                             const reader = new FileReader();
                             reader.onload = function(e) {
                                 const previewContainer = document.createElement('div');
@@ -252,16 +329,28 @@
                                 previewContainer.appendChild(img);
                                 previewContainer.appendChild(fileName);
                                 photoPreview.appendChild(previewContainer);
+
+                                // Update photo count
+                                const currentCount = photoPreview.children.length;
+                                selectedPhotoCount.textContent = currentCount;
+                                photoCount.classList.remove('d-none');
                             };
-                            
                             reader.readAsDataURL(file);
-                        });
-                    } else {
-                        // No files selected
-                        photoCount.classList.add('d-none');
+                        }, 'image/jpeg', 0.9); // Increased quality to 0.9
+                    } catch (err) {
+                        showError('Error capturing photo: ' + err.message);
+                        console.error('Capture error:', err);
                     }
                 });
             }
+
+            // Clean up camera stream when modal is closed
+            document.getElementById('cameraModal').addEventListener('hidden.bs.modal', () => {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+            });
 
             // Drag and drop handlers
             if (uploadZone) {

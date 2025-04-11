@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Liability Claim - Budget Claims System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <!-- Logo and navigation -->
+        <img src="/images/Budget_logo.svg" alt="Budget Logo" class="logo">
+        <h1>Budget Claims System</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li class="Claims">
+                    <a href="javascript:void(0)" class="dropbtn">Claims</a>
+                    <div class="dropdown-content">
+                        <a href="/claims/search">Search Claims</a>
+                        <a href="/claims/add">Add Claim</a>
+                    </div>
+                </li>
+                <li><a href="/reports">Reports</a></li>
+                <li class="Settings">
+                    <a href="javascript:void(0)" class="dropbtn">Settings</a>
+                    <div class="dropdown-content">
+                        <a href="/general-settings">General Settings</a>
+                        <a href="/user-management">User Management</a>
+                        <a href="/email-templates">Email Templates</a>
+                    </div>
+                </li>
+                <li><a href="/help">Help</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <div class="container">
+            <h2>Edit Liability Claim</h2>
+            <form action="/claims/liability/<%= claim._id %>?_method=PUT" method="post" enctype="multipart/form-data" class="claim-form">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3>Basic Information</h3>
+                    <div class="form-group">
+                        <label for="claimNumber">Claim Number:</label>
+                        <input type="text" id="claimNumber" name="claimNumber" value="<%= claim.claimNumber %>" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="mva">MVA:</label>
+                        <input type="text" id="mva" name="mva" value="<%= claim.mva %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="accidentDate">Accident Date:</label>
+                        <input type="date" id="accidentDate" name="accidentDate" value="<%= claim.accidentDate ? new Date(claim.accidentDate).toISOString().split('T')[0] : '' %>">
+                    </div>
+                </div>
+
+                <!-- Customer Information -->
+                <div class="form-section">
+                    <h3>Customer Information</h3>
+                    <div class="form-group">
+                        <label for="customerName">Customer Name:</label>
+                        <input type="text" id="customerName" name="customerName" value="<%= claim.customerName %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="customerNumber">Customer Number:</label>
+                        <input type="text" id="customerNumber" name="customerNumber" value="<%= claim.customerNumber %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="customerEmail">Customer Email:</label>
+                        <input type="email" id="customerEmail" name="customerEmail" value="<%= claim.customerEmail %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="customerAddress">Customer Address:</label>
+                        <textarea id="customerAddress" name="customerAddress"><%= claim.customerAddress %></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerDriversLicense">Customer Driver's License:</label>
+                        <input type="text" id="customerDriversLicense" name="customerDriversLicense" value="<%= claim.customerDriversLicense %>">
+                    </div>
+                </div>
+
+                <!-- Vehicle Information -->
+                <div class="form-section">
+                    <h3>Vehicle Information</h3>
+                    <div class="form-group">
+                        <label for="carMake">Car Make:</label>
+                        <input type="text" id="carMake" name="carMake" value="<%= claim.carMake %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="carModel">Car Model:</label>
+                        <input type="text" id="carModel" name="carModel" value="<%= claim.carModel %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="carYear">Car Year:</label>
+                        <input type="text" id="carYear" name="carYear" value="<%= claim.carYear %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="carColor">Car Color:</label>
+                        <input type="text" id="carColor" name="carColor" value="<%= claim.carColor %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="carVIN">Car VIN:</label>
+                        <input type="text" id="carVIN" name="carVIN" value="<%= claim.carVIN %>">
+                    </div>
+                </div>
+
+                <!-- Insurance Information -->
+                <div class="form-section">
+                    <h3>Insurance Information</h3>
+                    <div class="form-group">
+                        <label for="insuranceCarrier">Insurance Carrier:</label>
+                        <input type="text" id="insuranceCarrier" name="insuranceCarrier" value="<%= claim.insuranceCarrier %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="insuranceAdjuster">Insurance Adjuster:</label>
+                        <input type="text" id="insuranceAdjuster" name="insuranceAdjuster" value="<%= claim.insuranceAdjuster %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="insuranceEmail">Insurance Email:</label>
+                        <input type="email" id="insuranceEmail" name="insuranceEmail" value="<%= claim.insuranceEmail %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="insurancePhoneNumber">Insurance Phone Number:</label>
+                        <input type="text" id="insurancePhoneNumber" name="insurancePhoneNumber" value="<%= claim.insurancePhoneNumber %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="insurancePolicyNumber">Insurance Policy Number:</label>
+                        <input type="text" id="insurancePolicyNumber" name="insurancePolicyNumber" value="<%= claim.insurancePolicyNumber %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="insuranceClaimNumber">Insurance Claim Number:</label>
+                        <input type="text" id="insuranceClaimNumber" name="insuranceClaimNumber" value="<%= claim.insuranceClaimNumber %>">
+                    </div>
+                </div>
+
+                <!-- Third Party Information -->
+                <div class="form-section">
+                    <h3>Third Party Information</h3>
+                    <div class="form-group">
+                        <label for="thirdPartyName">Third Party Name:</label>
+                        <input type="text" id="thirdPartyName" name="thirdPartyName" value="<%= claim.thirdPartyName %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="thirdPartyAddress">Third Party Address:</label>
+                        <textarea id="thirdPartyAddress" name="thirdPartyAddress"><%= claim.thirdPartyAddress %></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="thirdPartyPhoneNumber">Third Party Phone Number:</label>
+                        <input type="text" id="thirdPartyPhoneNumber" name="thirdPartyPhoneNumber" value="<%= claim.thirdPartyPhoneNumber %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="thirdPartyInsuranceName">Third Party Insurance Name:</label>
+                        <input type="text" id="thirdPartyInsuranceName" name="thirdPartyInsuranceName" value="<%= claim.thirdPartyInsuranceName %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="thirdPartyPolicyNumber">Third Party Policy Number:</label>
+                        <input type="text" id="thirdPartyPolicyNumber" name="thirdPartyPolicyNumber" value="<%= claim.thirdPartyPolicyNumber %>">
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="form-section">
+                    <h3>Additional Information</h3>
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <textarea id="description" name="description"><%= claim.description %></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="damageType">Damage Type:</label>
+                        <select id="damageType" name="damageType" multiple>
+                            <% damageTypes.forEach(type => { %>
+                                <option value="<%= type._id %>" <%= claim.damageType && claim.damageType.includes(type._id.toString()) ? 'selected' : '' %>>
+                                    <%= type.name %>
+                                </option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Status:</label>
+                        <select id="status" name="status">
+                            <% statuses.forEach(status => { %>
+                                <option value="<%= status._id %>" <%= claim.status && claim.status._id.toString() === status._id.toString() ? 'selected' : '' %>>
+                                    <%= status.name %>
+                                </option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- File Uploads -->
+                <div class="form-section">
+                    <h3>File Uploads</h3>
+                    <div class="form-group">
+                        <label for="incidentReports">Incident Reports:</label>
+                        <input type="file" id="incidentReports" name="incidentReports" multiple>
+                    </div>
+                    <div class="form-group">
+                        <label for="correspondence">Correspondence:</label>
+                        <input type="file" id="correspondence" name="correspondence" multiple>
+                    </div>
+                    <div class="form-group">
+                        <label for="rentalAgreement">Rental Agreement:</label>
+                        <input type="file" id="rentalAgreement" name="rentalAgreement" multiple>
+                    </div>
+                    <div class="form-group">
+                        <label for="policeReport">Police Report:</label>
+                        <input type="file" id="policeReport" name="policeReport" multiple>
+                    </div>
+                    <div class="form-group">
+                        <label for="invoices">Invoices:</label>
+                        <input type="file" id="invoices" name="invoices" multiple>
+                    </div>
+                    <div class="form-group">
+                        <label for="photos">Photos:</label>
+                        <input type="file" id="photos" name="photos" multiple>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn">Save Changes</button>
+                    <a href="/claims/liability/<%= claim._id %>" class="btn">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+    <script src="/js/claim-edit.js"></script>
+</body>
+</html> 

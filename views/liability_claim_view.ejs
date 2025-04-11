@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Claim - Budget Claims System</title>
+    <title>View Liability Claim - Budget Claims System</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -37,7 +37,7 @@
     </header>
     <main>
         <div class="container">
-            <h2>View Claim</h2> <!-- Section heading -->
+            <h2>View Liability Claim</h2> <!-- Section heading -->
 
             <!-- Display claim information -->
             <div class="claim-info">
@@ -141,7 +141,7 @@
                 <p><%= claim.thirdPartyClaimNumber %></p>
 
                 <label>Renting Location:</label>
-                <p><%= claim.rentingLocation ? claim.rentingLocation.name : 'N/A' %></p> <!-- Display the name of the renting location -->
+                <p><%= claim.rentingLocation ? claim.rentingLocation.name : 'N/A' %></p>
 
                 <label>LDW Accepted:</label>
                 <p><%= claim.ldwAccepted ? 'Yes' : 'No' %></p>
@@ -345,15 +345,13 @@
                 </div>
             </div>
             <div class="button-group">
-                <a href="/claims/<%= claim._id %>/edit" class="btn">Edit Claim</a> <!-- Button to edit claim -->
-                <a href="/claims/<%= claim._id %>/export" class="btn">Export to PDF</a> <!-- Button to export claim to PDF -->
-                <% if (liabilityClaimId) { %>
-                    <a href="/claims/liability/<%= liabilityClaimId %>" class="btn">Show Liability</a> <!-- Button to view liability claim -->
-                <% } else { %>
-                    <a href="/claims/<%= claim._id %>/create-liability" class="btn">Create Liability</a> <!-- Button to create liability claim -->
+                <a href="/claims/liability/<%= claim._id %>/edit" class="btn">Edit Claim</a> <!-- Button to edit claim -->
+                <a href="/claims/liability/<%= claim._id %>/export" class="btn">Export to PDF</a> <!-- Button to export claim to PDF -->
+                <% if (originalClaimId) { %>
+                    <a href="/claims/<%= originalClaimId %>" class="btn">Show Damage Claim</a> <!-- Button to view original claim -->
                 <% } %>
                 <a href="#" class="btn" data-action="email" data-claimid="<%= claim._id %>">Send Email</a> <!-- Button to send email -->
-                <form action="/claims/<%= claim._id %>?_method=DELETE" method="post" style="display: inline;"> <!-- Form to delete claim -->
+                <form action="/claims/liability/<%= claim._id %>?_method=DELETE" method="post" style="display: inline;"> <!-- Form to delete claim -->
                     <button type="submit" class="btn btn-delete">Delete Claim</button> <!-- Button to delete claim -->
                 </form>
             </div>
@@ -375,4 +373,4 @@
     </script>
     <script src="/js/claim-view.js"></script>
 </body>
-</html>
+</html> 

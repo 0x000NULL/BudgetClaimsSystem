@@ -55,7 +55,7 @@ function getCurrentTemplatePath(usePdf = false) {
   }
   
   // If no current template exists, use the default one
-  const defaultPath = path.join(TEMPLATES_DIR, 'noi-template-v1.0.docx');
+  const defaultPath = path.join(TEMPLATES_DIR, 'noi-template-fillable.pdf');
   if (fs.existsSync(defaultPath)) {
     // Create a copy as the current template
     fs.copyFileSync(defaultPath, CURRENT_TEMPLATE_PATH);
@@ -127,7 +127,7 @@ function listTemplates() {
     // Get all versioned templates
     if (fs.existsSync(versionsDir)) {
       const versionFiles = fs.readdirSync(versionsDir)
-        .filter(file => file.endsWith('.docx'))
+        .filter(file => file.endsWith('.pdf'))
         .map(file => {
           const filePath = path.join(versionsDir, file);
           return {
@@ -297,9 +297,6 @@ function mapClaimDataToTemplateFields(claim) {
     generatedDate: formatDate(new Date()),
     adjustorName: claim.insuranceAdjuster || '',
     adjustorPhone: claim.insurancePhoneNumber || '',
-    companyName: 'Budget Car Rental',
-    companyAddress: '456 Corporate Plaza, Suite 300, Business City, CA 94123',
-    companyLogo: '[COMPANY LOGO]' // Placeholder - would be replaced with actual image in a real implementation
   };
 }
 

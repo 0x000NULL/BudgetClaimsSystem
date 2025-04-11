@@ -64,10 +64,10 @@ This document outlines the security and compliance requirements for the Budget C
 ## 4. Security Headers & Configuration
 
 ### 4.1 HTTP Security Headers
-- [ ] Configure CSP with nonces
-- [ ] Implement HSTS
-- [ ] Add X-Frame-Options
-- [ ] Configure X-Content-Type-Options
+- [x] Configure CSP with nonces
+- [x] Implement HSTS
+- [x] Add X-Frame-Options
+- [x] Configure X-Content-Type-Options
 - [ ] Set Referrer-Policy
 
 ### 4.2 Security Configurations

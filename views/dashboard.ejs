@@ -173,7 +173,27 @@
         </nav>
     </header>
     <main>
-        <h2>Dashboard Overview</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Dashboard Overview</h2>
+            <div style="display: flex; gap: 20px;">
+                <button id="liabilityToggle" class="toggle-btn" style="
+                    padding: 8px 16px;
+                    border: 1px solid #007bff;
+                    background-color: white;
+                    color: #007bff;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">Liability</button>
+                <button id="physicalToggle" class="toggle-btn" style="
+                    padding: 8px 16px;
+                    border: 1px solid #007bff;
+                    background-color: white;
+                    color: #007bff;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">Physical</button>
+            </div>
+        </div>
 
         <div class="stats-grid">
             <div class="stat-card">
